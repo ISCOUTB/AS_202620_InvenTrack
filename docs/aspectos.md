@@ -14,8 +14,8 @@ Un **aspecto** no es una capa del sistema ni un módulo — es un corte vertical
 
 | ID | Aspecto | Requisito | C4 | ADR | Código | Pruebas | Evidencia |
 |---|---|---|---|---|---|---|---|
-| ASP-01 | [Consistencia de datos](#asp-01--consistencia-de-datos) | [ESC-01, ESC-02](arc42/arc42-template-EN.md#quality-scenarios) | [C4 Nivel 2](c4/containers.md) — módulo `productos` y backend | [ADR-0001](adr/0001-usar-monolito-modular-con-hexagonal-por-modulo.md) — Monolito Modular con Hexagonal por Módulo | [`app/productos/`](../app/productos/) — Corte vertical funcional (Dominio, Aplicación e Infraestructura) | [`tests/productos/test_api_corte_vertical.py`](../tests/productos/test_api_corte_vertical.py) | Prueba de corte vertical (API + Hexagonal) en verde en la suite de pruebas automatizada |
-| ASP-02 | [Control de Concurrencia e Inventario (Reto Corte 1)](#asp-02--control-de-concurrencia-e-inventario-reto-corte-1) | [ESC-01](arc42/arc42-template-EN.md#quality-scenarios) — Latencia $p95 \le 400\text{ ms}$ con 20 usuarios | [C4 Nivel 2](c4/containers.md) — módulos `inventario` y `productos` | [ADR-0002](adr/0002-control-concurrencia-memoria-inventario.md) — Control de concurrencia en memoria para inventario | [`app/inventario/`](../app/inventario/) — Gestión de movimientos y stock atómico | [`tests/inventario/test_concurrencia.py`](../tests/inventario/test_concurrencia.py) | [`docs/retos/corte-1-medicion.md`](retos/corte-1-medicion.md) — Reporte de medición con $p95 = 28\text{ ms}$ |
+| ASP-01 | [Consistencia de datos](#asp-01--consistencia-de-datos) | [ESC-01, ESC-02](arc42/arc42-template-EN.md#quality-scenarios) | [C4 Nivel 2](c4/containers.md), [C4 Nivel 3](c4/components.md), [Mapa de contextos](context-map.md), [Contrato OpenAPI](../contracts/openapi/v1.json) — módulos `productos` e `inventario` | [ADR-0001](adr/0001-usar-monolito-modular-con-hexagonal-por-modulo.md), [ADR-0003](adr/0003-integracion-productos-inventario-via-puertos-de-aplicacion.md), [ADR-0004](adr/0004-contrato-api-versionado-openapi.md) | [`app/productos/`](../app/productos/), [`app/inventario/`](../app/inventario/) — Corte vertical funcional con integración real entre módulos | [`tests/productos/test_api_corte_vertical.py`](../tests/productos/test_api_corte_vertical.py), [`tests/productos/test_historial_real.py`](../tests/productos/test_historial_real.py), [`tests/inventario/test_validacion_producto.py`](../tests/inventario/test_validacion_producto.py), [`tests/contract/test_openapi_contract.py`](../tests/contract/test_openapi_contract.py) | Prueba de corte vertical (API + Hexagonal) en verde, contra el historial real de inventario ([`docs/propiedad-datos.md`](propiedad-datos.md), [`docs/auditoria-modularidad.md`](auditoria-modularidad.md)); contrato de API validado en CI (ADR-0004) |
+| ASP-02 | [Control de Concurrencia e Inventario (Reto Corte 1)](#asp-02--control-de-concurrencia-e-inventario-reto-corte-1) | [ESC-01](arc42/arc42-template-EN.md#quality-scenarios) — Latencia $p95 \le 400\text{ ms}$ con 20 usuarios | [C4 Nivel 2](c4/containers.md), [C4 Nivel 3](c4/components.md), [Mapa de contextos](context-map.md), [Contrato OpenAPI](../contracts/openapi/v1.json) — módulos `inventario` y `productos` | [ADR-0002](adr/0002-control-concurrencia-memoria-inventario.md) — Control de concurrencia en memoria para inventario; [ADR-0004](adr/0004-contrato-api-versionado-openapi.md) documenta el `503` de degradación en el contrato | [`app/inventario/`](../app/inventario/) — Gestión de movimientos y stock atómico | [`tests/inventario/test_concurrencia.py`](../tests/inventario/test_concurrencia.py), [`tests/contract/test_openapi_contract.py`](../tests/contract/test_openapi_contract.py) | [`docs/retos/corte-1-medicion.md`](retos/corte-1-medicion.md) — Reporte de medición con $p95 = 28\text{ ms}$ |
 
 ---
 
@@ -48,7 +48,7 @@ Este aspecto se refinó en dos escenarios de calidad medibles, documentados en [
 
 ### C4: dónde vive este aspecto
 
-El [diagrama de contenedores (C4 Nivel 2)](c4/containers.md) y el [diagrama de contexto (C4 Nivel 1)](c4/context.md) muestran que este aspecto vive en la capa de Backend (`API Backend (Monolito Modular)`), la cual expone las reglas de negocio hacia la interfaz. En la estructura del código, se implementó como el primer corte vertical en el módulo [`app/productos/`](../app/productos/), desacoplado mediante puertos y adaptadores según el [ADR-0001](adr/0001-usar-monolito-modular-con-hexagonal-por-modulo.md).
+El [diagrama de contenedores (C4 Nivel 2)](c4/containers.md) y el [diagrama de contexto (C4 Nivel 1)](c4/context.md) muestran que este aspecto vive en la capa de Backend (`API Backend (Monolito Modular)`), la cual expone las reglas de negocio hacia la interfaz. En la estructura del código, se implementó como corte vertical en los módulos [`app/productos/`](../app/productos/) e [`app/inventario/`](../app/inventario/), desacoplados mediante puertos y adaptadores según el [ADR-0001](adr/0001-usar-monolito-modular-con-hexagonal-por-modulo.md). El [C4 Nivel 3](c4/components.md) abre esos dos módulos hasta el nivel de componente, y el [mapa de contextos](context-map.md) documenta la relación cliente-proveedor entre ambos, tipificada según el [ADR-0003](adr/0003-integracion-productos-inventario-via-puertos-de-aplicacion.md).
 
 ---
 
@@ -59,18 +59,30 @@ El [ADR-0001](adr/0001-usar-monolito-modular-con-hexagonal-por-modulo.md) resuel
 - **Casos de uso aislados:** `CrearProducto` y `EliminarProducto` coordinan las reglas del sistema.
 - **Borrado lógico vs. borrado físico:** La regla de negocio valida si existen movimientos asociados antes de permitir la eliminación física o forzar la desactivación (`ESC-02`).
 
+El [ADR-0003](adr/0003-integracion-productos-inventario-via-puertos-de-aplicacion.md) resuelve cómo `productos` obtiene ese dato de movimientos sin importar el `domain` ni la `infrastructure` de `inventario` (y, en sentido contrario, cómo `inventario` valida que un producto exista antes de aceptar un movimiento). Ver el detalle de esta violación y su corrección en [`docs/auditoria-modularidad.md`](auditoria-modularidad.md) (VIO-01) y la propiedad de cada dato en [`docs/propiedad-datos.md`](propiedad-datos.md):
+
+- **`HistorialMovimientosAdapter`** (`app/productos/infrastructure/`) implementa el puerto `VerificadorDeMovimientos` de `productos` invocando el caso de uso `ConsultarHistorialMovimientos` de `inventario`.
+- **`ValidadorDeProductoAdapter`** (`app/inventario/infrastructure/`), en la dirección contraria, invoca `ConsultarProducto` de `productos` para evitar que `inventario` registre movimientos sobre productos inexistentes o desactivados.
+
 ---
 
 ### Código y pruebas (Corte Vertical Implementado)
 
 El módulo [`app/productos/`](../app/productos/) contiene el corte vertical funcional completo:
 - **Dominio y Puertos:** `app/productos/domain/` (`producto.py`, `ports.py`, `exceptions.py`).
-- **Aplicación:** `app/productos/application/` (`crear_producto.py`, `eliminar_producto.py`).
-- **Infraestructura y REST API:** `app/productos/infrastructure/` (`router.py`, `in_memory_repository.py`).
+- **Aplicación:** `app/productos/application/` (`crear_producto.py`, `eliminar_producto.py`, `consultar_producto.py`).
+- **Infraestructura y REST API:** `app/productos/infrastructure/` (`router.py`, `in_memory_repository.py`, `historial_movimientos_adapter.py`).
+
+El módulo [`app/inventario/`](../app/inventario/) aporta el dato real que `productos` necesita para ESC-02:
+- **Dominio y Puertos:** `app/inventario/domain/` (`stock.py`, `movimiento.py`, `ports.py`, `exceptions_producto.py`).
+- **Aplicación:** `app/inventario/application/` (`registrar_movimiento.py`, `consultar_movimientos.py`).
+- **Infraestructura:** `app/inventario/infrastructure/` (`router.py`, `in_memory_repository.py`, `in_memory_movimiento_repository.py`, `validador_producto_adapter.py`).
 
 El aspecto está cubierto y validado mediante la suite de pruebas automatizadas:
-- **Integración de Corte Vertical (E2E):** [`tests/productos/test_api_corte_vertical.py`](../tests/productos/test_api_corte_vertical.py)
-- **Pruebas de Unidad de Dominio:** [`tests/productos/test_eliminar_producto.py`](../tests/productos/test_eliminar_producto.py)
+- **Integración de Corte Vertical (E2E), contra el historial real de inventario:** [`tests/productos/test_api_corte_vertical.py`](../tests/productos/test_api_corte_vertical.py)
+- **Pruebas de Unidad de Dominio (productos):** [`tests/productos/test_eliminar_producto.py`](../tests/productos/test_eliminar_producto.py)
+- **Prueba del adaptador cruzado (ADR-0003):** [`tests/productos/test_historial_real.py`](../tests/productos/test_historial_real.py)
+- **Pruebas de validación de producto en inventario (ADR-0003):** [`tests/inventario/test_validacion_producto.py`](../tests/inventario/test_validacion_producto.py)
 
 ---
 
@@ -78,10 +90,12 @@ El aspecto está cubierto y validado mediante la suite de pruebas automatizadas:
 
 - [x] Aspecto identificado y declarado
 - [x] Escenarios de calidad definidos (ESC-01, ESC-02)
-- [x] Diagrama C4 Nivel 2 delimitado y vinculado
-- [x] Módulo del corte vertical implementado (`app/productos/`)
+- [x] Diagrama C4 Nivel 2 y Nivel 3 delimitados y vinculados
+- [x] Módulos del corte vertical implementados (`app/productos/`, `app/inventario/`)
 - [x] Reglas de consistencia (borrado lógico/físico ESC-02) implementadas
 - [x] Pruebas de integración E2E del corte vertical en verde
+- [x] ESC-02 verificado contra datos reales de `inventario`, no contra un doble de prueba (ADR-0003)
+- [x] `inventario` valida que el producto exista y esté activo antes de registrar un movimiento (ADR-0003)
 
 ---
 
@@ -128,7 +142,7 @@ El [ADR-0002](adr/0002-control-concurrencia-memoria-inventario.md) establece el 
 
 En caso de que la carga supere la capacidad de atención o el tiempo de espera por el cerrojo asíncrono exceda el límite razonable:
 - El sistema encola ordenadamente las peticiones sobre el *event loop* de FastAPI sin bloquear el hilo principal.
-- Ante saturación extrema o timeouts de espera sobre el lock, el servicio responde con estados HTTP controlados (`429 Too Many Requests` o `503 Service Unavailable`), protegiendo la consistencia del inventario y evitando el colapso del proceso.
+- Ante un timeout de espera sobre el lock, el servicio responde HTTP `503 Service Unavailable`, protegiendo la consistencia del inventario y evitando el colapso del proceso.
 
 ---
 

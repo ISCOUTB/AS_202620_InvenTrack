@@ -34,7 +34,7 @@ Adoptar la **Opción 3 (Mutex/Lock asíncrono por SKU)** para el corte vertical 
 ## Consecuencias y Límites
 
 - **Consecuencias Positivas:** Cumple holgadamente el umbral de rendimiento ($p95 = 28\text{ ms} \ll 400\text{ ms}$), elimina condiciones de carrera de stock negativo y preserva la simplicidad del Monolito Modular.
-- **Manejo de Degradación:** Si se alcanza una saturación de concurrencia sobre el cerrojo, el sistema encola peticiones en el *event loop* de FastAPI o responde con códigos HTTP `429` / `503` controlados sin comprometer la integridad del stock.
+- **Manejo de Degradación:** Si la espera por el cerrojo supera el timeout configurado, el sistema responde con HTTP `503 Service Unavailable` sin comprometer la integridad del stock.
 
 ---
 

@@ -19,16 +19,14 @@ class MovimientoResponse(BaseModel):
 
 
 def crear_router(registro: RegistrarMovimientoInventario, repositorio_stock: StockRepository) -> APIRouter:
-    """Ensambla el router de inventario a partir de dependencias ya
-    construidas por el composition root (app/main.py). Ver ADR-0003.
-
-    Los endpoints son `async` porque RegistrarMovimientoInventario ahora usa
-    un `asyncio.Lock` por producto (ADR-0002 del equipo); sin `await` en la
-    cadena completa, el lock nunca cedería el control real."""
 
     router = APIRouter()
 
-    @router.post("/inventario/{producto_id}/entradas", response_model=MovimientoResponse)
+    @router.post(
+        "/inventario/{producto_id}/entradas",
+        response_model=MovimientoResponse,
+        responses={404: {"description": "Not Found"}, 503: {"description": "Service Unavailable"}},
+    )
     async def registrar_entrada(producto_id: str, payload: MovimientoRequest) -> MovimientoResponse:
         try:
             resultado = await registro.registrar_entrada(producto_id, payload.cantidad)
@@ -38,7 +36,15 @@ def crear_router(registro: RegistrarMovimientoInventario, repositorio_stock: Sto
             raise HTTPException(status_code=503, detail=str(exc)) from exc
         return MovimientoResponse(**resultado.__dict__)
 
-    @router.post("/inventario/{producto_id}/salidas", response_model=MovimientoResponse)
+    @router.post(
+        "/inventario/{producto_id}/salidas",
+        response_model=MovimientoResponse,
+        responses={
+            404: {"description": "Not Found"},
+            409: {"description": "Conflict"},
+            503: {"description": "Service Unavailable"},
+        },
+    )
     async def registrar_salida(producto_id: str, payload: MovimientoRequest) -> MovimientoResponse:
         try:
             resultado = await registro.registrar_salida(producto_id, payload.cantidad)
@@ -53,7 +59,10 @@ def crear_router(registro: RegistrarMovimientoInventario, repositorio_stock: Sto
 
         return MovimientoResponse(**resultado.__dict__)
 
-    @router.get("/inventario/{producto_id}")
+    @router.get(
+        "/inventario/{producto_id}",
+        responses={404: {"description": "Not Found"}},
+    )
     def consultar_stock(producto_id: str) -> dict:
         stock = repositorio_stock.obtener(producto_id)
         if stock is None:

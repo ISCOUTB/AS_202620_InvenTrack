@@ -49,7 +49,7 @@
 |---|---|
 | [Ficha del problema](docs/ficha_problema.md) | Problema, solución propuesta, alcance del MVP y usuarios objetivo |
 | [Aspecto de calidad declarado](docs/aspectos.md) | Consistencia de datos: descripción, diagnóstico, escenarios y trazabilidad |
-| [Documentación arc42](docs/arc42/arc42-template-EN.md) | Objetivos, stakeholders, restricciones, contexto, estrategia, vistas y calidad |
+| [Documentación arc42](docs/arc42/arc42-template-EN.md) | Objetivos, stakeholders, restricciones, contexto, estrategia, vistas conceptos y calidad |
 | [C4 — Nivel 1 (Contexto)](docs/c4/context.md) | Diagrama de contexto: actores, sistema y sistema externo |
 | [C4 — Nivel 2 (Contenedores)](docs/c4/containers.md) | Diagrama de contenedores, evolución post-reto y aislamiento en memoria |
 | [C4 — Nivel 3 (Componentes)](docs/c4/components.md) | Componentes reales del API Backend y dependencias entre módulos |
@@ -59,6 +59,7 @@
 | [ADR-0001](docs/adr/0001-usar-monolito-modular-con-hexagonal-por-modulo.md) | Registro de decisión: Monolito modular con hexagonal por módulo (Aceptado) |
 | [ADR-0002](docs/adr/0002-control-concurrencia-memoria-inventario.md) | Control de concurrencia en memoria, criterios de revisión y costo de reversión (Aceptado) |
 | [ADR-0003](docs/adr/0003-integracion-productos-inventario-via-puertos-de-aplicacion.md) | Integración entre productos e inventario mediante puertos de aplicación y adaptadores (Aceptado) |
+| [ADR-0004](docs/adr/0004-contrato-api-versionado-openapi.md) | Contrato de API versionado con OpenAPI y validación automática (Aceptado) |
 | [Medición Reto Corte 1](docs/retos/corte-1-medicion.md) | Diagnóstico, pruebas de concurrencia, degradación controlada y comando de reproducción |
 | [Uso de IA](docs/ia.md) | Registro transparente de IA (sugerencias aceptadas vs. rechazadas)|
 
@@ -94,6 +95,7 @@ Antes de entrar a cada carpeta, vale la pena explicar la lógica detrás de la e
 - **`docs/adr/`** registra las decisiones arquitectónicas concretas, una por archivo: ADR-0001 para el estilo general, ADR-0002 para concurrencia y ADR-0003 para la integración entre productos e inventario.
 - **`docs/retos/`** documenta el diagnóstico, carga simulada, comandos de reproducción y resultados del reto del Corte 1.
 - **`docs/aspectos.md`** es el índice que conecta todo siguiendo la cadena navegable: `Aspecto → Requisito → C4 → ADR → Código → Pruebas → Evidencia`.
+- **`contracts/openapi/v1.json`** contiene el contrato HTTP versionado y `tests/contract/` valida que la implementación lo cumpla.
 
 ## Documentación de arquitectura
 
@@ -108,7 +110,7 @@ La documentación sigue la plantilla **arc42**, disponible completa en [`docs/ar
 | 5 · Building Block View | Descomposición en subsistemas y módulos internos (Productos, Inventario, Proveedores, etc.) |
 | 6 · Runtime View | Diagramas de secuencia para flujos críticos (ej. Registro concurrente de movimientos) |
 | 7 · Deployment View | Despliegue inicial como una única aplicación InvenTrack (FastAPI + Uvicorn) ejecutada localmente |
-| 8 · Cross-cutting Concepts | Mecanismo de exclusión mutua asíncrona por SKU y manejo unificado de excepciones |
+| 8 · Cross-cutting Concepts | Lenguaje ubicuo, mapa de contextos, mecanismo de exclusión mutua asíncrona por SKU y manejo unificado de excepciones |
 | 9 · Architecture Decisions | Enlace y matriz de trazabilidad con los ADRs |
 | 10 · Quality Requirements | Árbol de utilidad y 5 escenarios de calidad medibles |
 | 12 · Glossary | Glosario de términos de dominio técnico y de negocio |
@@ -151,7 +153,7 @@ Las decisiones arquitectónicas se documentan como archivos individuales en [`do
 | Backend | FastAPI + Uvicorn | Implementado |
 | Base de datos | Adaptador In-Memory (Transición a PostgreSQL/SQLite) | Implementado para MVP |
 | Hosting / despliegue | Por definir | Pendiente |
-| CI / calidad de código | GitHub Actions + Pytest + pytest-asyncio | Pruebas síncronas y asíncronas configuradas |
+| CI / calidad de código | GitHub Actions + Pytest + pytest-asyncio + SonarCloud | Pruebas síncronas y asíncronas configuradas; análisis SonarCloud completado exitosamente |
 
 ## Estructura del repositorio
 
@@ -181,6 +183,8 @@ docs/
 ├── matriz-comparativa-estilos.md# Comparativa de estilos arquitectónicos
 ├── utility-tree.md              # Árbol de utilidad
 └── ia.md                        # Registro de uso de IA en el proyecto
+contracts/
+└── openapi/v1.json              # Contrato versionado de la API HTTP
 app/                             # Aplicación FastAPI Monolito Modular
 ├── main.py                      # Composición y rutas principales
 ├── shared/                      # Dominio compartido y utilidades
@@ -194,7 +198,8 @@ tests/                           # Batería de pruebas automatizadas
 ├── productos/
 └── inventario/
     └── test_concurrencia.py     # Pruebas de simulación concurrente (20 req)
-requirements.txt                 # Dependencias (FastAPI, pytest, pytest-asyncio, httpx)
+requirements.in                  # Dependencias directas del proyecto
+requirements.txt                 # Lock con versiones, hashes y dependencias transitivas
 ```
 
 ## Cómo ejecutar el esqueleto
@@ -202,7 +207,7 @@ requirements.txt                 # Dependencias (FastAPI, pytest, pytest-asyncio
 Requisito: Python 3.11 o superior.
 
 ```powershell
-python -m pip install -r requirements.txt
+python -m pip install --require-hashes --only-binary :all: -r requirements.txt
 python -m uvicorn app.main:app --reload
 ```
 
@@ -241,7 +246,7 @@ Este proyecto documenta el uso de herramientas de IA de forma transparente en [`
 - Project Key: `ISCOUTB_AS_202620_InvenTrack`
 - Organization Key: `isco-utb`
 
-La configuración del análisis estático incluye Python 3.11 y la separación entre `app` (fuente) y `tests` (pruebas) para una evaluación más precisa.
+La configuración del análisis estático incluye Python 3.11 y la separación entre `app` (fuente) y `tests` (pruebas) para una evaluación más precisa. El análisis de SonarCloud se completó exitosamente en GitHub Actions después de corregir las dependencias y la configuración de autorización. En esta copia local, el workflow versionado conserva actualmente el paso de pruebas; para repetir el análisis se requiere mantener el paso de SonarCloud y un `SONAR_TOKEN` autorizado.
 
 ## Licencia y uso académico
 

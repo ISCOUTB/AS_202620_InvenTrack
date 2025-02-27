@@ -32,7 +32,11 @@ def crear_router(crear_producto: CrearProducto, eliminar_producto: EliminarProdu
         producto = crear_producto.ejecutar(payload.id, payload.nombre)
         return ProductoResponse(id=producto.id, nombre=producto.nombre, activo=producto.activo)
 
-    @router.delete("/productos/{producto_id}", response_model=EliminarProductoResponse)
+    @router.delete(
+        "/productos/{producto_id}",
+        response_model=EliminarProductoResponse,
+        responses={404: {"description": "Not Found"}},
+    )
     def eliminar(producto_id: str) -> EliminarProductoResponse:
         try:
             resultado = eliminar_producto.ejecutar(producto_id)

@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 
 
-@dataclass
+@dataclass(frozen=True)
 class Movimiento:
 
     producto_id: str
