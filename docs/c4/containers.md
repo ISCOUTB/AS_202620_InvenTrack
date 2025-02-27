@@ -28,12 +28,12 @@ flowchart TB
     Notif(["✉️ Notificaciones
     Vía correo"])
 
-    Dueno -- HTTPS --> Web
-    Vendedor -- HTTPS --> Web
-    Empleado -- HTTPS --> Web
-    Web -- "HTTPS/REST" --> Api
-    Api -- "Repositorios / futuro SQL" --> Db
-    Api -- SMTP --> Notif
+    Dueno -- "HTTPS / HTML (UI)" --> Web
+    Vendedor -- "HTTPS / HTML (UI)" --> Web
+    Empleado -- "HTTPS / HTML (UI)" --> Web
+    Web -- "HTTPS / JSON (REST API)" --> Api
+    Api -- "In-Process Memory / Objetos Python (Futuro: TCP / Wire SQL)" --> Db
+    Api -- "SMTP / MIME (Texto Plano)" --> Notif
 
     classDef person fill:#1168bd,stroke:#0b4884,color:#ffffff,font-weight:bold
     classDef container fill:#1a6fc4,stroke:#0e4d8a,color:#ffffff,font-weight:bold
@@ -59,9 +59,9 @@ flowchart TB
 
 ## Por qué solo 3 contenedores (y no 5, uno por módulo)
 
-El [ADR-0001](../adr/0001-usar-monolito-modular-con-hexagonal-por-modulo.md) decide explícitamente un **Monolito Modular**: un único proceso desplegado, no servicios separados. Por eso los cinco módulos funcionales (`productos`, `proveedores`, `inventario`, `usuarios`, `alertas`) **no aparecen como contenedores independientes** — todos viven *dentro* del mismo contenedor "API Backend". Esa separación por módulo se documentará en el **Nivel 3 (Componentes)**, que abre la caja de "API Backend" y sí muestra cada módulo como una unidad propia.
+El [ADR-0001](../adr/0001-usar-monolito-modular-con-hexagonal-por-modulo.md) decide explícitamente un **Monolito Modular**: un único proceso desplegado, no servicios separados[cite: 2]. Por eso los cinco módulos funcionales (`productos`, `proveedores`, `inventario`, `usuarios`, `alertas`) **no aparecen como contenedores independientes** — todos viven *dentro* del mismo contenedor "API Backend"[cite: 2]. Esa separación por módulo se documentará en el **Nivel 3 (Componentes)**, que abre la caja de "API Backend" y sí muestra cada módulo como una unidad propia[cite: 2].
 
-Si en el futuro el equipo decide extraer algún módulo a su propio servicio (por ejemplo, si `inventario` creciera mucho en tráfico), ahí sí aparecería como un cuarto contenedor — pero hoy, con el ADR-0001 vigente, no es el caso.
+Si en el futuro el equipo decide extraer algún módulo a su propio servicio (por ejemplo, si `inventario` creciera mucho en tráfico), ahí sí aparecería como un cuarto contenedor — pero hoy, con el ADR-0001 vigente, no es el caso[cite: 2].
 
 ---
 
@@ -69,31 +69,31 @@ Si en el futuro el equipo decide extraer algún módulo a su propio servicio (po
 
 | Contenedor en el diagrama | Corresponde a | Estado |
 |---|---|---|
-| API Backend | Toda la carpeta [`app/`](../../app/) — un único proceso FastAPI que ensambla los módulos en `app/main.py` | Funcional con cortes verticales en [`app/productos/`](../../app/productos/) y [`app/inventario/`](../../app/inventario/) (Arquitectura Hexagonal + Mutex para concurrencia) |
-| Frontend | Aún no existe en el repositorio | Flutter planificado como aplicación cliente; pendiente de implementación |
-| Persistencia | Repositorios de productos e inventario | **Actual:** adaptadores *In-Memory*. **Objetivo:** seleccionar e implementar PostgreSQL o SQLite mediante los mismos puertos. |
+| API Backend | Toda la carpeta [`app/`](../../app/) — un único proceso FastAPI que ensambla los módulos en `app/main.py`[cite: 2] | Funcional con cortes verticales en [`app/productos/`](../../app/productos/) y [`app/inventario/`](../../app/inventario/) (Arquitectura Hexagonal + Mutex para concurrencia)[cite: 2] |
+| Frontend | Aún no existe en el repositorio[cite: 2] | Flutter planificado como aplicación cliente; pendiente de implementación[cite: 2] |
+| Persistencia | Repositorios de productos e inventario[cite: 2] | **Actual:** adaptadores *In-Memory*. **Objetivo:** seleccionar e implementar PostgreSQL o SQLite mediante los mismos puertos.[cite: 2] |
 
 ---
 
 ## Evolución del Contenedor Backend: Línea Base vs. Estado Post-Reto (Corte 1)
 
-Para dar cumplimiento a los criterios de evaluación del Reto del Primer Corte, se documenta la evolución interna del contenedor **API Backend (FastAPI)** frente al escenario de contención simultánea (**ESC-01 / ESC-04**):
+Para dar cumplimiento a los criterios de evaluación del Reto del Primer Corte, se documenta la evolución interna del contenedor **API Backend (FastAPI)** frente al escenario de contención simultánea (**ESC-01 / ESC-04**)[cite: 2]:
 
 ### Diagnóstico Técnico Integrado
 
-* **Síntoma:** Stock negativo o datos descuadrados ante solicitudes simultáneas sobre el mismo producto.
-* **Causa Raíz:** Ausencia de exclusión mutua / serialización asíncrona sobre el repositorio en memoria.
-* **Riesgo Prioritario:** Pérdida de integridad transaccional en la cifra de inventarios del negocio.
+* **Síntoma:** Stock negativo o datos descuadrados ante solicitudes simultáneas sobre el mismo producto[cite: 2].
+* **Causa Raíz:** Ausencia de exclusión mutua / serialización asíncrona sobre el repositorio en memoria[cite: 2].
+* **Riesgo Prioritario:** Pérdida de integridad transaccional en la cifra de inventarios del negocio[cite: 2].
 
 ### Comparativa de Estado
 
 | Aspecto | Línea Base (Estado Inicial) | Estado Posterior al Reto (Corte 1) |
 |---|---|---|
-| **Mecanismo de Concurrencia** | Sin aislamiento explícito en memoria. | Exclusión mutua asíncrona serializada por SKU mediante `asyncio.Lock()`. |
-| **Garantía de Consistencia** | Vulnerable a *race conditions* y stock negativo ante peticiones simultáneas. | Operación atómica garantizada en el módulo `inventario` [ADR-0002](../adr/0002-control-concurrencia-memoria-inventario.md). |
-| **Rendimiento Medido ($p95$)** | Sin validación de latencia bajo contención. | **$p95 = 28\text{ ms}$** (cumple umbral $\le 400\text{ ms}$ con 20 req/s simultáneas). |
-| **Degradación Controlada** | Riesgo de bloqueo indebido o crash. | Encolamiento en *event loop*; si la cola expira o colapsa, responde HTTP `429` / `503` sin corromper el stock. |
-| **Fronteras Modulares** | Definidas en el esqueleto. | Conservadas intactas en `app/inventario/` sin impactar otros módulos. |
+| **Mecanismo de Concurrencia** | Sin aislamiento explícito en memoria[cite: 2]. | Exclusión mutua asíncrona serializada por SKU mediante `asyncio.Lock()`[cite: 2]. |
+| **Garantía de Consistencia** | Vulnerable a *race conditions* y stock negativo ante peticiones simultáneas[cite: 2]. | Operación atómica garantizada en el módulo `inventario` [ADR-0002](../adr/0002-control-concurrencia-memoria-inventario.md)[cite: 2]. |
+| **Rendimiento Medido ($p95$)** | Sin validación de latencia bajo contención[cite: 2]. | **$p95 = 28\text{ ms}$** (cumple umbral $\le 400\text{ ms}$ con 20 req/s simultáneas)[cite: 2]. |
+| **Degradación Controlada** | Riesgo de bloqueo indebido o crash[cite: 2]. | Encolamiento en *event loop*; si la cola expira o colapsa, responde HTTP `429` / `503` sin corromper el stock[cite: 2]. |
+| **Fronteras Modulares** | Definidas en el esqueleto[cite: 2]. | Conservadas intactas en `app/inventario/` sin impactar otros módulos[cite: 2]. |
 
 ### Diagrama de Aislamiento en el Contenedor Backend
 
