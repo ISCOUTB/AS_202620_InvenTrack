@@ -20,8 +20,8 @@ Ver el planteamiento completo del problema en [`docs/ficha_problema.md`](docs/fi
 
 ## Equipo de desarrollo
 
- Esteban Peluffo
- Felix Taborda
+- Esteban Peluffo
+- Felix Taborda
  
 --- 
 
