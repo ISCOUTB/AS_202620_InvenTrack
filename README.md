@@ -23,7 +23,7 @@ Ver el planteamiento completo del problema en [`docs/ficha_problema.md`](docs/fi
 - Esteban Peluffo
 - Felix Taborda
 - Jose g. vargas
-
+- Javier Carta
  
 --- 
 
