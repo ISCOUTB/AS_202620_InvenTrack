@@ -16,14 +16,14 @@ Ver el planteamiento completo del problema en [`docs/ficha_problema.md`](docs/fi
 
 **Consistencia de datos** — ver detalle y justificación en [`docs/aspectos.md`](docs/aspectos.md).
 
+---
+
 ## Equipo de desarrollo
 
-| Nombre | Rol / GitHub |
-|--------|--------------|
-| - Esteban Peluffo
-| - Felix Taborda
-| 
-| 
+ Esteban Peluffo
+ Felix Taborda
+ 
+--- 
 
 ## Estructura del repositorio
 
