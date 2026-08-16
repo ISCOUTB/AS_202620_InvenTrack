@@ -27,7 +27,7 @@ la alternativa manual (Excel).
 
 Este aspecto se refinó en dos escenarios de calidad medibles, documentados en
 [`docs/arc42/arc42-template-EN.md`](arc42/arc42-template-EN.md) (sección Quality
-Requirements) y en el [árbol de utilidad](c4/utility-tree.md):
+Requirements) y en el [árbol de utilidad](utility-tree.md):
 
 - **ESC-01 — Registro simultáneo de salida del mismo producto** *(prioridad: impacto de
   negocio alto, riesgo técnico alto)*. Dos empleados registran una salida del mismo
