@@ -93,6 +93,50 @@ o se escala. Se distingue de un requisito (lo que el sistema debe hacer).
 | C6 | Técnica | La interfaz debe ser utilizable por personas con alfabetización digital variable, que hoy trabajan con Excel o papel. | Perfil real de los usuarios objetivo descrito en la ficha del problema; condiciona la complejidad admisible de los flujos. |
 | C7 | Técnica (pendiente de confirmar) | Conectividad e infraestructura de despliegue disponibles en las PYMEs piloto. | Se resolverá con la encuesta "Disponibilidad técnica y de despliegue" (Inicio y orientación); hasta entonces se asume acceso vía navegador web estándar. |
 
+## Implicaciones arquitectónicas de las restricciones
+
+Las restricciones anteriores tienen consecuencias directas sobre las decisiones arquitectónicas de InvenTrack.
+
+## C1 — Protección de datos personales
+
+La arquitectura deberá contemplar mecanismos para proteger las credenciales y restringir el acceso a información según los permisos correspondientes. Esto implica que la autenticación y autorización no pueden tratarse únicamente como características de la interfaz, sino que deben estar respaldadas por el servidor.
+
+## C2 — Estructura del repositorio
+
+La documentación y los artefactos arquitectónicos deberán organizarse de acuerdo con la estructura establecida por el curso. Las decisiones arquitectónicas, diagramas C4, documentación arc42 y aspectos de calidad deberán mantenerse dentro de los directorios correspondientes.
+
+## C3 — SonarCloud
+
+La estructura y las tecnologías utilizadas deberán permitir realizar análisis automatizados de calidad del código. Por tanto, se debe evitar una arquitectura que dificulte la integración del proyecto con herramientas de análisis estático.
+
+## C4 — Tiempo y tamaño del equipo
+
+La arquitectura debe mantenerse suficientemente sencilla para que pueda ser implementada y mantenida por un equipo pequeño durante un semestre. Esto justifica priorizar el MVP frente a funcionalidades avanzadas que no sean necesarias para resolver el problema principal.
+
+El MVP contempla:
+
+Gestión de productos.
+Gestión de proveedores.
+Registro de entradas y salidas.
+Consulta del inventario actual.
+Gestión de usuarios.
+Historial de movimientos.
+Alertas de stock bajo.
+
+La predicción de demanda mediante modelos históricos queda fuera del alcance actual y se considera una posible extensión futura.
+
+## C5 — Presupuesto
+
+La arquitectura debe favorecer tecnologías y servicios que puedan ejecutarse sin costos de licencia o infraestructura durante el desarrollo del MVP. Esto limita la selección de servicios propietarios que requieran planes de pago.
+
+## C6 — Perfil de los usuarios
+
+La interfaz debe evitar flujos innecesariamente complejos y presentar las operaciones principales de forma clara. Esta decisión responde a que los usuarios objetivo son dueños y empleados de pequeñas y medianas empresas que actualmente pueden trabajar mediante procesos manuales o herramientas desarticuladas.
+ 
+## C7 — Infraestructura y conectividad
+
+Mientras la disponibilidad técnica de las PYMEs piloto no haya sido confirmada, la arquitectura deberá asumir como escenario base el acceso mediante un navegador web estándar. La decisión podrá revisarse posteriormente si la encuesta identifica limitaciones importantes de conectividad o infraestructura.
+
 # Context and Scope
 
 ## Business Context
