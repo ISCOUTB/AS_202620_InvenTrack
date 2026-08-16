@@ -10,7 +10,7 @@ Los atributos elegidos siguen el marco de clase "cinco atributos, cinco
 preguntas" (Rendimiento, Escalabilidad, Disponibilidad, Mantenibilidad,
 Seguridad), más el aspecto ya declarado (Consistencia de datos).
 Escalabilidad y Mantenibilidad se identificaron pero no se priorizaron
-esta semana — ver `docs/arc42/arc42-template-EN.md`, sección Quality
+esta semana — ver [`docs/arc42/arc42-template-EN.md`](../arc42/arc42-template-EN.md), sección Quality
 Goals, para la justificación completa.
 
 ```mermaid
