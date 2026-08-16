@@ -26,8 +26,8 @@ la alternativa manual (Excel).
 ### Escenarios de calidad (Semana 2)
 
 Este aspecto se refinó en dos escenarios de calidad medibles, documentados en
-`docs/arc42/arc42-template-EN.md` (sección Quality Requirements) y en el árbol de
-utilidad (`docs/c4/utility-tree.md`):
+[`docs/arc42/arc42-template-EN.md`](arc42/arc42-template-EN.md) (sección Quality
+Requirements) y en el [árbol de utilidad](c4/utility-tree.md):
 
 - **ESC-01 — Registro simultáneo de salida del mismo producto** *(prioridad: impacto de
   negocio alto, riesgo técnico alto)*. Dos empleados registran una salida del mismo
@@ -41,7 +41,7 @@ utilidad (`docs/c4/utility-tree.md`):
   (borrado lógico), preservando la trazabilidad. Medida: verificado con prueba
   automatizada sobre el 100 % de los casos.
 
-El diagrama de contexto (`docs/c4/context.md`) muestra dónde vive este aspecto: en el
+El [diagrama de contexto](c4/context.md) muestra dónde vive este aspecto: en el
 módulo de registro de movimientos dentro de InvenTrack, expuesto a los dos actores
 (Dueño y Empleado) que pueden operar de forma simultánea.
 
@@ -51,7 +51,7 @@ Se documentará más adelante el mecanismo elegido para garantizar consistencia 
 movimientos concurrentes (por ejemplo: transacciones con nivel de aislamiento adecuado,
 bloqueos optimistas o pesimistas sobre el registro de stock, o validaciones a nivel de
 base de datos que impidan valores negativos). Esa decisión se registrará como ADR en
-`docs/adr/` y se enlazará aquí. Esta sección se irá actualizando a medida
+[`docs/adr/`](adr/) y se enlazará aquí. Esta sección se irá actualizando a medida
 que el equipo tome esas decisiones de diseño.
 
 ### Estado
