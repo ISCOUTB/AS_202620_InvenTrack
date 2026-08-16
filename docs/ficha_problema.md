@@ -52,15 +52,9 @@ generen datos inconsistentes (por ejemplo, stock negativo o doble descuento del 
 movimiento). Un inventario que reporta cifras incorrectas es peor que uno manual, porque
 genera falsa confianza en la toma de decisiones.
 
-Ver detalle de justificación y decisiones asociadas en `docs/aspectos.md`.
+Ver detalle de justificación y decisiones asociadas en [`docs/aspectos.md`](aspectos.md).
 
 ## 5. Usuarios objetivo
 
 Dueños y empleados de pequeñas y medianas empresas locales que actualmente no cuentan con
-un sistema digital de inventario, o que lo manejan de forma manual/desarticulada.# Ficha del Problema
-
-**Proyecto:** InvenTrack — Sistema Inteligente de Inventarios
-**Curso:** Arquitectura de Software — AS_202620
-**Repositorio:** AS_202620_InvenTrack (organización ISCOUTB)
-
----
+un sistema digital de inventario, o que lo manejan de forma manual/desarticulada.
