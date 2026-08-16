@@ -2,6 +2,22 @@
 
 Plantilla arc42 v9.0-EN (versión académica). Fuente: <https://arc42.org>.
 
+## Cómo leer este documento
+
+Este archivo es la **narrativa completa** de la arquitectura de InvenTrack:
+aquí se explica en texto qué decisiones de calidad se tomaron y por qué.
+Los **diagramas** (C4 de contexto, árbol de utilidad) viven como archivos
+aparte en [`docs/c4/`](../c4/) y [`docs/utility-tree.md`](../utility-tree.md)
+y se enlazan desde aquí en vez de repetirse. Las **decisiones arquitectónicas
+concretas** (ADR) se documentan por separado en [`docs/adr/`](../adr/) a
+medida que el equipo las tome. El archivo [`docs/aspectos.md`](../aspectos.md)
+es el índice que conecta todo: por cada aspecto de calidad declarado, enlaza
+su requisito, su C4, su ADR, su código y sus pruebas.
+
+Por ahora (Semana 2 del curso) están completas las secciones 1, 2, 3 y 10.
+El resto queda marcado como pendiente y se completa en semanas
+posteriores, conforme el curso lo va pidiendo.
+
 # Introduction and Goals
 
 ## Requirements Overview
@@ -29,14 +45,22 @@ Alcance del MVP de esta entrega:
 - Alertas de stock bajo
 
 Fuera de alcance por ahora: predicción de demanda mediante modelos
-históricos; se contempla como extensión futura sin comprometer la base
-arquitectónica.
+históricos. Se deja como extensión futura, condicionada a contar con
+suficiente volumen de datos históricos, sin comprometer la base
+arquitectónica definida en esta entrega.
 
 ## Quality Goals
 
+Antes de listar atributos, vale la pena recordar por qué esta sección
+existe: en clase se vio que "rápido" no es verificable — sin contexto ni
+medida, un requisito de calidad no se puede probar ni usar para decidir
+nada. Por eso cada atributo de esta tabla se responde con la pregunta guía
+específica que le corresponde, no con una palabra suelta.
+
 Siguiendo el marco visto en clase — "cinco atributos, cinco preguntas"
 (Rendimiento, Escalabilidad, Disponibilidad, Mantenibilidad, Seguridad) —
-más el aspecto de calidad ya declarado en [`docs/aspectos.md`](../aspectos.md):
+más el aspecto de calidad ya declarado en
+[`docs/aspectos.md`](../aspectos.md):
 
 | Atributo | Pregunta guía (clase) | Respuesta para InvenTrack | Prioridad |
 |---|---|---|---|
@@ -47,26 +71,29 @@ más el aspecto de calidad ya declarado en [`docs/aspectos.md`](../aspectos.md):
 | Escalabilidad | ¿Qué crecimiento debe absorber? | Identificado, no priorizado: el piloto es una sola PYME; se revisa si el proyecto crece a varios negocios. | Baja por ahora |
 | Mantenibilidad | ¿Qué cambio, esfuerzo y riesgo? | Identificado, no priorizado esta semana: se aborda junto con las decisiones de Building Block View. | Baja por ahora |
 
-> **Usabilidad** también es relevante para el perfil de usuario descrito en
-> la ficha (personas no técnicas, ver restricción C6), pero al aplicar el
-> árbol de utilidad no alcanzó la misma prioridad que Seguridad, porque la
-> protección de datos personales es además una restricción legal (C1) que
-> no se puede posponer. Se documentará como aspecto propio si el equipo
-> decide priorizarla en semanas futuras.
+> **Sobre Usabilidad:** también es relevante para el perfil de usuario
+> descrito en la ficha (personas no técnicas, ver restricción C6), pero al
+> aplicar el árbol de utilidad no alcanzó la misma prioridad que
+> Seguridad, porque la protección de datos personales es además una
+> restricción legal (C1) que no se puede posponer. Se documentará como
+> aspecto propio si el equipo decide priorizarla en semanas futuras.
 >
 > **Pregunta guía de la clase — "¿qué atributo sacrificarían y a cambio de
 > qué?":** si tuviéramos que elegir, sacrificaríamos algo de latencia
 > (Rendimiento) a cambio de Consistencia, porque el aspecto declarado del
-> proyecto prioriza la integridad del dato sobre la velocidad (ver el
-> trade-off ESC-01 vs. ESC-04 en la sección 10.3).
+> proyecto prioriza la integridad del dato sobre la velocidad. El
+> desarrollo completo de este trade-off, y otros dos más, está en la
+> sección 10.3 más abajo.
 
 ## Stakeholders
 
-Siguiendo las dos perspectivas trabajadas en clase para interpretar la
-calidad desde responsabilidades concretas:
+Un interesado no opina sobre "la calidad" en abstracto — opina desde una
+responsabilidad concreta. Por eso se clasifican en dos perspectivas
+trabajadas en clase:
 
 - **Usuario y negocio** → exige respuesta, costo y continuidad.
-- **Operaciones y seguridad** → exige recuperación, control y trazabilidad.
+- **Operaciones y seguridad** → exige recuperación, control y
+  trazabilidad.
 
 | Rol | Perspectiva | Contacto | Expectativas |
 |---|---|---|---|
@@ -79,9 +106,28 @@ calidad desde responsabilidades concretas:
 
 # Architecture Constraints
 
-Restricción entendida como condición impuesta desde fuera, que acota el
-espacio de solución antes de diseñar: no se negocia con el diseño, se acata
-o se escala. Se distingue de un requisito (lo que el sistema debe hacer).
+Una restricción es distinta de un requisito: el requisito dice qué debe
+hacer el sistema, la restricción acota entre qué opciones se puede elegir
+para lograrlo. Ejemplo concreto de este proyecto: *"el sistema debe
+permitir registrar entradas y salidas de mercancía"* es un requisito (está
+en el alcance del MVP, en la sección 1); *"no hay presupuesto para
+servicios de pago"* es una restricción (no dice qué debe hacer el sistema,
+solo limita con qué se puede construir).
+
+La prueba de comprensión vista en clase es simple: una restricción no se
+negocia con el diseño, se acata o se escala — si el equipo puede decidir
+no cumplirla, no era una restricción real, era una preferencia.
+
+**Cómo leer la tabla:** la columna *Tipo* distingue el origen de la
+restricción (porque cada tipo se negocia distinto):
+
+- **Legal** — la impone una ley externa al proyecto; nunca se negocia, se
+  cumple sin excepción (C1).
+- **Organizativa** — la impone el curso o el calendario académico; se
+  podría escalar (hablar con el docente), pero no se ignora unilateralmente (C2, C3, C4).
+- **Técnica** — nace de las condiciones reales del contexto (presupuesto,
+  perfil de usuario, infraestructura); es la más propensa a cambiar si
+  cambian esas condiciones, pero hoy es tan vinculante como las otras (C5, C6, C7).
 
 | # | Tipo | Restricción | Quién la impone / justificación |
 |---|---|---|---|
@@ -93,55 +139,23 @@ o se escala. Se distingue de un requisito (lo que el sistema debe hacer).
 | C6 | Técnica | La interfaz debe ser utilizable por personas con alfabetización digital variable, que hoy trabajan con Excel o papel. | Perfil real de los usuarios objetivo descrito en la ficha del problema; condiciona la complejidad admisible de los flujos. |
 | C7 | Técnica (pendiente de confirmar) | Conectividad e infraestructura de despliegue disponibles en las PYMEs piloto. | Se resolverá con la encuesta "Disponibilidad técnica y de despliegue" (Inicio y orientación); hasta entonces se asume acceso vía navegador web estándar. |
 
-## Implicaciones arquitectónicas de las restricciones
-
-Las restricciones anteriores tienen consecuencias directas sobre las decisiones arquitectónicas de InvenTrack.
-
-### C1 — Protección de datos personales
-
-La arquitectura deberá contemplar mecanismos para proteger las credenciales y restringir el acceso a información según los permisos correspondientes. Esto implica que la autenticación y autorización no pueden tratarse únicamente como características de la interfaz, sino que deben estar respaldadas por el servidor.
-
-### C2 — Estructura del repositorio
-
-La documentación y los artefactos arquitectónicos deberán organizarse de acuerdo con la estructura establecida por el curso. Las decisiones arquitectónicas, diagramas C4, documentación arc42 y aspectos de calidad deberán mantenerse dentro de los directorios correspondientes.
-
-### C3 — SonarCloud
-
-La estructura y las tecnologías utilizadas deberán permitir realizar análisis automatizados de calidad del código. Por tanto, se debe evitar una arquitectura que dificulte la integración del proyecto con herramientas de análisis estático.
-
-### C4 — Tiempo y tamaño del equipo
-
-La arquitectura debe mantenerse suficientemente sencilla para que pueda ser implementada y mantenida por un equipo pequeño durante un semestre. Esto justifica priorizar el MVP frente a funcionalidades avanzadas que no sean necesarias para resolver el problema principal.
-
-El MVP contempla:
-
-Gestión de productos.
-Gestión de proveedores.
-Registro de entradas y salidas.
-Consulta del inventario actual.
-Gestión de usuarios.
-Historial de movimientos.
-Alertas de stock bajo.
-
-La predicción de demanda mediante modelos históricos queda fuera del alcance actual y se considera una posible extensión futura.
-
-### C5 — Presupuesto
-
-La arquitectura debe favorecer tecnologías y servicios que puedan ejecutarse sin costos de licencia o infraestructura durante el desarrollo del MVP. Esto limita la selección de servicios propietarios que requieran planes de pago.
-
-### C6 — Perfil de los usuarios
-
-La interfaz debe evitar flujos innecesariamente complejos y presentar las operaciones principales de forma clara. Esta decisión responde a que los usuarios objetivo son dueños y empleados de pequeñas y medianas empresas que actualmente pueden trabajar mediante procesos manuales o herramientas desarticuladas.
- 
-### C7 — Infraestructura y conectividad
-
-Mientras la disponibilidad técnica de las PYMEs piloto no haya sido confirmada, la arquitectura deberá asumir como escenario base el acceso mediante un navegador web estándar. La decisión podrá revisarse posteriormente si la encuesta identifica limitaciones importantes de conectividad o infraestructura.
+**Por qué importan para la arquitectura, no solo para la gestión del
+proyecto:** C5 (sin presupuesto) descarta de entrada cualquier solución
+que dependa de servicios de pago, antes incluso de evaluar si serían
+técnicamente mejores. C1 (ley de datos) obliga a que el control de acceso
+(ver ESC-05 en la sección 10) no sea opcional, sino parte del diseño desde
+el principio. Ninguna restricción de esta tabla es solo "administrativa":
+todas terminan afectando qué se puede construir y cómo.
 
 # Context and Scope
 
 ## Business Context
 
-**Diagrama C4 Nivel 1 (Contexto del sistema):** ver [`docs/c4/context.md`](../c4/context.md).
+Esta sección responde una pregunta simple: ¿quién está afuera del sistema
+y cómo se conecta con él? El diagrama vive en
+[`docs/c4/context.md`](../c4/context.md) (C4 Nivel 1); aquí se explica en
+texto lo mismo que muestra ese diagrama, para quien prefiera leer antes de
+ver la imagen.
 
 InvenTrack tiene dos actores humanos que interactúan directamente con el
 sistema, y un canal externo de notificación:
@@ -168,13 +182,18 @@ por confirmar):
 
 # Solution Strategy
 
-*(Se completa en semanas posteriores, cuando el equipo decida el stack y las tácticas para cada atributo de calidad.)*
+*(Pendiente. Se completa en semanas posteriores, cuando el equipo decida
+el stack tecnológico y las tácticas concretas para resolver cada atributo
+de calidad priorizado en la sección 10 — por ejemplo, qué táctica se usa
+para garantizar consistencia en movimientos concurrentes.)*
 
 # Building Block View
 
 ## Whitebox Overall System
 
-*(Pendiente — se completa cuando exista una primera versión del sistema.)*
+*(Pendiente — se completa cuando exista una primera versión del sistema y
+el equipo defina los componentes principales, coherente con las
+decisiones de Solution Strategy.)*
 
 ## Level 2
 
@@ -182,31 +201,42 @@ por confirmar):
 
 # Runtime View
 
-*(Pendiente.)*
+*(Pendiente — se completará con al menos un escenario de ejecución, muy
+probablemente el de ESC-01, que es el de mayor prioridad.)*
 
 # Deployment View
 
 ## Infrastructure Level 1
 
-*(Pendiente — se completa en la semana 8, "Guía de despliegue y costos".)*
+*(Pendiente — se completa en la Semana 8 del curso, con la "Guía de
+despliegue y costos" de Inicio y orientación. Depende de la restricción C7
+(conectividad e infraestructura de las PYMEs piloto), aún por confirmar.)*
 
 ## Infrastructure Level 2
 
 # Cross-cutting Concepts
 
-*(Pendiente.)*
+*(Pendiente — aquí se documentarán decisiones transversales como manejo de
+errores, logging o el mecanismo de autenticación una vez definido, ligado
+a ESC-05.)*
 
 # Architecture Decisions
 
-*(Los ADR viven como archivos individuales en [`docs/adr/`](../adr/); aquí
-se puede enlazar la lista cuando existan.)*
+Las decisiones arquitectónicas se documentan como archivos individuales en
+[`docs/adr/`](../adr/), siguiendo el modelo de trazabilidad
+Aspecto → Requisito → C4 → ADR → Código → Pruebas → Evidencia. Aún no hay
+decisiones registradas; la primera candidata natural es cómo se garantiza
+la consistencia en movimientos concurrentes (ver ESC-01 y la sección
+10.3 de trade-offs).
 
 # Quality Requirements
 
 ## Quality Requirements Overview
 
 **De la preocupación al atributo (método visto en clase, aplicado a
-InvenTrack):**
+InvenTrack):** una preocupación suelta de un interesado no sirve para
+diseñar nada hasta que se convierte en un atributo con nombre, y ese
+atributo en un escenario medible. Ejemplo real de este proyecto:
 
 > Preocupación (Dueño/Empleado): *"las consultas de inventario se demoran
 > en hora pico."*
@@ -219,9 +249,14 @@ InvenTrack):**
 Este mismo método (preocupación → atributo → escenario de seis partes →
 evidencia) se aplicó a los otros cuatro escenarios de esta sección.
 
-**Árbol de utilidad** (Utilidad → atributo → refinamiento → escenario,
-priorizado como (impacto en el negocio, riesgo técnico); H=alto, M=medio,
-L=bajo). Fuente Mermaid en [`docs/utility-tree.md`](../utility-tree.md).
+**Árbol de utilidad.** Es la herramienta que ordena la priorización:
+Utilidad general del sistema → atributo de calidad → refinamiento más
+específico → escenario medible, cada uno etiquetado como (impacto en el
+negocio, riesgo técnico), con H=alto, M=medio, L=bajo. El diagrama
+completo, coloreado por prioridad y con la explicación de por qué cada
+escenario quedó donde quedó, está en
+[`docs/utility-tree.md`](../utility-tree.md). Aquí va solo el resumen en
+texto:
 
 ```
 Utilidad de InvenTrack
@@ -242,13 +277,40 @@ Utilidad de InvenTrack
 ```
 
 Los escenarios con mayor impacto de negocio y/o riesgo técnico (ESC-01,
-ESC-03) orientan las primeras decisiones arquitectónicas: control de
-concurrencia y estrategia de disponibilidad, respectivamente.
+ESC-03, en rojo en el árbol) orientan las primeras decisiones
+arquitectónicas: control de concurrencia y estrategia de disponibilidad,
+respectivamente. ESC-01 es, de los dos, el que también tiene riesgo
+técnico alto — por eso es el candidato natural para el primer ADR del
+proyecto.
 
 ## Quality Scenarios
 
-Cada escenario sigue el formato de seis partes visto en clase: **Fuente +
-Estímulo + Artefacto + Entorno → Respuesta + Medida verificable.**
+Cada escenario sigue el formato de seis partes visto en clase. Antes de
+leer los cinco de abajo, esto es lo que significa cada parte y por qué
+está ahí — usando ESC-01 como ejemplo de referencia:
+
+| Parte | Qué significa | Ejemplo en ESC-01 |
+|---|---|---|
+| **Fuente** | Quién o qué origina el estímulo. Sin esto, no se sabe a quién afecta el escenario. | Dos empleados usando el sistema al mismo tiempo |
+| **Estímulo** | La condición concreta que llega y necesita una respuesta del sistema. | Registran una salida del mismo producto simultáneamente |
+| **Artefacto** | Qué parte específica del sistema recibe el estímulo. Sin esto, el escenario aplicaría "a todo el sistema" y sería imposible de probar. | Módulo de registro de movimientos y stock |
+| **Entorno** | Las circunstancias bajo las que ocurre — no es lo mismo en operación normal que durante una falla. | Operación normal, horario comercial |
+| **Respuesta** | Lo que el sistema debe hacer ante el estímulo, en ese entorno. | Serializa las transacciones y aplica ambos descuentos, o rechaza uno |
+| **Medida (verificable)** | El número o condición exacta que confirma si la respuesta fue correcta. Es la parte que convierte el escenario en una prueba real, no en una intención. | 0 casos de stock negativo en 50 transacciones simultáneas |
+
+Un escenario completo permite diseñar una prueba automatizada directamente
+a partir de su texto — si no se puede escribir un caso de prueba con lo
+que dice el escenario, algo de las seis partes quedó demasiado vago.
+
+**Fuente + Estímulo + Artefacto + Entorno → Respuesta + Medida
+verificable.**
+
+Además de las seis partes, cada escenario trae dos etiquetas que no son
+parte del formato oficial pero ayudan a ubicarlo: **Perspectiva** (de qué
+interesado viene, según la clasificación de la sección 1) y **Prioridad**
+(impacto de negocio, riesgo técnico), que es la misma que aparece en el
+árbol de utilidad de la sección 10.1 — así no hay que saltar entre
+secciones para saber por qué un escenario importa más que otro.
 
 ### ESC-01 — Consistencia de datos (aspecto declarado)
 
@@ -292,7 +354,7 @@ Estímulo + Artefacto + Entorno → Respuesta + Medida verificable.**
 - **Artefacto:** módulo de consulta de inventario.
 - **Entorno:** hora pico, hasta 20 usuarios concurrentes.
 - **Respuesta:** el sistema retorna el listado solicitado.
-- **Medida (verificable):** ≤ 400 ms p95 con 20 usuarios concurrentes, medido con prueba de carga. (p95 = al menos el 95 % de las observaciones no supera ese tiempo; se define población, ventana, carga y método de medición para que el número sea reproducible.)
+- **Medida (verificable):** ≤ 400 ms p95 con 20 usuarios concurrentes, medido con prueba de carga. (p95 = al menos el 95 % de las observaciones no supera ese tiempo; se define población, ventana, carga y método de medición para que el número sea reproducible — ver el ejemplo trabajado al inicio de esta sección.)
 
 ### ESC-05 — Seguridad
 
@@ -306,16 +368,19 @@ Estímulo + Artefacto + Entorno → Respuesta + Medida verificable.**
 - **Medida (verificable):** 100 % de los intentos de acceso sin sesión válida o sin rol suficiente son rechazados y quedan registrados, verificado con pruebas de control de acceso sobre los roles definidos (Dueño, Administrador, Empleado).
 
 > Cada escenario se enlaza desde la fila correspondiente de
-> [`docs/aspectos.md`](../aspectos.md). ESC-01 y ESC-02 pertenecen al aspecto "Consistencia
-> de datos" declarado en la Evidencia S1; el resto (ESC-03 a ESC-05)
-> corresponde a atributos de calidad priorizados pero aún sin un aspecto
-> propio declarado.
+> [`docs/aspectos.md`](../aspectos.md). ESC-01 y ESC-02 pertenecen al
+> aspecto "Consistencia de datos" declarado en la Evidencia S1; el resto
+> (ESC-03 a ESC-05) corresponde a atributos de calidad priorizados pero
+> aún sin un aspecto propio declarado — si el equipo decide más adelante
+> convertir alguno de ellos en aspecto, se agregaría una fila nueva en
+> `aspectos.md`.
 
 ## Trade-offs y tensiones identificadas
 
-Retomando la idea de clase de que "una táctica puede mejorar un atributo y
-afectar otro" y que "la decisión se justifica con escenarios y evidencia,
-no con reglas absolutas":
+En clase se vio que una táctica puede mejorar un atributo y afectar otro,
+y que la decisión se justifica con escenarios y evidencia, no con reglas
+absolutas. Estas son las tensiones que ya identificamos entre nuestros
+propios escenarios, antes incluso de haber elegido una táctica concreta:
 
 - **Consistencia (ESC-01) vs. Rendimiento (ESC-04):** garantizar
   consistencia estricta en movimientos concurrentes (por ejemplo, bloqueos
@@ -341,12 +406,18 @@ cada atributo.
 
 # Risks and Technical Debts
 
-*(Pendiente.)*
+*(Pendiente — se completa una vez existan decisiones de arquitectura y
+componentes de código sobre los cuales identificar riesgos concretos.)*
 
 # Glossary
 
 | Término | Definición |
 |---|---|
-| Aspecto | Porción del sistema con valor propio, recorrible de punta a punta (necesidad → evidencia). |
-| Escenario de calidad | Fuente + estímulo + artefacto + entorno + respuesta + medida verificable. |
-| ADR | Architecture Decision Record: registro de una decisión arquitectónica, su contexto y sus consecuencias. |
+| Aspecto | Porción del sistema con valor propio, recorrible de punta a punta, de la necesidad a la evidencia (Aspecto → Requisito → C4 → ADR → Código → Pruebas → Evidencia). |
+| Atributo de calidad | Dimensión medible de "qué tan bien" funciona el sistema (ej. rendimiento, disponibilidad), distinta de lo que el sistema hace funcionalmente. |
+| Restricción | Condición impuesta desde fuera que acota el espacio de solución antes de diseñar; no se negocia con el diseño, se acata o se escala. |
+| Escenario de calidad | Fuente + estímulo + artefacto + entorno + respuesta + medida verificable; es lo que convierte un atributo de calidad en algo que se puede probar. |
+| Árbol de utilidad | Estructura que prioriza escenarios de calidad por impacto en el negocio y riesgo técnico, de la utilidad general del sistema hacia los escenarios concretos. |
+| Trade-off | Tensión entre dos atributos de calidad, donde mejorar uno con una táctica concreta puede afectar al otro; se resuelve con evidencia, no con reglas absolutas. |
+| ADR | Architecture Decision Record: registro de una decisión arquitectónica, su contexto, las alternativas consideradas y sus consecuencias. |
+| Decisión arquitectónica | Aquella cuyo costo de reversión es alto; cambiarla obliga a tocar varias partes del sistema, migrar datos o renegociar con terceros. |
