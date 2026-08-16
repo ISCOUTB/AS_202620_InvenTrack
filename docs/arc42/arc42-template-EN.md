@@ -36,7 +36,7 @@ arquitectónica.
 
 Siguiendo el marco visto en clase — "cinco atributos, cinco preguntas"
 (Rendimiento, Escalabilidad, Disponibilidad, Mantenibilidad, Seguridad) —
-más el aspecto de calidad ya declarado en `docs/aspectos.md`:
+más el aspecto de calidad ya declarado en [`docs/aspectos.md`](../aspectos.md):
 
 | Atributo | Pregunta guía (clase) | Respuesta para InvenTrack | Prioridad |
 |---|---|---|---|
@@ -74,7 +74,7 @@ calidad desde responsabilidades concretas:
 | Empleado / vendedor (usuario operativo) | Usuario y negocio | Equipo InvenTrack | Registrar entradas y salidas rápido, sin errores y sin capacitación extensa. |
 | Administrador del sistema (rol dentro de la PYME) | Operaciones y seguridad | Equipo InvenTrack | Gestionar usuarios, permisos y catálogo de productos y proveedores; auditar quién hizo cada movimiento. |
 | Proveedor (interesado indirecto, no usa el sistema) | Usuario y negocio (indirecto) | No aplica | Que la información de sus productos y órdenes quede registrada correctamente por el negocio. |
-| Equipo de desarrollo / arquitectura (curso) | Operaciones y seguridad | Equipo AS_202620_InvenTrack — *(completar con nombres y correos del equipo)* | Poder evolucionar y mantener el sistema; decisiones arquitectónicas trazables (aspecto → requisito → C4 → ADR → código → pruebas → evidencia). |
+| Equipo de desarrollo / arquitectura (curso) | Operaciones y seguridad | Esteban Peluffo, Felix Taborda, Jose Vargas, Javier Carta — equipo AS_202620_InvenTrack | Poder evolucionar y mantener el sistema; decisiones arquitectónicas trazables (aspecto → requisito → C4 → ADR → código → pruebas → evidencia). |
 | Docente / evaluador (interesado académico) | — (fuera del marco de negocio) | Jairo Serrano (jserrano@utb.edu.co) | Verificar que la arquitectura responde a los atributos de calidad declarados, con evidencia y trazabilidad real. |
 
 # Architecture Constraints
@@ -86,7 +86,7 @@ o se escala. Se distingue de un requisito (lo que el sistema debe hacer).
 | # | Tipo | Restricción | Quién la impone / justificación |
 |---|---|---|---|
 | C1 | Legal | Los datos personales de usuarios y clientes deben protegerse conforme a la Ley 1581 de 2012 (protección de datos personales, Colombia): credenciales cifradas, acceso restringido por rol. | Legislación colombiana. No se puede decidir no cumplirla. |
-| C2 | Organizativa | El repositorio debe alojarse en la organización GitHub `ISCOUTB` con la estructura fija del curso (`/docs/arc42`, `/docs/adr`, `/docs/c4`, `docs/aspectos.md`, `docs/ia.md`). | Impuesta por el curso AS_202620. |
+| C2 | Organizativa | El repositorio debe alojarse en la organización GitHub `ISCOUTB` con la estructura fija del curso (`/docs/arc42`, [`/docs/adr`](../adr/), [`/docs/c4`](../c4/), [`docs/aspectos.md`](../aspectos.md), [`docs/ia.md`](../ia.md)). | Impuesta por el curso AS_202620. |
 | C3 | Organizativa | El código debe poder evaluarse de forma continua con SonarCloud. | Impuesta por el curso (recurso "Sonarcloud" en Inicio y orientación). |
 | C4 | Organizativa | Equipo de 3–4 personas con dedicación parcial (curso de un semestre) y entregas semanales fijas los domingos. | Calendario académico; limita cuánto alcance se construye por iteración y obliga a priorizar el MVP declarado en la ficha del problema. |
 | C5 | Técnica | Sin presupuesto para servicios de pago; debe usarse stack y hosting con capa gratuita/open source. | Restricción real del contexto: son PYMEs sin músculo financiero para licencias, y el equipo no cuenta con presupuesto del curso. |
@@ -97,7 +97,7 @@ o se escala. Se distingue de un requisito (lo que el sistema debe hacer).
 
 ## Business Context
 
-**Diagrama C4 Nivel 1 (Contexto del sistema):** ver `docs/c4/context.md`.
+**Diagrama C4 Nivel 1 (Contexto del sistema):** ver [`docs/c4/context.md`](../c4/context.md).
 
 InvenTrack tiene dos actores humanos que interactúan directamente con el
 sistema, y un canal externo de notificación:
@@ -154,8 +154,8 @@ por confirmar):
 
 # Architecture Decisions
 
-*(Los ADR viven como archivos individuales en `docs/adr/`; aquí se puede
-enlazar la lista cuando existan.)*
+*(Los ADR viven como archivos individuales en [`docs/adr/`](../adr/); aquí
+se puede enlazar la lista cuando existan.)*
 
 # Quality Requirements
 
@@ -177,7 +177,7 @@ evidencia) se aplicó a los otros cuatro escenarios de esta sección.
 
 **Árbol de utilidad** (Utilidad → atributo → refinamiento → escenario,
 priorizado como (impacto en el negocio, riesgo técnico); H=alto, M=medio,
-L=bajo). Fuente Mermaid en `docs/c4/utility-tree.md`.
+L=bajo). Fuente Mermaid en [`docs/c4/utility-tree.md`](../c4/utility-tree.md).
 
 ```
 Utilidad de InvenTrack
@@ -262,7 +262,7 @@ Estímulo + Artefacto + Entorno → Respuesta + Medida verificable.**
 - **Medida (verificable):** 100 % de los intentos de acceso sin sesión válida o sin rol suficiente son rechazados y quedan registrados, verificado con pruebas de control de acceso sobre los roles definidos (Dueño, Administrador, Empleado).
 
 > Cada escenario se enlaza desde la fila correspondiente de
-> `docs/aspectos.md`. ESC-01 y ESC-02 pertenecen al aspecto "Consistencia
+> [`docs/aspectos.md`](../aspectos.md). ESC-01 y ESC-02 pertenecen al aspecto "Consistencia
 > de datos" declarado en la Evidencia S1; el resto (ESC-03 a ESC-05)
 > corresponde a atributos de calidad priorizados pero aún sin un aspecto
 > propio declarado.
@@ -292,8 +292,8 @@ no con reglas absolutas":
   debilitar la medida de ESC-05.
 
 Estas tensiones no se resuelven todavía: se documentarán como ADR en
-`docs/adr/` cuando el equipo decida la táctica concreta para cada
-atributo.
+[`docs/adr/`](../adr/) cuando el equipo decida la táctica concreta para
+cada atributo.
 
 # Risks and Technical Debts
 
