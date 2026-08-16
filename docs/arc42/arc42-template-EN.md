@@ -34,27 +34,48 @@ arquitectónica.
 
 ## Quality Goals
 
-Priorizados según su impacto en el negocio y el riesgo técnico (ver árbol
-de utilidad en la sección 10):
+Siguiendo el marco visto en clase — "cinco atributos, cinco preguntas"
+(Rendimiento, Escalabilidad, Disponibilidad, Mantenibilidad, Seguridad) —
+más el aspecto de calidad ya declarado en `docs/aspectos.md`:
 
-| # | Atributo de calidad | Motivación |
-|---|---|---|
-| 1 | **Consistencia de datos** (aspecto declarado en `docs/aspectos.md`) | Movimientos simultáneos de distintos usuarios no deben producir stock negativo ni doble descuento del mismo movimiento. |
-| 2 | **Disponibilidad** | El sistema reemplaza el registro manual; si no responde en horario comercial, el negocio pierde la venta o vuelve al papel. |
-| 3 | **Usabilidad** | Los usuarios objetivo no tienen formación técnica y hoy trabajan con Excel o papel; la curva de aprendizaje debe ser mínima. |
-| 4 | **Eficiencia de desempeño** | Las consultas de inventario y el registro de movimientos deben sentirse instantáneos en el mostrador, incluso en hora pico. |
-| 5 | **Seguridad** | El control de usuarios y la trazabilidad exigen que cada movimiento quede asociado a quién lo hizo, sin que se pueda suplantar a otro usuario. |
+| Atributo | Pregunta guía (clase) | Respuesta para InvenTrack | Prioridad |
+|---|---|---|---|
+| **Consistencia de datos** *(aspecto declarado; fuera del marco de 5 preguntas)* | — | Movimientos concurrentes de distintos usuarios no deben producir stock negativo ni doble descuento del mismo movimiento. | Muy alta |
+| Disponibilidad | ¿Qué fallos y recuperación? | El sistema debe seguir disponible en horario comercial; una caída se traduce en venta perdida o vuelta al papel. | Alta |
+| Rendimiento | ¿Con qué carga y latencia? | Consultas y registros deben sentirse instantáneos en el mostrador, incluso en hora pico. | Media-alta |
+| Seguridad | ¿Qué activo, amenaza y control? | Activo: historial de movimientos y datos personales de usuarios (restricción legal C1). Amenaza: suplantación o acceso sin el rol adecuado. Control: autenticación + roles. | Media-alta |
+| Escalabilidad | ¿Qué crecimiento debe absorber? | Identificado, no priorizado: el piloto es una sola PYME; se revisa si el proyecto crece a varios negocios. | Baja por ahora |
+| Mantenibilidad | ¿Qué cambio, esfuerzo y riesgo? | Identificado, no priorizado esta semana: se aborda junto con las decisiones de Building Block View. | Baja por ahora |
+
+> **Usabilidad** también es relevante para el perfil de usuario descrito en
+> la ficha (personas no técnicas, ver restricción C6), pero al aplicar el
+> árbol de utilidad no alcanzó la misma prioridad que Seguridad, porque la
+> protección de datos personales es además una restricción legal (C1) que
+> no se puede posponer. Se documentará como aspecto propio si el equipo
+> decide priorizarla en semanas futuras.
+>
+> **Pregunta guía de la clase — "¿qué atributo sacrificarían y a cambio de
+> qué?":** si tuviéramos que elegir, sacrificaríamos algo de latencia
+> (Rendimiento) a cambio de Consistencia, porque el aspecto declarado del
+> proyecto prioriza la integridad del dato sobre la velocidad (ver el
+> trade-off ESC-01 vs. ESC-04 en la sección 10.3).
 
 ## Stakeholders
 
-| Rol | Contacto | Expectativas |
-|---|---|---|
-| Dueño de la PYME (patrocinador / usuario principal) | Equipo InvenTrack / negocio piloto | Ver el stock real en cualquier momento; tomar decisiones de compra con datos históricos; no depender de una sola persona para conocer el inventario. |
-| Empleado / vendedor (usuario operativo) | Equipo InvenTrack | Registrar entradas y salidas rápido, sin errores y sin capacitación extensa. |
-| Administrador del sistema (rol dentro de la PYME) | Equipo InvenTrack | Gestionar usuarios, permisos y catálogo de productos y proveedores; auditar quién hizo cada movimiento. |
-| Proveedor (interesado indirecto, no usa el sistema) | No aplica | Que la información de sus productos y órdenes quede registrada correctamente por el negocio. |
-| Equipo de desarrollo / arquitectura (curso) | Equipo AS_202620_InvenTrack — *(completar con nombres y correos institucionales del equipo)* | Poder evolucionar y mantener el sistema; decisiones arquitectónicas trazables (aspecto → requisito → C4 → ADR → código → pruebas → evidencia). |
-| Docente / evaluador (interesado académico) | Jairo Serrano (jserrano@utb.edu.co) | Verificar que la arquitectura responde a los atributos de calidad declarados, con evidencia y trazabilidad real. |
+Siguiendo las dos perspectivas trabajadas en clase para interpretar la
+calidad desde responsabilidades concretas:
+
+- **Usuario y negocio** → exige respuesta, costo y continuidad.
+- **Operaciones y seguridad** → exige recuperación, control y trazabilidad.
+
+| Rol | Perspectiva | Contacto | Expectativas |
+|---|---|---|---|
+| Dueño de la PYME (patrocinador / usuario principal) | Usuario y negocio | Equipo InvenTrack / negocio piloto | Ver el stock real en cualquier momento; tomar decisiones de compra con datos históricos; no depender de una sola persona para conocer el inventario. |
+| Empleado / vendedor (usuario operativo) | Usuario y negocio | Equipo InvenTrack | Registrar entradas y salidas rápido, sin errores y sin capacitación extensa. |
+| Administrador del sistema (rol dentro de la PYME) | Operaciones y seguridad | Equipo InvenTrack | Gestionar usuarios, permisos y catálogo de productos y proveedores; auditar quién hizo cada movimiento. |
+| Proveedor (interesado indirecto, no usa el sistema) | Usuario y negocio (indirecto) | No aplica | Que la información de sus productos y órdenes quede registrada correctamente por el negocio. |
+| Equipo de desarrollo / arquitectura (curso) | Operaciones y seguridad | Equipo AS_202620_InvenTrack — *(completar con nombres y correos del equipo)* | Poder evolucionar y mantener el sistema; decisiones arquitectónicas trazables (aspecto → requisito → C4 → ADR → código → pruebas → evidencia). |
+| Docente / evaluador (interesado académico) | — (fuera del marco de negocio) | Jairo Serrano (jserrano@utb.edu.co) | Verificar que la arquitectura responde a los atributos de calidad declarados, con evidencia y trazabilidad real. |
 
 # Architecture Constraints
 
@@ -140,6 +161,148 @@ enlazar la lista cuando existan.)*
 
 ## Quality Requirements Overview
 
+**De la preocupación al atributo (método visto en clase, aplicado a
+InvenTrack):**
+
+> Preocupación (Dueño/Empleado): *"las consultas de inventario se demoran
+> en hora pico."*
+> Atributo: eficiencia de desempeño (Rendimiento).
+> Escenario: ver **ESC-04** más abajo, con sus seis partes.
+> Evidencia: prueba de carga, midiendo el percentil p95. Población:
+> consultas de listado de inventario. Ventana: hora pico (12 m.–2 p. m.).
+> Carga: 20 usuarios concurrentes. Método: prueba de carga automatizada.
+
+Este mismo método (preocupación → atributo → escenario de seis partes →
+evidencia) se aplicó a los otros cuatro escenarios de esta sección.
+
 **Árbol de utilidad** (Utilidad → atributo → refinamiento → escenario,
 priorizado como (impacto en el negocio, riesgo técnico); H=alto, M=medio,
 L=bajo). Fuente Mermaid en `docs/c4/utility-tree.md`.
+
+```
+Utilidad de InvenTrack
+├─ Consistencia de datos (aspecto declarado)
+│   ├─ Concurrencia en movimientos de inventario
+│   │   └─ ESC-01 Registro simultáneo de salida del mismo producto (H, H)
+│   └─ Integridad referencial del catálogo
+│       └─ ESC-02 Eliminar producto con movimientos asociados (M, M)
+├─ Disponibilidad
+│   └─ Continuidad operativa en horario comercial
+│       └─ ESC-03 Caída del servidor durante el registro de una venta (H, M)
+├─ Rendimiento
+│   └─ Tiempo de respuesta en consulta de inventario
+│       └─ ESC-04 Consulta de stock en hora pico (M, L)
+└─ Seguridad
+    └─ Control de acceso por rol
+        └─ ESC-05 Intento de acceso sin autenticación o sin rol suficiente (M, M)
+```
+
+Los escenarios con mayor impacto de negocio y/o riesgo técnico (ESC-01,
+ESC-03) orientan las primeras decisiones arquitectónicas: control de
+concurrencia y estrategia de disponibilidad, respectivamente.
+
+## Quality Scenarios
+
+Cada escenario sigue el formato de seis partes visto en clase: **Fuente +
+Estímulo + Artefacto + Entorno → Respuesta + Medida verificable.**
+
+### ESC-01 — Consistencia de datos (aspecto declarado)
+
+*Perspectiva: Operaciones y seguridad · Prioridad (H, H)*
+
+- **Fuente:** dos empleados usando el sistema al mismo tiempo.
+- **Estímulo:** registran una salida de inventario del mismo producto simultáneamente.
+- **Artefacto:** módulo de registro de movimientos y stock.
+- **Entorno:** operación normal, horario comercial.
+- **Respuesta:** el sistema serializa las transacciones concurrentes y aplica ambos descuentos de forma consistente, o rechaza uno si el stock resultante sería negativo.
+- **Medida (verificable):** 0 casos de stock negativo y 0 casos de doble descuento del mismo movimiento en el 100 % de una prueba de concurrencia con 50 transacciones simultáneas sobre el mismo producto.
+
+### ESC-02 — Consistencia de datos (integridad referencial)
+
+*Perspectiva: Operaciones y seguridad · Prioridad (M, M)*
+
+- **Fuente:** usuario administrador.
+- **Estímulo:** intenta eliminar un producto con movimientos históricos asociados.
+- **Artefacto:** módulo de gestión de productos.
+- **Entorno:** operación normal.
+- **Respuesta:** el sistema impide el borrado físico y solo permite desactivar (borrado lógico) el producto.
+- **Medida (verificable):** 100 % de los productos con movimientos asociados no pueden eliminarse físicamente; verificado con prueba automatizada.
+
+### ESC-03 — Disponibilidad
+
+*Perspectiva: Usuario y negocio · Prioridad (H, M) · Pregunta guía: ¿qué fallos y recuperación?*
+
+- **Fuente:** falla de infraestructura (caída del servidor).
+- **Estímulo:** el servicio deja de responder mientras un empleado registra una venta.
+- **Artefacto:** sistema completo (backend).
+- **Entorno:** horario comercial pico.
+- **Respuesta:** el sistema se recupera y el movimiento no confirmado no queda aplicado parcialmente.
+- **Medida (verificable):** disponibilidad ≥ 99 % mensual en horario comercial (8 a. m.–8 p. m.) y recuperación en ≤ 5 minutos tras una falla, medido con monitoreo de uptime.
+
+### ESC-04 — Rendimiento
+
+*Perspectiva: Usuario y negocio · Prioridad (M, L) · Pregunta guía: ¿con qué carga y latencia?*
+
+- **Fuente:** empleado o dueño.
+- **Estímulo:** consulta el inventario actual con filtros.
+- **Artefacto:** módulo de consulta de inventario.
+- **Entorno:** hora pico, hasta 20 usuarios concurrentes.
+- **Respuesta:** el sistema retorna el listado solicitado.
+- **Medida (verificable):** ≤ 400 ms p95 con 20 usuarios concurrentes, medido con prueba de carga. (p95 = al menos el 95 % de las observaciones no supera ese tiempo; se define población, ventana, carga y método de medición para que el número sea reproducible.)
+
+### ESC-05 — Seguridad
+
+*Perspectiva: Operaciones y seguridad · Prioridad (M, M) · Pregunta guía: ¿qué activo, amenaza y control?*
+
+- **Fuente:** usuario sin sesión válida, o autenticado pero sin el rol requerido (ej. empleado intentando una acción de administrador).
+- **Estímulo:** intenta iniciar sesión con credenciales inválidas, o intenta ejecutar una acción restringida (gestionar usuarios, eliminar producto) sin permiso suficiente.
+- **Artefacto:** módulo de autenticación y control de acceso por roles.
+- **Entorno:** operación normal, cualquier momento, incluidos intentos repetidos.
+- **Respuesta:** el sistema rechaza la operación, no expone datos ni funciones fuera del rol del usuario, y registra el intento en el log de auditoría.
+- **Medida (verificable):** 100 % de los intentos de acceso sin sesión válida o sin rol suficiente son rechazados y quedan registrados, verificado con pruebas de control de acceso sobre los roles definidos (Dueño, Administrador, Empleado).
+
+> Cada escenario se enlaza desde la fila correspondiente de
+> `docs/aspectos.md`. ESC-01 y ESC-02 pertenecen al aspecto "Consistencia
+> de datos" declarado en la Evidencia S1; el resto (ESC-03 a ESC-05)
+> corresponde a atributos de calidad priorizados pero aún sin un aspecto
+> propio declarado.
+
+## Trade-offs y tensiones identificadas
+
+Retomando la idea de clase de que "una táctica puede mejorar un atributo y
+afectar otro" y que "la decisión se justifica con escenarios y evidencia,
+no con reglas absolutas":
+
+- **Consistencia (ESC-01) vs. Rendimiento (ESC-04):** garantizar
+  consistencia estricta en movimientos concurrentes (por ejemplo, bloqueos
+  pesimistas o transacciones serializables) puede aumentar la latencia de
+  las escrituras bajo carga. Es el trade-off que responde a la pregunta
+  guía "¿qué atributo sacrificarían y a cambio de qué?": este equipo
+  prioriza Consistencia sobre Rendimiento, porque el aspecto declarado del
+  proyecto es la integridad del dato, no la velocidad.
+- **Consistencia (ESC-01/ESC-02) vs. Disponibilidad (ESC-03):** el ejemplo
+  visto en clase — "Réplicas: disponibilidad ↑; costo y consistencia se
+  tensionan" — aplica directamente aquí. Si más adelante el equipo decide
+  replicar la base de datos para mejorar disponibilidad, esa decisión
+  deberá evaluarse primero contra ESC-01 y ESC-02, porque la consistencia
+  es el aspecto declarado y no se negocia sin justificación explícita.
+- **Seguridad (ESC-05) vs. Usabilidad:** exigir autenticación y control de
+  roles añade fricción para usuarios no técnicos (restricción C6). Se
+  buscará que el mecanismo de control de acceso sea simple de usar sin
+  debilitar la medida de ESC-05.
+
+Estas tensiones no se resuelven todavía: se documentarán como ADR en
+`docs/adr/` cuando el equipo decida la táctica concreta para cada
+atributo.
+
+# Risks and Technical Debts
+
+*(Pendiente.)*
+
+# Glossary
+
+| Término | Definición |
+|---|---|
+| Aspecto | Porción del sistema con valor propio, recorrible de punta a punta (necesidad → evidencia). |
+| Escenario de calidad | Fuente + estímulo + artefacto + entorno + respuesta + medida verificable. |
+| ADR | Architecture Decision Record: registro de una decisión arquitectónica, su contexto y sus consecuencias. |
