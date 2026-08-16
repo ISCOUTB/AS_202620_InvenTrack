@@ -221,7 +221,7 @@ evidencia) se aplicó a los otros cuatro escenarios de esta sección.
 
 **Árbol de utilidad** (Utilidad → atributo → refinamiento → escenario,
 priorizado como (impacto en el negocio, riesgo técnico); H=alto, M=medio,
-L=bajo). Fuente Mermaid en [`docs/c4/utility-tree.md`](../c4/utility-tree.md).
+L=bajo). Fuente Mermaid en [`docs/utility-tree.md`](../utility-tree.md).
 
 ```
 Utilidad de InvenTrack
