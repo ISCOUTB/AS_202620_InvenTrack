@@ -84,7 +84,7 @@ de la hoja es lo que realmente importa para decidir por dónde empezar.
 
 | ID | Atributo | Refinamiento | Prioridad (negocio, riesgo) | Por qué esta prioridad |
 |---|---|---|---|---|
-| ESC-01 | Consistencia de datos *(aspecto declarado)* | Concurrencia en movimientos de inventario | **(A, A)** | Es el aspecto declarado del proyecto: un stock negativo o un doble descuento rompe la confianza del dueño en el sistema desde el primer uso, y la solución técnica (control de concurrencia) no es trivial — de ahí el riesgo también alto. |
+| ESC-01 | Consistencia de datos *(aspecto declarado)* | Concurrencia en movimientos de inventario |  **(A, A)** | Es el aspecto declarado del proyecto: un stock negativo o un doble descuento rompe la confianza del dueño en el sistema desde el primer uso, y la solución técnica (control de concurrencia) no es trivial — de ahí el riesgo también alto. |
 | ESC-02 | Consistencia de datos | Integridad referencial del catálogo | (M, M) | Afecta la trazabilidad histórica si se permite borrar productos con movimientos, pero el impacto es menor que ESC-01 y la solución (borrado lógico en vez de físico) es directa. |
 | ESC-03 | Disponibilidad | Continuidad operativa en horario comercial | **(A, M)** | Si el sistema cae en horario comercial, el negocio pierde la venta o vuelve al papel — impacto alto. El riesgo es medio, no alto, porque depende sobre todo de la infraestructura de despliegue, que aún está por confirmar (no es un problema de diseño complejo). |
 | ESC-04 | Rendimiento | Tiempo de respuesta en consulta de inventario | (M, B) | Importa para la experiencia de uso en el mostrador, pero el volumen de datos de una sola PYME es pequeño, así que el riesgo técnico de no cumplir el umbral es bajo. |
