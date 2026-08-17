@@ -252,7 +252,7 @@ evidencia) se aplicó a los otros cuatro escenarios de esta sección.
 **Árbol de utilidad.** Es la herramienta que ordena la priorización:
 Utilidad general del sistema → atributo de calidad → refinamiento más
 específico → escenario medible, cada uno etiquetado como (impacto en el
-negocio, riesgo técnico), con H=alto, M=medio, L=bajo. El diagrama
+negocio, riesgo técnico), con A=alto, M=medio, B=bajo. El diagrama
 completo, coloreado por prioridad y con la explicación de por qué cada
 escenario quedó donde quedó, está en
 [`docs/utility-tree.md`](../utility-tree.md). Aquí va solo el resumen en
@@ -262,15 +262,15 @@ texto:
 Utilidad de InvenTrack
 ├─ Consistencia de datos (aspecto declarado)
 │   ├─ Concurrencia en movimientos de inventario
-│   │   └─ ESC-01 Registro simultáneo de salida del mismo producto (H, H)
+│   │   └─ ESC-01 Registro simultáneo de salida del mismo producto (A, A)
 │   └─ Integridad referencial del catálogo
 │       └─ ESC-02 Eliminar producto con movimientos asociados (M, M)
 ├─ Disponibilidad
 │   └─ Continuidad operativa en horario comercial
-│       └─ ESC-03 Caída del servidor durante el registro de una venta (H, M)
+│       └─ ESC-03 Caída del servidor durante el registro de una venta (A, M)
 ├─ Rendimiento
 │   └─ Tiempo de respuesta en consulta de inventario
-│       └─ ESC-04 Consulta de stock en hora pico (M, L)
+│       └─ ESC-04 Consulta de stock en hora pico (M, B)
 └─ Seguridad
     └─ Control de acceso por rol
         └─ ESC-05 Intento de acceso sin autenticación o sin rol suficiente (M, M)
@@ -314,7 +314,7 @@ secciones para saber por qué un escenario importa más que otro.
 
 ### ESC-01 — Consistencia de datos (aspecto declarado)
 
-*Perspectiva: Operaciones y seguridad · Prioridad (H, H)*
+*Perspectiva: Operaciones y seguridad · Prioridad (A, A)*
 
 - **Fuente:** dos empleados usando el sistema al mismo tiempo.
 - **Estímulo:** registran una salida de inventario del mismo producto simultáneamente.
@@ -336,7 +336,7 @@ secciones para saber por qué un escenario importa más que otro.
 
 ### ESC-03 — Disponibilidad
 
-*Perspectiva: Usuario y negocio · Prioridad (H, M) · Pregunta guía: ¿qué fallos y recuperación?*
+*Perspectiva: Usuario y negocio · Prioridad (A, M) · Pregunta guía: ¿qué fallos y recuperación?*
 
 - **Fuente:** falla de infraestructura (caída del servidor).
 - **Estímulo:** el servicio deja de responder mientras un empleado registra una venta.
@@ -347,7 +347,7 @@ secciones para saber por qué un escenario importa más que otro.
 
 ### ESC-04 — Rendimiento
 
-*Perspectiva: Usuario y negocio · Prioridad (M, L) · Pregunta guía: ¿con qué carga y latencia?*
+*Perspectiva: Usuario y negocio · Prioridad (M, B) · Pregunta guía: ¿con qué carga y latencia?*
 
 - **Fuente:** empleado o dueño.
 - **Estímulo:** consulta el inventario actual con filtros.
