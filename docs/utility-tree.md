@@ -17,7 +17,7 @@ probar. Se lee de izquierda a derecha, en cuatro niveles:
    qué número se verifica.
 
 Cada escenario se prioriza como **(impacto en el negocio, riesgo
-técnico)**, con H = alto, M = medio, L = bajo. Esa priorización es la que
+técnico)**, con A = alto, M = medio, B = bajo. Esa priorización es la que
 decide qué se ataca primero cuando el equipo empiece a tomar decisiones
 de arquitectura (ADR).
 
@@ -54,10 +54,10 @@ graph LR
     QA3 --> R4(["Tiempo de<br/>respuesta"])
     QA4 --> R5(["Control de<br/>acceso por rol"])
 
-    R1 --> S1["ESC-01 (H,H)"]
+    R1 --> S1["ESC-01 (A,A)"]
     R2 --> S2["ESC-02 (M,M)"]
-    R3 --> S3["ESC-03 (H,M)"]
-    R4 --> S4["ESC-04 (M,L)"]
+    R3 --> S3["ESC-03 (A,M)"]
+    R4 --> S4["ESC-04 (M,B)"]
     R5 --> S5["ESC-05 (M,M)"]
 
     classDef root fill:#0d3b66,stroke:#082746,color:#ffffff,font-weight:bold
@@ -84,10 +84,10 @@ de la hoja es lo que realmente importa para decidir por dónde empezar.
 
 | ID | Atributo | Refinamiento | Prioridad (negocio, riesgo) | Por qué esta prioridad |
 |---|---|---|---|---|
-| ESC-01 | Consistencia de datos *(aspecto declarado)* | Concurrencia en movimientos de inventario | **(H, H)** | Es el aspecto declarado del proyecto: un stock negativo o un doble descuento rompe la confianza del dueño en el sistema desde el primer uso, y la solución técnica (control de concurrencia) no es trivial — de ahí el riesgo también alto. |
+| ESC-01 | Consistencia de datos *(aspecto declarado)* | Concurrencia en movimientos de inventario | **(A, A)** | Es el aspecto declarado del proyecto: un stock negativo o un doble descuento rompe la confianza del dueño en el sistema desde el primer uso, y la solución técnica (control de concurrencia) no es trivial — de ahí el riesgo también alto. |
 | ESC-02 | Consistencia de datos | Integridad referencial del catálogo | (M, M) | Afecta la trazabilidad histórica si se permite borrar productos con movimientos, pero el impacto es menor que ESC-01 y la solución (borrado lógico en vez de físico) es directa. |
-| ESC-03 | Disponibilidad | Continuidad operativa en horario comercial | **(H, M)** | Si el sistema cae en horario comercial, el negocio pierde la venta o vuelve al papel — impacto alto. El riesgo es medio, no alto, porque depende sobre todo de la infraestructura de despliegue, que aún está por confirmar (no es un problema de diseño complejo). |
-| ESC-04 | Rendimiento | Tiempo de respuesta en consulta de inventario | (M, L) | Importa para la experiencia de uso en el mostrador, pero el volumen de datos de una sola PYME es pequeño, así que el riesgo técnico de no cumplir el umbral es bajo. |
+| ESC-03 | Disponibilidad | Continuidad operativa en horario comercial | **(A, M)** | Si el sistema cae en horario comercial, el negocio pierde la venta o vuelve al papel — impacto alto. El riesgo es medio, no alto, porque depende sobre todo de la infraestructura de despliegue, que aún está por confirmar (no es un problema de diseño complejo). |
+| ESC-04 | Rendimiento | Tiempo de respuesta en consulta de inventario | (M, B) | Importa para la experiencia de uso en el mostrador, pero el volumen de datos de una sola PYME es pequeño, así que el riesgo técnico de no cumplir el umbral es bajo. |
 | ESC-05 | Seguridad | Control de acceso por rol | (M, M) | La protección de datos personales es una restricción legal (Ley 1581 de 2012, ver restricción C1 en el arc42), no solo una preferencia de diseño — de ahí que no sea prioridad baja. El riesgo es medio porque el mecanismo de autenticación concreto todavía depende de una decisión de stack que no se ha tomado. |
 
 ## Qué hacer con esta priorización
