@@ -19,6 +19,7 @@
 - [Documentación de arquitectura](#documentación-de-arquitectura)
 - [Diagramas C4](#diagramas-c4)
 - [Decisiones de arquitectura (ADR)](#decisiones-de-arquitectura-adr)
+- [Matriz comparativa de estilos](#matriz-comparativa-de-estilos)
 - [Stack tecnológico](#stack-tecnológico)
 - [Estructura del repositorio](#estructura-del-repositorio)
 - [Flujo de trabajo del equipo](#flujo-de-trabajo-del-equipo)
@@ -38,7 +39,7 @@
 | [Documentación arc42](docs/arc42/arc42-template-EN.md) | Objetivos, stakeholders, restricciones, contexto y requisitos de calidad |
 | [C4 — Nivel 1 (Contexto)](docs/c4/context.md) | Diagrama de contexto: actores, sistema y sistema externo |
 | [Árbol de utilidad](docs/utility-tree.md) | Priorización de atributos de calidad por impacto y riesgo |
-| [ADR](docs/adr/README.md) | Registro de decisiones arquitectónicas (aún sin decisiones) |
+| [ADR](docs/adr/README.md) | Registro de decisiones arquitectónicas |
 | [Uso de IA](docs/ia.md) | Registro transparente del uso de IA en el proyecto |
 
 ---
@@ -116,10 +117,17 @@ incluye:
 | 3 · Context and Scope | Contexto de negocio (actores que interactúan con el sistema) y contexto técnico (canales y protocolos, aún parcialmente pendientes de decisión de stack) |
 | 10 · Quality Requirements | Árbol de utilidad, 5 escenarios de calidad de seis partes cada uno (Fuente, Estímulo, Artefacto, Entorno, Respuesta, Medida), y trade-offs identificados entre atributos |
 
-Las demás secciones de arc42 (Solution Strategy, Building Block View, Runtime View,
+Las demás secciones de arc42 (Building Block View, Runtime View,
 Deployment View, Cross-cutting Concepts, Risks, Glossary) están marcadas como pendientes,
 cada una con una nota explicando de qué decisión futura depende completarla, y se llenan
 en semanas posteriores del curso conforme se van tomando esas decisiones.
+
+## Matriz comparativa de estilos
+
+La comparación entre arquitectura por capas, hexagonal y monolito modular está
+en [`docs/matriz-comparativa-estilos.md`](docs/matriz-comparativa-estilos.md).
+La decisión adoptada combina un **Monolito Modular** como estructura general
+con **Hexagonal por módulo**.
 
 ## Diagramas C4
 
@@ -143,7 +151,8 @@ Las decisiones arquitectónicas se documentan como archivos individuales en
 Aspecto → Requisito → C4 → ADR → Código → Pruebas → Evidencia
 ```
 
-Aún no hay decisiones registradas. La primera candidata natural es el mecanismo de
+La decisión de estilo arquitectónico está registrada en el
+[ADR-0001](docs/adr/0001-estilo-arquitectonico.md). Sigue pendiente el mecanismo de
 control de concurrencia para el aspecto "Consistencia de datos" (ver escenarios ESC-01 y
 ESC-02, y la sección de trade-offs en el arc42): las alternativas sobre la mesa son
 transacciones con aislamiento adecuado, bloqueo pesimista, bloqueo optimista, o
@@ -151,14 +160,14 @@ validaciones a nivel de base de datos — cada una con distinto costo en Rendimi
 
 ## Stack tecnológico
 
-Pendiente de decisión formal por el equipo (ver recurso "Stack de Desarrollo" del curso).
-Se documentará aquí y como ADR una vez definido, respetando la restricción de usar
-tecnología con capa gratuita/open source (restricción C5 en el arc42).
+El backend del esqueleto usa **FastAPI** con **Uvicorn**. La base de datos, el
+frontend y el hosting quedan pendientes de decisión formal, respetando la
+restricción de usar tecnología open source o con capa gratuita.
 
 | Capa | Tecnología | Estado |
 |---|---|---|
 | Frontend | Por definir | Pendiente |
-| Backend | Por definir | Pendiente |
+| Backend | FastAPI + Uvicorn | Esqueleto ejecutable |
 | Base de datos | Por definir | Pendiente |
 | Hosting / despliegue | Por definir | Pendiente (ver encuesta de disponibilidad técnica) |
 | CI / calidad de código | SonarCloud | Definido por el curso |
@@ -180,6 +189,33 @@ docs/
 ├── aspectos.md                  # Índice: aspecto declarado + escenarios enlazados
 ├── utility-tree.md              # Árbol de utilidad (diagrama + explicación)
 └── ia.md                        # Registro de uso de IA en el proyecto
+app/                              # Esqueleto FastAPI del monolito modular
+├── main.py                       # Composición de la aplicación
+├── shared/                       # Código compartido
+├── productos/                    # Módulo de productos
+├── proveedores/                  # Módulo de proveedores
+├── inventario/                   # Módulo de inventario
+├── usuarios/                     # Módulo de usuarios
+└── alertas/                      # Módulo de alertas
+tests/                            # Prueba automatizada del esqueleto
+└── test_health.py
+requirements.txt                  # Dependencias del esqueleto
+```
+
+## Cómo ejecutar el esqueleto
+
+Requisito: Python 3.11 o superior.
+
+```powershell
+python -m pip install -r requirements.txt
+python -m uvicorn app.main:app --reload
+```
+
+La aplicación queda disponible en `http://127.0.0.1:8000` y expone `GET /health`.
+La prueba automatizada se ejecuta con:
+
+```powershell
+python -m pytest -v
 ```
 
 ## Flujo de trabajo del equipo
@@ -200,6 +236,7 @@ docs/
 |---|---|---|
 | S1 | Equipo, problema y repositorio | Completo |
 | S2 | Escenarios de calidad y restricciones | Completo |
+| S4 | Estrategia, matriz, ADR y esqueleto ejecutable | Completo |
 
 ## Uso de IA
 

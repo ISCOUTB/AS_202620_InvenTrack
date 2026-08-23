@@ -1,0 +1,1 @@
+"""Componentes compartidos del monolito."""

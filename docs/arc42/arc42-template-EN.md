@@ -182,18 +182,63 @@ por confirmar):
 
 # Solution Strategy
 
-*(Pendiente. Se completa en semanas posteriores, cuando el equipo decida
-el stack tecnológico y las tácticas concretas para resolver cada atributo
-de calidad priorizado en la sección 10 — por ejemplo, qué táctica se usa
-para garantizar consistencia en movimientos concurrentes.)*
+Para InvenTrack se adopta un **Monolito Modular** como estructura general del
+sistema, con **Arquitectura Hexagonal (Puertos y Adaptadores)** aplicada dentro
+de cada módulo. Los módulos funcionales son `productos`, `proveedores`,
+`inventario`, `usuarios` y `alertas`.
+
+La aplicación se despliega inicialmente como una sola unidad. Esta decisión
+mantiene baja la complejidad operativa y el costo de infraestructura, mientras
+que los límites por módulo reducen el acoplamiento entre funcionalidades. La
+arquitectura hexagonal separa el dominio y los casos de uso de FastAPI, la
+persistencia y el servicio externo de correo.
+
+La estructura ejecutable inicial se encuentra en [`app/`](../../app/):
+
+```text
+app/
+├── main.py
+├── shared/
+└── <modulo>/
+    ├── domain/
+    ├── application/
+    └── infrastructure/
+```
+
+Dentro de cada módulo, la dependencia apunta hacia el centro: `infrastructure`
+depende de `application`, y `application` depende de `domain`. El dominio no
+depende de FastAPI ni de otro detalle de infraestructura. Las dependencias se
+ensamblan en `app/main.py`.
+
+FastAPI se utilizará como adaptador HTTP y Uvicorn como servidor de desarrollo.
+El endpoint `GET /health` demuestra que la composición arranca; no contiene
+lógica de negocio.
+
+La estrategia responde a los objetivos de calidad así:
+
+- **Consistencia:** el módulo `inventario` tendrá un límite único para coordinar
+  los casos de uso de movimientos y la futura estrategia de concurrencia.
+- **Mantenibilidad:** los módulos separan responsabilidades por dominio y
+  permiten trabajar con menor interferencia entre integrantes.
+- **Seguridad:** la autorización se ubicará en los casos de uso y no dependerá
+  solamente de los endpoints HTTP.
+- **Rendimiento:** las llamadas entre módulos permanecen dentro del mismo
+  proceso, sin el costo de coordinación de microservicios.
+- **Disponibilidad:** el despliegue único reduce la complejidad inicial, aunque
+  implica que la recuperación deba considerar toda la aplicación.
+
+Las alternativas y sus consecuencias están documentadas en la
+[matriz comparativa](../matriz-comparativa-estilos.md) y en el
+[ADR-0001](../adr/0001-estilo-arquitectonico.md).
 
 # Building Block View
 
 ## Whitebox Overall System
 
-*(Pendiente — se completa cuando exista una primera versión del sistema y
-el equipo defina los componentes principales, coherente con las
-decisiones de Solution Strategy.)*
+La vista inicial de bloques está representada por un único despliegue de
+InvenTrack con módulos funcionales separados. Cada módulo tendrá sus propios
+dominio, aplicación e infraestructura; los paquetes actuales son un esqueleto
+vacío para hacer visibles esos límites antes de implementar la lógica.
 
 ## Level 2
 
