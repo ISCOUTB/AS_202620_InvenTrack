@@ -30,8 +30,6 @@
 
 ---
 
-## Ir directo a...
-
 | Documento | Contenido |
 |---|---|
 | [Ficha del problema](docs/ficha_problema.md) | Problema, solución propuesta, alcance del MVP y usuarios objetivo |
@@ -39,7 +37,7 @@
 | [Documentación arc42](docs/arc42/arc42-template-EN.md) | Objetivos, stakeholders, restricciones, contexto y requisitos de calidad |
 | [C4 — Nivel 1 (Contexto)](docs/c4/context.md) | Diagrama de contexto: actores, sistema y sistema externo |
 | [Árbol de utilidad](docs/utility-tree.md) | Priorización de atributos de calidad por impacto y riesgo |
-| [ADR](docs/adr/README.md) | Registro de decisiones arquitectónicas |
+| [ADR-0001](docs/adr/0001-usar-monolito-modular-con-hexagonal-por-modulo.md) | Registro de decisión: Monolito modular con hexagonal por módulo |
 | [Uso de IA](docs/ia.md) | Registro transparente del uso de IA en el proyecto |
 
 ---
@@ -152,7 +150,7 @@ Aspecto → Requisito → C4 → ADR → Código → Pruebas → Evidencia
 ```
 
 La decisión de estilo arquitectónico está registrada en el
-[ADR-0001](docs/adr/0001-estilo-arquitectonico.md). Sigue pendiente el mecanismo de
+[ADR-0001](docs/adr/0001-usar-monolito-modular-con-hexagonal-por-modulo.md). Sigue pendiente el mecanismo de
 control de concurrencia para el aspecto "Consistencia de datos" (ver escenarios ESC-01 y
 ESC-02, y la sección de trade-offs en el arc42): las alternativas sobre la mesa son
 transacciones con aislamiento adecuado, bloqueo pesimista, bloqueo optimista, o
@@ -175,31 +173,34 @@ restricción de usar tecnología open source o con capa gratuita.
 ## Estructura del repositorio
 
 ```
+.github/
+└── workflows/
+    └── test.yml                 # Pipeline de CI/CD para pruebas en GitHub Actions
 docs/
 ├── arc42/
-│   ├── arc42-template-EN.md   # Narrativa completa: objetivos, restricciones,
-│   │                            # contexto y requisitos de calidad (secciones 1-3 y 10)
+│   ├── arc42-template-EN.md    # Narrativa completa (secciones 1-4 y 10)
 │   └── images/
 │       └── arc42-logo.png
 ├── c4/
 │   └── context.md              # C4 Nivel 1 — Diagrama de contexto
 ├── adr/
-│   └── README.md                # Architecture Decision Records (pendiente)
+│   └── 0001-usar-monolito-modular-con-hexagonal-por-modulo.md
 ├── ficha_problema.md            # Planteamiento del problema (1 página)
-├── aspectos.md                  # Índice: aspecto declarado + escenarios enlazados
+├── aspectos.md                  # Índice: aspecto declared + escenarios enlazados
+├── matriz-comparativa-estilos.md# Comparativa de estilos arquitectónicos
 ├── utility-tree.md              # Árbol de utilidad (diagrama + explicación)
 └── ia.md                        # Registro de uso de IA en el proyecto
-app/                              # Esqueleto FastAPI del monolito modular
-├── main.py                       # Composición de la aplicación
-├── shared/                       # Código compartido
-├── productos/                    # Módulo de productos
-├── proveedores/                  # Módulo de proveedores
-├── inventario/                   # Módulo de inventario
-├── usuarios/                     # Módulo de usuarios
-└── alertas/                      # Módulo de alertas
-tests/                            # Prueba automatizada del esqueleto
+app/                             # Esqueleto FastAPI del monolito modular
+├── main.py                      # Composición de la aplicación
+├── shared/                      # Código compartido
+├── productos/                   # Módulo de productos
+├── proveedores/                 # Módulo de proveedores
+├── inventario/                  # Módulo de inventario
+├── usuarios/                    # Módulo de usuarios
+└── alertas/                     # Módulo de alertas
+tests/                           # Prueba automatizada del esqueleto
 └── test_health.py
-requirements.txt                  # Dependencias del esqueleto
+requirements.txt                 # Dependencias del esqueleto
 ```
 
 ## Cómo ejecutar el esqueleto
@@ -236,7 +237,7 @@ python -m pytest -v
 |---|---|---|
 | S1 | Equipo, problema y repositorio | Completo |
 | S2 | Escenarios de calidad y restricciones | Completo |
-| S4 | Estrategia, matriz, ADR y esqueleto ejecutable | Completo |
+| S3 | Estrategia, matriz, ADR y esqueleto ejecutable | Completo |
 
 ## Uso de IA
 
