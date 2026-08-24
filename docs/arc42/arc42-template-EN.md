@@ -229,7 +229,7 @@ La estrategia responde a los objetivos de calidad así:
 
 Las alternativas y sus consecuencias están documentadas en la
 [matriz comparativa](../matriz-comparativa-estilos.md) y en el
-[ADR-0001](../adr/0001-estilo-arquitectonico.md).
+[ADR-0001](../adr/0001-usar-monolito-modular-con-hexagonal-por-modulo.md).
 
 # Building Block View
 
@@ -269,10 +269,13 @@ a ESC-05.)*
 
 Las decisiones arquitectónicas se documentan como archivos individuales en
 [`docs/adr/`](../adr/), siguiendo el modelo de trazabilidad
-Aspecto → Requisito → C4 → ADR → Código → Pruebas → Evidencia. Aún no hay
-decisiones registradas; la primera candidata natural es cómo se garantiza
-la consistencia en movimientos concurrentes (ver ESC-01 y la sección
-10.3 de trade-offs).
+Aspecto → Requisito → C4 → ADR → Código → Pruebas → Evidencia.
+
+- **[ADR-0001](../adr/0001-usar-monolito-modular-con-hexagonal-por-modulo.md)** — Monolito Modular con Hexagonal por módulo. Estado: propuesto, pendiente de ratificación del equipo.
+
+Sigue pendiente cómo se garantiza la consistencia en movimientos
+concurrentes para el aspecto declarado (ver ESC-01 y la sección 10.3 de
+trade-offs) — será el ADR-0002.
 
 # Quality Requirements
 
