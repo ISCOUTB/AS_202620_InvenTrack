@@ -1,8 +1,8 @@
 # Ficha del Problema
 
-**Proyecto:** InvenTrack — Sistema Inteligente de Inventarios
-**Curso:** Arquitectura de Software — AS_202620
-**Repositorio:** AS_202620_InvenTrack (organización ISCOUTB)
+**Proyecto:** InvenTrack — Sistema Inteligente de Inventarios  
+**Curso:** Arquitectura de Software — AS_202620  
+**Repositorio:** AS_202620_InvenTrack (organización ISCOUTB)  
 
 ---
 
@@ -44,15 +44,18 @@ además de alertas automáticas cuando el stock de un producto baja de un umbral
 como extensión futura, condicionada a contar con suficiente volumen de datos históricos,
 sin comprometer la base arquitectónica definida en esta entrega.
 
-## 4. Aspecto de calidad declarado
+## 4. Aspecto de calidad declarado y tensiones de calidad
 
-**Consistencia de datos.** El sistema debe garantizar que los movimientos de inventario
-(entradas, salidas, ajustes) registrados por distintos usuarios de forma simultánea no
-generen datos inconsistentes (por ejemplo, stock negativo o doble descuento del mismo
-movimiento). Un inventario que reporta cifras incorrectas es peor que uno manual, porque
-genera falsa confianza en la toma de decisiones.
+### Aspecto prioritario: Consistencia de datos
+El sistema debe garantizar que los movimientos de inventario (entradas, salidas, ajustes) registrados por distintos usuarios de forma simultánea no generen datos inconsistentes (por ejemplo, stock negativo o doble descuento del mismo movimiento). Un inventario que reporta cifras incorrectas es peor que uno manual, porque genera falsa confianza en la toma de decisiones.
 
-Ver detalle de justificación y decisiones asociadas en [`docs/aspectos.md`](aspectos.md).
+### Tensiones entre atributos de calidad
+Para satisfacer este aspecto de calidad, la arquitectura enfrenta dos tensiones fundamentales:
+
+1. **Consistencia de Datos vs. Rendimiento / Latencia:** Garantizar la consistencia en registros concurrentes exige mecanismos de bloqueo (pesimista/optimista) o niveles estrictos de aislamiento en transacciones (ej. `SERIALIZABLE`). Esto incrementa la latencia y reduce el rendimiento de respuesta ante ráfagas simultáneas de peticiones.
+2. **Consistencia de Datos vs. Disponibilidad:** En escenarios de fallos o degradación de red en el módulo de inventario, priorizar la consistencia estricta implica rechazar o bloquear transacciones dudosas en lugar de permitir escrituras no verificadas, afectando temporalmente la disponibilidad del servicio de registro.
+
+Ver detalle de justificación, escenarios y la tabla de trazabilidad en [`docs/aspectos.md`](aspectos.md).
 
 ## 5. Usuarios objetivo
 
