@@ -38,9 +38,9 @@ flowchart TB
     Correo electrónico: entrega
     alertas de stock bajo"]
 
-    Dueno -- "Usa (HTTPS)" --> InvenTrack
-    Empleado -- "Usa (HTTPS)" --> InvenTrack
-    InvenTrack -- "Envía alerta de stock bajo (SMTP / API)" --> Notif
+    Dueno -->|Usa HTTPS| InvenTrack
+    Empleado -->|Usa HTTPS| InvenTrack
+    InvenTrack -->|Envía alerta de stock bajo via SMTP / API| Notif
 
     classDef person fill:#1168bd,stroke:#0b4884,color:#ffffff,font-weight:bold
     classDef system fill:#0d3b66,stroke:#082746,color:#ffffff,font-weight:bold
