@@ -1,7 +1,5 @@
 # Aspectos de Calidad
 
-## Qué es este documento
-
 Este archivo sigue el modelo de trazabilidad visto en clase:
 
 ```
@@ -11,20 +9,25 @@ Aspecto → Requisito → C4 → ADR → Código → Pruebas → Evidencia
 Un **aspecto** no es una capa del sistema ni un módulo — es un corte
 vertical, de punta a punta, que se puede recorrer completo: desde la
 necesidad que lo justifica hasta la evidencia que demuestra que se
-cumplió. Por eso cada fila de este documento va acumulando enlaces a
-medida que avanza el curso: primero el requisito y los escenarios que lo
-refinan, después el diagrama C4 donde vive, después el ADR con la decisión
-técnica, después el código y las pruebas, y al final la evidencia (por
-ejemplo, un run de CI).
+cumplió. La tabla de abajo tiene una fila por aspecto declarado, con las
+ocho columnas que exige el curso; cada celda enlaza al artefacto real
+cuando existe, o dice explícitamente "Pendiente" cuando no — una celda no
+puede quedar con un texto que no lleve a ninguna parte.
 
 Por ahora el equipo ha declarado **un solo aspecto**: Consistencia de
 datos. Puede haber más aspectos declarados en semanas futuras si el
 equipo decide convertir otro atributo de calidad priorizado (por ejemplo
-Disponibilidad o Seguridad, ver el árbol de utilidad) en su propio corte
-vertical — en ese momento se agregaría una sección nueva a este mismo
-documento, con la misma estructura que la de abajo.
+Disponibilidad o Seguridad, ver el [árbol de utilidad](utility-tree.md))
+en su propio corte vertical — en ese momento se agregaría una fila nueva
+a esta misma tabla.
 
-## Aspecto declarado: Consistencia de datos
+## Tabla de trazabilidad
+
+| ID | Aspecto | Requisito | C4 | ADR | Código | Pruebas | Evidencia |
+|---|---|---|---|---|---|---|---|
+| ASP-01 | [Consistencia de datos](#asp-01--consistencia-de-datos) | [ESC-01, ESC-02](arc42/arc42-template-EN.md#quality-scenarios) | [C4 de contexto](c4/context.md) — módulo `inventario` | [ADR-0001](adr/0001-usar-monolito-modular-con-hexagonal-por-modulo.md) — define el módulo `inventario` como límite; el mecanismo específico de concurrencia sigue pendiente (ADR-0002) | [`app/inventario/`](../app/inventario/) (esqueleto de módulo, sin lógica de negocio aún) | Pendiente — [`tests/test_health.py`](../tests/test_health.py) existe pero aún no cubre este aspecto | Pendiente |
+
+## ASP-01 — Consistencia de datos
 
 ### Descripción
 
@@ -61,7 +64,7 @@ el motivo por el que este aspecto tiene la prioridad más alta de todo el
 árbol de utilidad — impacto de negocio alto y riesgo técnico alto en su
 escenario principal (ESC-01).
 
-### Escenarios de calidad (Semana 2)
+### Requisito: escenarios de calidad
 
 Este aspecto se refinó en dos escenarios de calidad medibles, documentados en
 [`docs/arc42/arc42-template-EN.md`](arc42/arc42-template-EN.md) (sección Quality
@@ -82,21 +85,31 @@ Requirements) y en el [árbol de utilidad](utility-tree.md):
 **Por qué solo estos dos y no los cinco escenarios de la arc42:** el
 arc42 documenta cinco escenarios en total (ESC-01 a ESC-05), cubriendo
 distintos atributos de calidad priorizados. Aquí solo se enlazan los que
-**pertenecen a este aspecto específico** — es decir, los que refinan
-Consistencia de datos. Los otros tres (Disponibilidad, Rendimiento,
-Seguridad) están documentados igual de completos en el arc42, pero no
-tienen fila propia aquí todavía porque no se ha declarado un aspecto
-propio para ellos.
+**pertenecen a este aspecto específico**. Los otros tres (Disponibilidad,
+Rendimiento, Seguridad) están documentados igual de completos en el
+arc42, pero no tienen fila propia aquí todavía porque no se ha declarado
+un aspecto propio para ellos.
 
-El [diagrama de contexto](c4/context.md) muestra dónde vive este aspecto: en el
-módulo de registro de movimientos dentro de InvenTrack, expuesto a los dos actores
-(Dueño y Empleado) que pueden operar de forma simultánea.
+### C4: dónde vive este aspecto
 
-### Cómo se va a evaluar / demostrar
+El [diagrama de contexto](c4/context.md) muestra que este aspecto vive en
+el módulo de registro de movimientos dentro de InvenTrack, expuesto a los
+dos actores (Dueño y Empleado) que pueden operar de forma simultánea. En
+la estructura de código, corresponde al módulo
+[`app/inventario/`](../app/inventario/), definido en el
+[ADR-0001](adr/0001-usar-monolito-modular-con-hexagonal-por-modulo.md)
+como parte del Monolito Modular.
 
-Se documentará más adelante el mecanismo elegido para garantizar consistencia en
-movimientos concurrentes. Las alternativas que el equipo tiene sobre la mesa, y que se
-convertirán en un ADR cuando se elija una:
+### ADR: estilo definido, mecanismo técnico pendiente
+
+El [ADR-0001](adr/0001-usar-monolito-modular-con-hexagonal-por-modulo.md)
+ya resuelve dónde vive este aspecto en el código (módulo `inventario`,
+con dominio separado de infraestructura vía hexagonal) y fue evaluado
+explícitamente contra ESC-01 y ESC-02 en la
+[matriz comparativa](matriz-comparativa-estilos.md). Lo que sigue
+pendiente es el **mecanismo concreto** para garantizar consistencia en
+movimientos concurrentes — ese será el ADR-0002. Las alternativas que el
+equipo tiene sobre la mesa para esa segunda decisión:
 
 - **Transacciones con nivel de aislamiento adecuado** (ej. `SERIALIZABLE` o
   `REPEATABLE READ` según el motor de base de datos), dejando que la base de datos
@@ -112,15 +125,23 @@ convertirán en un ADR cuando se elija una:
 Cualquiera de estas opciones implica un trade-off distinto con Rendimiento
 (ver la sección "Trade-offs y tensiones identificadas" del arc42), así que
 la elección no se hará solo por facilidad de implementación, sino
-evaluada contra ESC-01 y su medida verificable. Esa decisión se
-registrará como ADR en [`docs/adr/`](adr/) y se enlazará aquí. Esta
-sección se irá actualizando a medida que el equipo tome esas decisiones
-de diseño.
+evaluada contra ESC-01 y su medida verificable.
+
+### Código y pruebas (pendiente)
+
+El módulo `app/inventario/` existe como esqueleto (`domain/`,
+`application/`, `infrastructure/`, todos vacíos por ahora, según define el
+ADR-0001) — todavía no contiene la lógica de negocio ni el mecanismo de
+concurrencia. `tests/test_health.py` prueba que la aplicación arranca,
+pero no cubre este aspecto todavía; la prueba de concurrencia con 50
+transacciones simultáneas (la medida de ESC-01) se agregará junto con el
+ADR-0002.
 
 ### Estado
 
 - [x] Aspecto identificado y declarado
 - [x] Escenarios de calidad definidos (ESC-01, ESC-02)
-- [ ] Mecanismo técnico de garantía definido (ADR pendiente)
+- [x] Módulo del esqueleto delimitado (`app/inventario/`, vía ADR-0001)
+- [ ] Mecanismo técnico de garantía definido (ADR-0002 pendiente)
 - [ ] Mecanismo implementado
 - [ ] Pruebas de concurrencia realizadas

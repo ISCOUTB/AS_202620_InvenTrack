@@ -371,6 +371,8 @@ secciones para saber por qué un escenario importa más que otro.
 - **Respuesta:** el sistema serializa las transacciones concurrentes y aplica ambos descuentos de forma consistente, o rechaza uno si el stock resultante sería negativo.
 - **Medida (verificable):** 0 casos de stock negativo y 0 casos de doble descuento del mismo movimiento en el 100 % de una prueba de concurrencia con 50 transacciones simultáneas sobre el mismo producto.
 
+> Este escenario motivó la decisión de estructura en [ADR-0001](../adr/0001-usar-monolito-modular-con-hexagonal-por-modulo.md).
+
 ### ESC-02 — Consistencia de datos (integridad referencial)
 
 *Perspectiva: Operaciones y seguridad · Prioridad (M, M)*
