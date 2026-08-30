@@ -235,19 +235,170 @@ Las alternativas y sus consecuencias están documentadas en la
 
 ## Whitebox Overall System
 
-La vista inicial de bloques está representada por un único despliegue de
-InvenTrack con módulos funcionales separados. Cada módulo tendrá sus propios
-dominio, aplicación e infraestructura; los paquetes actuales son un esqueleto
-vacío para hacer visibles esos límites antes de implementar la lógica.
+InvenTrack se implementa como un Monolito Modular. La aplicación se despliega como una sola unidad, pero su estructura interna está dividida en módulos funcionales con responsabilidades y límites explícitos.
 
-## Level 2
+Los módulos principales definidos para el MVP son:
 
-## Level 3
+* `productos`
+* `proveedores`
+* `inventario`
+* `usuarios`
+* `alertas`
+
+La decisión de utilizar estos módulos responde a los principales dominios funcionales identificados en el alcance del sistema. Cada módulo aplica internamente una organización inspirada en Arquitectura Hexagonal, separando dominio, aplicación e infraestructura.
+
+```mermaid
+flowchart TB
+
+    IT["InvenTrack<br/>Modular Monolith"]
+
+    IT --> PROD["Productos"]
+    IT --> INV["Inventario"]
+    IT --> USERS["Usuarios"]
+    IT --> PROV["Proveedores"]
+    IT --> ALERT["Alertas"]
+```
+### Responsabilidades
+
+| Bloque        | Responsabilidad                                                                                                            |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `productos`   | Gestionar la información del catálogo de productos.                                                                        |
+| `proveedores` | Gestionar la información de proveedores asociados al negocio.                                                              |
+| `inventario`  | Coordinar consultas de stock y, posteriormente, los movimientos de inventario y la estrategia de consistencia.             |
+| `usuarios`    | Gestionar usuarios, roles y acceso al sistema.                                                                             |
+| `alertas`     | Gestionar las alertas relacionadas con condiciones como stock bajo.                                                        |
+| `shared`      | Contener elementos realmente compartidos entre módulos, evitando convertirlo en un módulo de dependencias indiscriminadas. |
+| `main.py`     | Componer y arrancar la aplicación.                                                                                         |
+
+## Level 2 — Módulo Inventario
+
+El módulo `inventario` es arquitectónicamente relevante porque concentra el aspecto de calidad prioritario del proyecto: Consistencia de datos.
+
+Su estructura sigue la separación:
+
+```text
+inventario/
+├── domain/
+├── application/
+└── infrastructure/
+```
+
+### Domain
+
+Contiene los conceptos y reglas propias del dominio de inventario.
+
+No debe depender de:
+
+* FastAPI.
+* Uvicorn.
+* HTTP.
+* Base de datos concreta.
+* Frameworks externos.
+
+### Application
+
+Contiene los casos de uso y coordina el flujo entre el dominio y los puertos necesarios.
+
+En el incremento actual, el caso de uso mínimo es la consulta de inventario de un producto.
+
+### Infrastructure
+
+Contiene los adaptadores que permiten conectar el módulo con el exterior.
+
+En el corte vertical inicial incluye:
+
+* Adaptador HTTP.
+* Implementación inicial del acceso a datos.
+
+La infraestructura depende de la aplicación, pero el dominio no depende de la infraestructura.
+
+```mermaid
+flowchart TB
+
+    subgraph INV["Módulo Inventario"]
+
+        INF["Infrastructure"]
+        APP["Application"]
+        DOM["Domain"]
+
+        INF --> APP
+        APP --> DOM
+
+    end
+
+    HTTP["Cliente HTTP"] --> INF
+```
+## Level 3 — Corte vertical inicial
+
+El primer corte vertical implementado recorre las tres partes del módulo `inventario`.
+
+```mermaid
+flowchart LR
+
+    HTTP["HTTP Request"]
+
+    INF["Infrastructure"]
+
+    APP["Application"]
+
+    DOM["Domain"]
+
+    RESP["Response"]
+
+    HTTP --> INF
+    INF --> APP
+    APP --> DOM
+
+    DOM --> APP
+    APP --> INF
+    INF --> RESP
+```
+Este corte no pretende implementar todavía toda la gestión del inventario. Su objetivo es demostrar que la arquitectura definida por el ADR-0001 puede ejecutarse mediante un flujo completo de punta a punta.
 
 # Runtime View
 
-*(Pendiente — se completará con al menos un escenario de ejecución, muy
-probablemente el de ESC-01, que es el de mayor prioridad.)*
+## Consulta de inventario
+
+El primer escenario de ejecución implementado corresponde a una consulta mínima del inventario.
+
+```mermaid
+sequenceDiagram
+
+    actor U as Usuario
+    participant API as Infrastructure/API
+    participant APP as Application
+    participant DOM as Domain
+
+    U->>API: GET /inventario/{id}
+
+    API->>APP: Consultar inventario
+
+    APP->>DOM: Ejecutar caso de uso
+
+    DOM-->>APP: Resultado
+
+    APP-->>API: Resultado
+
+    API-->>U: HTTP Response
+```
+### Secuencia
+
+1. El usuario realiza una solicitud HTTP para consultar un producto.
+2. El adaptador HTTP recibe la solicitud.
+3. El adaptador delega la operación al caso de uso de la capa `application`.
+4. El caso de uso utiliza el modelo o servicio correspondiente del dominio.
+5. Se obtiene el resultado.
+6. La infraestructura transforma el resultado en una respuesta HTTP.
+
+Este escenario demuestra el flujo de dependencias definido en el ADR-0001 sin incorporar todavía lógica relacionada con movimientos concurrentes.
+
+## Movimiento concurrente de inventario
+
+El escenario ESC-01 continúa siendo el principal escenario arquitectónico para el aspecto Consistencia de datos.
+
+Sin embargo, su mecanismo concreto de ejecución permanece pendiente del ADR-0002, donde se decidirá la estrategia de concurrencia.
+
+Por tanto, el corte vertical actual demuestra la arquitectura general, mientras que la serialización, bloqueo o control de concurrencia será incorporado posteriormente sobre el módulo `inventario`.
 
 # Deployment View
 
@@ -267,15 +418,61 @@ a ESC-05.)*
 
 # Architecture Decisions
 
-Las decisiones arquitectónicas se documentan como archivos individuales en
-[`docs/adr/`](../adr/), siguiendo el modelo de trazabilidad
-Aspecto → Requisito → C4 → ADR → Código → Pruebas → Evidencia.
+Las decisiones arquitectónicas de InvenTrack se documentan mediante **Architecture Decision Records (ADR)**.
 
-- **[ADR-0001](../adr/0001-usar-monolito-modular-con-hexagonal-por-modulo.md)** — Monolito Modular con Hexagonal por módulo. Estado: propuesto, pendiente de ratificación del equipo.
+El modelo de trazabilidad utilizado es:
+
+```text
+Aspecto → Requisito → C4 → ADR → Código → Pruebas → Evidencia
+```
+
+## ADR-0001 — Monolito Modular con Hexagonal por módulo
+
+La primera decisión arquitectónica establece:
+
+> InvenTrack se organiza como un Monolito Modular y cada módulo utiliza una separación entre Domain, Application e Infrastructure.
+
+Esta decisión permite:
+
+* Mantener un único despliegue.
+* Reducir complejidad para un equipo pequeño.
+* Separar los dominios funcionales.
+* Mantener la lógica de negocio independiente de FastAPI y otros detalles externos.
+* Facilitar las pruebas automatizadas.
+* Permitir una evolución futura de los módulos si el crecimiento lo justifica.
+
+Las alternativas consideradas incluyen arquitectura por capas, arquitectura hexagonal aplicada al sistema completo y microservicios.
+
+La decisión completa se encuentra en:
+
+`docs/adr/0001-usar-monolito-modular-con-hexagonal-por-modulo.md`
+
 
 Sigue pendiente cómo se garantiza la consistencia en movimientos
 concurrentes para el aspecto declarado (ver ESC-01 y la sección 10.3 de
 trade-offs) — será el ADR-0002.
+
+```mermaid
+flowchart TB
+
+    REQ["Requisitos y<br/>Escenarios de calidad"]
+
+    ADR1["ADR-0001<br/>Monolito Modular +<br/>Hexagonal por módulo"]
+
+    CODE["Estructura del código"]
+
+    TEST["Pruebas"]
+
+    REQ --> ADR1
+
+    ADR1 --> CODE
+
+    CODE --> TEST
+
+    ADR2["ADR-0002<br/>Concurrencia<br/>(Pendiente)"]
+
+    REQ -.-> ADR2
+```
 
 # Quality Requirements
 
@@ -471,3 +668,10 @@ componentes de código sobre los cuales identificar riesgos concretos.)*
 | Trade-off | Tensión entre dos atributos de calidad, donde mejorar uno con una táctica concreta puede afectar al otro; se resuelve con evidencia, no con reglas absolutas. |
 | ADR | Architecture Decision Record: registro de una decisión arquitectónica, su contexto, las alternativas consideradas y sus consecuencias. |
 | Decisión arquitectónica | Aquella cuyo costo de reversión es alto; cambiarla obliga a tocar varias partes del sistema, migrar datos o renegociar con terceros. |
+| Monolito Modular | Aplicación desplegada como una única unidad, pero organizada internamente en módulos funcionales con responsabilidades y límites explícitos. |
+| Arquitectura Hexagonal | Organización arquitectónica aplicada dentro de cada módulo para separar la lógica del negocio de los detalles externos, distinguiendo Domain, Application e Infrastructure. |
+| Domain | Parte del módulo que contiene los conceptos y reglas propias del negocio y no depende de frameworks, HTTP, bases de datos concretas u otros detalles externos. |
+| Application | Parte del módulo que contiene y coordina los casos de uso entre el dominio y los puertos o adaptadores necesarios. |
+| Infrastructure | Parte del módulo que contiene los adaptadores y detalles técnicos que conectan la aplicación con elementos externos, como HTTP o mecanismos de acceso a datos. |
+| Corte vertical | Incremento que recorre de punta a punta las partes necesarias de la arquitectura para demostrar un flujo funcional completo, desde una solicitud externa hasta su respuesta. |
+| Concurrencia | Situación en la que dos o más operaciones pueden ejecutarse o afectar simultáneamente un mismo recurso del sistema, como el inventario de un producto. |
