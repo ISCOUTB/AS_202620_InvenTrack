@@ -17,75 +17,79 @@ interesados antes de discutir cómo se construye por dentro.
 ```mermaid
 flowchart TB
     Dueno["Dueño de la PYME
-    Persona
-    Consulta inventario, reportes e
-    historial; gestiona usuarios
-    y proveedores"]
+    Rol: Administrador"]
+    Vendedor["Vendedor
+    Rol: Operador de Ventas"]
+    Empleado["Empleado de bodega
+    Rol: Operador de Inventario"]
+    InvenTrack[["InvenTrack
+    Gestión de inventario"]]
+    Notif(["Notificaciones
+    Sistema externo (correo)"])
+    Bandeja(["Bandeja
+    Endpoint final"])
 
-    Empleado["Empleado / Vendedor
-    Persona
-    Registra entradas y salidas;
-    consulta stock actual"]
-
-    InvenTrack["InvenTrack
-    Sistema de software
-    Centraliza productos, proveedores,
-    movimientos de inventario, usuarios
-    y alertas de stock bajo"]
-
-    Notif["Servicio de notificaciones
-    Sistema externo
-    Correo electrónico: entrega
-    alertas de stock bajo"]
-
-    Dueno -- "Usa (HTTPS)" --> InvenTrack
-    Empleado -- "Usa (HTTPS)" --> InvenTrack
-    InvenTrack -- "Envía alerta de stock bajo (SMTP / API)" --> Notif
+    Dueno -- HTTPS --> InvenTrack
+    Vendedor -- HTTPS --> InvenTrack
+    Empleado -- HTTPS --> InvenTrack
+    InvenTrack -- SMTP --> Notif
+    Notif -- entrega --> Bandeja
 
     classDef person fill:#1168bd,stroke:#0b4884,color:#ffffff,font-weight:bold
-    classDef system fill:#0d3b66,stroke:#082746,color:#ffffff,font-weight:bold
-    classDef external fill:#8a8a8a,stroke:#5c5c5c,color:#ffffff,font-weight:bold
+    classDef system fill:#08427b,stroke:#052e56,color:#ffffff,font-weight:bold
+    classDef external fill:#999999,stroke:#6b6b6b,color:#ffffff,font-weight:bold
 
-    class Dueno,Empleado person
+    class Dueno,Vendedor,Empleado person
     class InvenTrack system
-    class Notif external
+    class Notif,Bandeja external
 ```
 
-**Leyenda:** azul claro = persona (actor humano), azul oscuro = el
-sistema InvenTrack (lo que este proyecto construye), gris = sistema
-externo (algo que ya existe, fuera del control del equipo).
+## Leyenda
 
-## Actores y sistemas, explicados uno por uno
+| Color | Hex | Significado |
+|---|---|---|
+| Azul medio | `#1168bd` | **Persona** — actor humano que usa el sistema |
+| Azul oscuro | `#08427b` | **Sistema** — InvenTrack, el proyecto que estamos documentando |
+| Gris | `#999999` | **Externo** — sistema o endpoint fuera de nuestro control |
 
-| Actor / sistema | Tipo | Interacción con InvenTrack | Por qué está en el diagrama |
-|---|---|---|---|
-| Dueño de la PYME | Persona | Consulta inventario, reportes e historial de movimientos; gestiona usuarios y proveedores. | Es el interesado principal (ver Stakeholders en el arc42): sin su rol, no habría razón de negocio para el sistema. |
-| Empleado / vendedor | Persona | Registra entradas y salidas de mercancía; consulta stock actual. | Es quien dispara el escenario de mayor prioridad del proyecto (ESC-01): dos empleados operando al mismo tiempo es justamente la situación que pone a prueba la Consistencia de datos. |
-| InvenTrack | Sistema (este proyecto) | Centraliza productos, proveedores, movimientos de inventario, usuarios y alertas de stock bajo. | Es el sistema que se está documentando; en este nivel se trata como caja cerrada a propósito. |
-| Servicio de notificaciones (correo electrónico) | Sistema externo | Recibe la solicitud de alerta cuando un producto baja del umbral crítico y la entrega al destinatario. | Es el único sistema externo real del MVP: sin él, la funcionalidad "alertas de stock bajo" (declarada en el alcance de la ficha del problema) no se podría entregar. |
+> **Nota sobre la convención de color:** el estándar original del modelo
+> C4 (Simon Brown / Structurizr) usa persona en azul oscuro y sistema en
+> azul medio. Aquí se invierte a pedido del curso, para que el sistema en
+> desarrollo (InvenTrack) resalte visualmente como protagonista del
+> diagrama.
+
+## Roles y actores, explicados uno por uno
+
+| Actor | Tipo | Rol en el sistema | Qué hace | Por qué está en el diagrama |
+|---|---|---|---|---|
+| Dueño de la PYME | Persona | **Administrador** | Gestiona usuarios, proveedores y catálogo de productos; consulta reportes e historial completo de movimientos. | Es el interesado principal (ver Stakeholders en el arc42): sin su rol, no habría razón de negocio para el sistema. |
+| Vendedor | Persona | **Operador de Ventas** | Registra salidas de inventario por venta; consulta stock actual. | Dispara el escenario de mayor prioridad del proyecto (ESC-01): dos operadores registrando salidas al mismo tiempo es la situación que pone a prueba la Consistencia de datos. |
+| Empleado de bodega | Persona | **Operador de Inventario** | Registra entradas de mercancía y ajustes de inventario. | Junto con Vendedor, es el segundo actor que puede generar concurrencia sobre el mismo producto (ESC-01), y es quien opera físicamente el almacén. |
+| InvenTrack | Sistema (este proyecto) | — | Centraliza productos, proveedores, movimientos de inventario, usuarios y alertas de stock bajo. | Es el sistema que se está documentando; en este nivel se trata como caja cerrada a propósito. |
+| Notificaciones | Sistema externo | — | Recibe la solicitud de alerta cuando un producto baja del umbral crítico y la entrega por correo electrónico. | Es el único sistema externo real del MVP: sin él, la funcionalidad "alertas de stock bajo" (declarada en el alcance de la ficha del problema) no se podría entregar. |
+| Bandeja | Endpoint | — | Bandeja de correo donde finalmente llega la alerta (del Dueño, Vendedor o Empleado, según a quién se configure notificar). | Cierra el ciclo de la notificación: sin este endpoint, "Notificaciones" quedaría como una caja que solo recibe, sin mostrar a dónde entrega. |
+
+**Por qué tres roles y no solo "Dueño" y "Empleado":** el escenario ESC-05
+(control de acceso por rol, en la sección Quality Requirements del arc42)
+exige verificar permisos sobre roles específicos. Con solo dos actores
+genéricos, "Dueño" y "Administrador" terminaban confundiéndose como si
+fueran roles distintos sin serlo realmente. Separar Vendedor y Empleado
+de bodega, y nombrar el rol de cada uno explícitamente (Administrador,
+Operador de Ventas, Operador de Inventario), elimina esa ambigüedad y
+deja los tres roles de ESC-05 con un actor real detrás de cada uno.
 
 ## Por qué se eligieron esos protocolos en las flechas
 
 - **HTTPS** entre las personas e InvenTrack: es el protocolo estándar para
   cualquier interfaz web, y es consistente con la restricción C5 (sin
   presupuesto para servicios de pago) — no requiere licencias ni
-  infraestructura adicional.
-- **SMTP / API** hacia el servicio de notificaciones: se dejan ambas
-  opciones abiertas a propósito, porque todavía no se ha decidido si el
-  envío de correos se hace directo por SMTP o a través de la API de un
-  proveedor de correo transaccional. Esa decisión se tomará junto con el
-  stack técnico y quedará registrada como ADR.
-
-## Por qué el Proveedor no aparece como actor externo
-
-El Proveedor es un interesado real (está en la tabla de Stakeholders del
-arc42), pero **no interactúa directamente con el sistema**: sus datos
-(catálogo, órdenes) los ingresan manualmente el Dueño o el Empleado dentro
-de InvenTrack. No hay integración directa con sistemas de proveedores en
-el MVP — por eso, aunque el Proveedor le importa al negocio, no aparece
-como caja en un diagrama de *contexto del sistema*, porque ese diagrama
-solo dibuja actores y sistemas que efectivamente se comunican con
-InvenTrack.
+  infraestructura adicional. También conecta con la restricción C1 (Ley
+  1581 de 2012): HTTPS cifra los datos en tránsito, protegiendo
+  credenciales y datos personales.
+- **SMTP** hacia Notificaciones: protocolo estándar de envío de correo;
+  se mantiene simple porque la decisión de stack (y si se usa un
+  proveedor transaccional con API propia en vez de SMTP directo) todavía
+  está pendiente — se documentará como ADR cuando se decida.
 
 ## Qué falta y qué sigue
 
