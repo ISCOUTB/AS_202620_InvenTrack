@@ -357,7 +357,7 @@ Este corte no pretende implementar todavía toda la gestión del inventario. Su 
 
 # Runtime View
 
-## 5.1 Consulta de inventario
+## Consulta de inventario
 
 El primer escenario de ejecución implementado corresponde a una consulta mínima del inventario.
 
@@ -392,7 +392,7 @@ sequenceDiagram
 
 Este escenario demuestra el flujo de dependencias definido en el ADR-0001 sin incorporar todavía lógica relacionada con movimientos concurrentes.
 
-## 5.2 Movimiento concurrente de inventario
+## Movimiento concurrente de inventario
 
 El escenario ESC-01 continúa siendo el principal escenario arquitectónico para el aspecto Consistencia de datos.
 
@@ -668,3 +668,10 @@ componentes de código sobre los cuales identificar riesgos concretos.)*
 | Trade-off | Tensión entre dos atributos de calidad, donde mejorar uno con una táctica concreta puede afectar al otro; se resuelve con evidencia, no con reglas absolutas. |
 | ADR | Architecture Decision Record: registro de una decisión arquitectónica, su contexto, las alternativas consideradas y sus consecuencias. |
 | Decisión arquitectónica | Aquella cuyo costo de reversión es alto; cambiarla obliga a tocar varias partes del sistema, migrar datos o renegociar con terceros. |
+| Monolito Modular | Aplicación desplegada como una única unidad, pero organizada internamente en módulos funcionales con responsabilidades y límites explícitos. |
+| Arquitectura Hexagonal | Organización arquitectónica aplicada dentro de cada módulo para separar la lógica del negocio de los detalles externos, distinguiendo Domain, Application e Infrastructure. |
+| Domain | Parte del módulo que contiene los conceptos y reglas propias del negocio y no depende de frameworks, HTTP, bases de datos concretas u otros detalles externos. |
+| Application | Parte del módulo que contiene y coordina los casos de uso entre el dominio y los puertos o adaptadores necesarios. |
+| Infrastructure | Parte del módulo que contiene los adaptadores y detalles técnicos que conectan la aplicación con elementos externos, como HTTP o mecanismos de acceso a datos. |
+| Corte vertical | Incremento que recorre de punta a punta las partes necesarias de la arquitectura para demostrar un flujo funcional completo, desde una solicitud externa hasta su respuesta. |
+| Concurrencia | Situación en la que dos o más operaciones pueden ejecutarse o afectar simultáneamente un mismo recurso del sistema, como el inventario de un producto. |
