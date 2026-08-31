@@ -396,7 +396,7 @@ Este escenario demuestra el flujo de dependencias definido en el ADR-0001 sin in
 
 El escenario ESC-01 continúa siendo el principal escenario arquitectónico para el aspecto Consistencia de datos.
 
-Sin embargo, su mecanismo concreto de ejecución permanece pendiente del ADR-0002, donde se decidirá la estrategia de concurrencia.
+Sin embargo, su mecanismo concreto de ejecución permanece pendiente del ADR-0003, donde se decidirá la estrategia de concurrencia.
 
 Por tanto, el corte vertical actual demuestra la arquitectura general, mientras que la serialización, bloqueo o control de concurrencia será incorporado posteriormente sobre el módulo `inventario`.
 
@@ -494,7 +494,7 @@ La decisión completa se encuentra en:
 
 Sigue pendiente cómo se garantiza la consistencia en movimientos
 concurrentes para el aspecto declarado (ver ESC-01 y la sección 10.3 de
-trade-offs) — será el ADR-0002.
+trade-offs) — será el ADR-0003.
 
 ```mermaid
 flowchart TB
@@ -513,9 +513,9 @@ flowchart TB
 
     CODE --> TEST
 
-    ADR2["ADR-0002<br/>Concurrencia<br/>(Pendiente)"]
+    ADR3["ADR-0003<br/>Concurrencia<br/>(Pendiente)"]
 
-    REQ -.-> ADR2
+    REQ -.-> ADR3
 ```
 
 # Quality Requirements
