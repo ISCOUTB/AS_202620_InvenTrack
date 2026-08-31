@@ -426,7 +426,7 @@ python -m uvicorn app.main:app --reload
 
 El despliegue productivo, el hosting y la infraestructura definitiva permanecen pendientes de decisión, debido a la restricción C7 sobre la disponibilidad técnica de las PYMEs piloto.
 
-6.2 Infrastructure Level 2
+## Infrastructure Level 2
 
 Dentro del proceso de InvenTrack se encuentran los módulos definidos por la arquitectura:
 
@@ -489,7 +489,7 @@ Las alternativas consideradas incluyen arquitectura por capas, arquitectura hexa
 
 La decisión completa se encuentra en:
 
-`docs/adr/0001-usar-monolito-modular-con-hexagonal-por-modulo.md`
+[ADR-0001 — Monolito Modular con Hexagonal por módulo](../adr/0001-usar-monolito-modular-con-hexagonal-por-modulo.md)
 
 
 Sigue pendiente cómo se garantiza la consistencia en movimientos
