@@ -81,16 +81,9 @@ vigente, no es el caso.
 
 | Contenedor en el diagrama | Corresponde a | Estado |
 |---|---|---|
-| API Backend | Toda la carpeta [`app/`](../../app/) — un único proceso FastAPI que ensambla los cinco módulos en `app/main.py` | Esqueleto ejecutable (endpoint `/health` únicamente, sin lógica de negocio aún) |
+| API Backend | Toda la carpeta [`app/`](../../app/) — un único proceso FastAPI que ensambla los módulos en `app/main.py` | Funcional con Corte Vertical en [`app/productos/`](../../app/productos/) (Arquitectura Hexagonal completa) |
 | Interfaz web | Aún no existe en el repositorio | Pendiente — depende de la decisión de stack de frontend |
-| Base de datos | Aún no existe en el repositorio | Pendiente — depende de la decisión de stack de persistencia |
-
-**Los módulos (`app/productos/`, `app/proveedores/`, `app/inventario/`,
-`app/usuarios/`, `app/alertas/`), cada uno con su `domain/`,
-`application/` e `infrastructure/`, son estructura *interna* del
-contenedor "API Backend"** — no aparecen como cajas propias en este
-diagrama de Nivel 2 porque, para C4, siguen siendo el mismo contenedor
-desplegable. Su desglose correcto es el Nivel 3 (Componentes).
+| Base de datos | Módulo compartidos y repositorios en memoria | Implementado con adaptadores *In-Memory* para el corte vertical en `app/productos/infrastructure/` |
 
 ## Qué falta y qué sigue
 
