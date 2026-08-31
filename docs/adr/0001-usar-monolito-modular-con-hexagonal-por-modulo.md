@@ -1,39 +1,27 @@
 # ADR-0001: Monolito Modular con Hexagonal por módulo
 
-- **Estado:** Propuesto, pendiente de ratificación del equipo.
-- **Fecha:** 2026-08-22.
+- **Estado:** Aceptado
+- **Fecha:** 2026-08-30.
 - **Decisores:** Equipo InvenTrack.
 
 ## Contexto
 
-InvenTrack necesita una base arquitectónica antes de implementar su MVP. El
-proyecto tiene un equipo de 3 a 4 personas, dedicación parcial, restricciones
-de costo y un aspecto central de consistencia de datos. Los dominios funcionales
-anticipados son productos, proveedores, inventario, usuarios y alertas.
+InvenTrack necesita una base arquitectónica antes de implementar su MVP. El proyecto tiene un equipo de 3 a 4 personas, dedicación parcial, restricciones de costo y un aspecto central de consistencia de datos. Los dominios funcionales anticipados son productos, proveedores, inventario, usuarios y alertas.
 
-La arquitectura debe permitir empezar por la estructura, mantener el dominio
-separable de FastAPI y la persistencia, y facilitar pruebas de ESC-01 y ESC-02
-sin levantar infraestructura real.
+La arquitectura debe permitir empezar por la estructura, mantener el dominio separable de FastAPI y la persistencia, y facilitar pruebas de ESC-01 y ESC-02 sin levantar infraestructura real.
 
 ## Alternativas consideradas
 
-1. **Arquitectura por capas:** rápida de iniciar y familiar, pero puede debilitar
-   los límites entre dominios y dispersar reglas entre servicios y repositorios.
-2. **Arquitectura hexagonal como monolito único:** ofrece excelente aislamiento
-   mediante puertos y adaptadores, pero no define por sí sola la separación entre
-   los cinco módulos funcionales.
-3. **Monolito modular con hexagonal por módulo:** combina límites por dominio,
-   testabilidad y un único proceso y despliegue.
-4. **Microservicios:** no se adopta por el costo operativo y la complejidad
-   desproporcionada para un equipo de 3-4 personas y un MVP académico.
+1. **Arquitectura por capas:** Rápida de iniciar y familiar, pero puede debilitar los límites entre dominios y dispersar reglas entre servicios y repositorios.
+2. **Arquitectura hexagonal como monolito único:** Ofrece excelente aislamiento mediante puertos y adaptadores, pero no define por sí sola la separación entre los cinco módulos funcionales.
+3. **Monolito modular con hexagonal por módulo:** Combina límites por dominio, testabilidad y un único proceso y despliegue.
+4. **Microservicios:** No se adopta por el costo operativo y la complejidad desproporcionada para un equipo de 3-4 personas y un MVP académico.
 
-La comparación detallada está en
-[matriz-comparativa-estilos.md](../matriz-comparativa-estilos.md).
+La comparación detallada está en [matriz-comparativa-estilos.md](../matriz-comparativa-estilos.md).
 
 ## Decisión
 
-Se adopta **Monolito Modular** como estilo general, con **Hexagonal (Puertos y
-Adaptadores)** dentro de cada módulo. La estructura inicial es:
+Se adopta **Monolito Modular** como estilo general, con **Hexagonal (Puertos y Adaptadores)** dentro de cada módulo. La estructura inicial es:
 
 ```text
 app/
@@ -73,6 +61,8 @@ composición de la aplicación se realiza en `app/main.py`.
   un monolito.
 - Esta decisión no resuelve aún la concurrencia de ESC-01, la idempotencia, la
   base de datos ni el despliegue; serán ADR posteriores.
+- El lenguaje (Python) no impone visual ni físicamente la restricción de importaciones entre módulos a menos que se configure una herramienta de análisis estático.
+- *Mitigación:* Se evaluará el uso de linters o reglas estáticas (ej. import-linter o pytest-archon) en el pipeline de CI para bloquear importaciones cruzadas prohibidas.
 
 ## Evidencia inicial
 
