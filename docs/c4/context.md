@@ -2,277 +2,608 @@
 
 ## 1. Propósito del diagrama
 
-El modelo C4 permite representar la arquitectura de un sistema mediante
-diferentes niveles de abstracción. Cada nivel responde una pregunta diferente
-y evita mezclar información de contexto con detalles de implementación.
+Este documento presenta el **C4 Nivel 1 — Diagrama de Contexto** de
+**InvenTrack**, el sistema de gestión de inventarios para pequeñas y medianas
+empresas.
 
-Los cuatro niveles principales son:
+El objetivo de este nivel es mostrar a InvenTrack como una única caja lógica y
+explicar:
 
-1. **Nivel 1 — Contexto:** ¿quién utiliza el sistema y con qué sistemas
-   externos se relaciona?
-2. **Nivel 2 — Contenedores:** ¿qué partes principales componen el sistema?
-3. **Nivel 3 — Componentes:** ¿qué componentes existen dentro de cada
-   contenedor?
-4. **Nivel 4 — Código:** ¿cómo se implementan concretamente los componentes?
+- quiénes utilizan el sistema;
+- qué rol cumple cada persona;
+- qué responsabilidad tiene cada actor;
+- qué sistema externo utiliza InvenTrack;
+- qué información o acción intercambia cada actor con InvenTrack;
+- qué elementos pertenecen al alcance del proyecto y cuáles son externos.
 
-Este documento corresponde al:
+En C4, el diagrama de contexto representa el sistema que se está construyendo
+rodeado por las personas y sistemas de software con los que interactúa
+directamente. No se muestran todavía los módulos internos, clases, bases de
+datos
+ni componentes de InvenTrack, porque esos detalles corresponden a niveles
+posteriores de zoom.
 
-> **C4 Nivel 1 — Diagrama de Contexto de InvenTrack**
-
-El objetivo de este nivel es mostrar el sistema desde una perspectiva
-externa, identificando claramente:
-
-- Los actores humanos.
-- Los roles específicos de cada actor.
-- Las responsabilidades principales de cada actor.
-- El sistema que está siendo desarrollado.
-- Los sistemas externos relacionados.
-- Las relaciones entre los elementos.
-- El propósito de cada comunicación.
-- Los protocolos o medios de comunicación.
-- El límite entre InvenTrack y los elementos externos.
-
-En este nivel, **InvenTrack se considera una caja negra**. No se muestran
-todavía sus módulos internos, clases, base de datos, endpoints ni capas
-arquitectónicas, ya que estos elementos pertenecen a niveles posteriores
-del modelo C4.
+Por esta razón, **InvenTrack aparece como una única unidad** en este nivel.
 
 ---
 
-# 2. Diagrama de contexto
-
-El siguiente diagrama utiliza la notación C4 directamente mediante:
-
-- `Person` para representar personas.
-- `System` para representar el sistema principal.
-- `System_Ext` para representar sistemas externos.
-- `Rel` para representar relaciones entre los elementos.
+## 2. Diagrama
 
 ```mermaid
-C4Context
+flowchart LR
 
-title Diagrama de Contexto — InvenTrack
+    Dueno((👤<br/>Dueño de la PYME<br/>Administrador))
+    Vendedor((👤<br/>Vendedor<br/>Operador de Ventas))
+    Bodega((👤<br/>Empleado de bodega<br/>Operador de Inventario))
 
-' ============================================================
-' PERSONAS / ACTORES HUMANOS
-' ============================================================
+    InvenTrack([InvenTrack<br/>Sistema de Gestión de Inventarios])
 
-Person(
-    dueno,
-    "Dueño de la PYME",
-    "Administrador del sistema. Gestiona usuarios, productos, proveedores e inventario; consulta reportes, historial y recibe alertas."
-)
+    Correo([Servicio de correo electrónico<br/>Sistema externo])
 
-Person(
-    vendedor,
-    "Vendedor",
-    "Operador de Ventas. Consulta el stock y registra salidas de inventario generadas por las ventas."
-)
+    Dueno -->|Administra usuarios, productos y proveedores| InvenTrack
+    Vendedor -->|Registra ventas y consulta stock| InvenTrack
+    Bodega -->|Registra entradas y ajustes de inventario| InvenTrack
 
-Person(
-    bodeguero,
-    "Empleado de bodega",
-    "Operador de Inventario. Registra entradas de mercancía, ajustes y consulta las existencias."
-)
+    InvenTrack -->|Solicita envío de alertas de stock bajo| Correo
 
-' ============================================================
-' SISTEMA PRINCIPAL
-' ============================================================
 
-System(
-    inventrack,
-    "InvenTrack",
-    "Sistema de gestión de inventarios para PYMEs. Centraliza productos, proveedores, movimientos, usuarios, trazabilidad y alertas de stock bajo."
-)
+    classDef person fill:#438dd5,stroke:#2f6fae,color:#ffffff,stroke-width:2px
+    classDef system fill:#08427b,stroke:#052e56,color:#ffffff,stroke-width:3px
+    classDef external fill:#999999,stroke:#666666,color:#ffffff,stroke-width:2px
 
-' ============================================================
-' SISTEMA EXTERNO
-' ============================================================
+    class Dueno,Vendedor,Bodega person
+    class InvenTrack system
+    class Correo external
+```
 
-System_Ext(
-    correo,
-    "Servicio de correo electrónico",
-    "Servicio externo utilizado para entregar las alertas de stock bajo a los usuarios configurados."
-)
+---
 
-' ============================================================
-' RELACIONES DE LOS ACTORES CON INVENTRACK
-' ============================================================
+## 3. Leyenda del diagrama
 
-Rel(
-    dueno,
-    inventrack,
-    "Administra y consulta información del negocio",
-    "HTTPS"
-)
+La representación visual diferencia los tres tipos principales de elementos
+utilizados en este nivel.
 
-Rel(
-    vendedor,
-    inventrack,
-    "Consulta stock y registra salidas por ventas",
-    "HTTPS"
-)
+| Elemento visual | Tipo C4 | Significado |
+|---|---|---|
+| 👤 Círculo azul | **Person** | Persona o actor humano que interactúa directamente con InvenTrack |
+| Forma azul oscuro | **Software System** | Sistema que se encuentra dentro del alcance del proyecto |
+| Forma gris | **External Software System** | Sistema externo que InvenTrack utiliza pero que no forma parte del proyecto |
+| Flecha | **Relationship** | Relación o interacción entre dos elementos |
+| Texto sobre la flecha | **Descripción de relación** | Explica qué acción o información se intercambia |
 
-Rel(
-    bodeguero,
-    inventrack,
-    "Registra entradas, ajustes y consulta existencias",
-    "HTTPS"
-)
+### Convención de colores
 
-' ============================================================
-' RELACIÓN ENTRE INVENTRACK Y SISTEMA EXTERNO
-' ============================================================
+- **Azul medio:** personas que utilizan InvenTrack.
+- **Azul oscuro:** InvenTrack, sistema principal dentro del alcance.
+- **Gris:** sistema externo fuera del alcance del proyecto.
 
-Rel(
-    inventrack,
-    correo,
-    "Solicita el envío de alertas de stock bajo",
-    "SMTP / HTTPS"
-)
+El color no se utiliza como único indicador del significado: el tipo también
+se comunica mediante la forma, el símbolo de persona y la descripción textual.
+Esto permite que la interpretación del diagrama no dependa únicamente del
+color.
 
-' ============================================================
-' ENTREGA DE ALERTAS A LOS USUARIOS
-' ============================================================
+---
 
-Rel(
-    correo,
-    dueno,
-    "Entrega alertas configuradas",
-    "Correo electrónico"
-)
+## 4. Elementos del contexto
 
-Rel(
-    correo,
-    vendedor,
-    "Entrega alertas configuradas",
-    "Correo electrónico"
-)
+### 4.1 Dueño de la PYME
 
-Rel(
-    correo,
-    bodeguero,
-    "Entrega alertas configuradas",
-    "Correo electrónico"
-)
+**Tipo:** Person  
+**Rol:** Administrador
 
-' ============================================================
-' ESTILOS
-' ============================================================
+El dueño de la pequeña o mediana empresa es el responsable administrativo
+principal de InvenTrack.
 
-' ------------------------------------------------------------
-' PERSONAS
-' Azul medio
-' ------------------------------------------------------------
+Sus responsabilidades dentro del sistema son:
 
-UpdateElementStyle(
-    dueno,
-    $bgColor="#1168BD",
-    $fontColor="#FFFFFF",
-    $borderColor="#0B4884",
-    $shadowing="false"
-)
+- gestionar usuarios;
+- administrar el catálogo de productos;
+- gestionar proveedores;
+- consultar el inventario;
+- consultar el historial de movimientos;
+- revisar información relacionada con las operaciones del negocio;
+- supervisar las alertas de stock bajo.
 
-UpdateElementStyle(
-    vendedor,
-    $bgColor="#1168BD",
-    $fontColor="#FFFFFF",
-    $borderColor="#0B4884",
-    $shadowing="false"
-)
+Se representa como una **Person** porque es un actor humano que interactúa
+directamente con el sistema.
 
-UpdateElementStyle(
-    bodeguero,
-    $bgColor="#1168BD",
-    $fontColor="#FFFFFF",
-    $borderColor="#0B4884",
-    $shadowing="false"
-)
+El rol **Administrador** también permite relacionarlo con el escenario
+**ESC-05 — Control de acceso por rol**, donde se requiere distinguir los
+permisos de los diferentes tipos de usuario.
 
-' ------------------------------------------------------------
-' SISTEMA PRINCIPAL
-' Azul oscuro
-' ------------------------------------------------------------
+---
 
-UpdateElementStyle(
-    inventrack,
-    $bgColor="#08427B",
-    $fontColor="#FFFFFF",
-    $borderColor="#052E56",
-    $shadowing="false"
-)
+### 4.2 Vendedor
 
-' ------------------------------------------------------------
-' SISTEMA EXTERNO
-' Gris
-' ------------------------------------------------------------
+**Tipo:** Person  
+**Rol:** Operador de Ventas
 
-UpdateElementStyle(
-    correo,
-    $bgColor="#999999",
-    $fontColor="#FFFFFF",
-    $borderColor="#6B6B6B",
-    $shadowing="false"
-)
+El vendedor utiliza InvenTrack principalmente durante el proceso de venta.
 
-' ============================================================
-' ESTILOS DE RELACIONES
-' ============================================================
+Sus responsabilidades son:
 
-UpdateRelStyle(
-    dueno,
-    inventrack,
-    $textColor="#333333",
-    $lineColor="#1168BD"
-)
+- consultar la disponibilidad de productos;
+- registrar salidas de inventario asociadas a ventas;
+- consultar el stock actual;
+- generar movimientos que deben quedar registrados en el historial.
 
-UpdateRelStyle(
-    vendedor,
-    inventrack,
-    $textColor="#333333",
-    $lineColor="#1168BD"
-)
+El vendedor se separa deliberadamente del empleado de bodega porque ambos
+interactúan con el inventario, pero realizan operaciones diferentes.
 
-UpdateRelStyle(
-    bodeguero,
-    inventrack,
-    $textColor="#333333",
-    $lineColor="#1168BD"
-)
+Esta separación también es importante para el escenario:
 
-UpdateRelStyle(
-    inventrack,
-    correo,
-    $textColor="#333333",
-    $lineColor="#666666"
-)
+**ESC-01 — Registro simultáneo de salida del mismo producto.**
 
-UpdateRelStyle(
-    correo,
-    dueno,
-    $textColor="#333333",
-    $lineColor="#666666"
-)
+Por ejemplo, dos operadores pueden intentar registrar simultáneamente una
+salida del mismo producto. La arquitectura debe garantizar que esta situación
+no produzca stock negativo ni doble descuento.
 
-UpdateRelStyle(
-    correo,
-    vendedor,
-    $textColor="#333333",
-    $lineColor="#666666"
-)
+---
 
-UpdateRelStyle(
-    correo,
-    bodeguero,
-    $textColor="#333333",
-    $lineColor="#666666"
-)
+### 4.3 Empleado de bodega
 
-' ============================================================
-' CONFIGURACIÓN DE DISTRIBUCIÓN
-' ============================================================
+**Tipo:** Person  
+**Rol:** Operador de Inventario
 
-UpdateLayoutConfig(
-    $c4ShapeInRow="3",
-    $c4BoundaryInRow="1"
-)
+El empleado de bodega representa al usuario responsable de las operaciones
+físicas de inventario.
+
+Sus responsabilidades son:
+
+- registrar entradas de mercancía;
+- registrar ajustes de inventario;
+- consultar cantidades disponibles;
+- actualizar información relacionada con movimientos de inventario;
+- mantener la trazabilidad de las operaciones realizadas en bodega.
+
+Se representa como una persona independiente del vendedor porque su función
+dentro del negocio y sus permisos son diferentes.
+
+Esta separación permite que el modelo de contexto refleje de forma explícita
+los tres roles principales considerados para el sistema:
+
+1. **Administrador**
+2. **Operador de Ventas**
+3. **Operador de Inventario**
+
+---
+
+### 4.4 InvenTrack
+
+**Tipo:** Software System  
+**Alcance:** Sistema principal del proyecto
+
+**InvenTrack** es el sistema que se encuentra dentro del alcance de esta
+entrega.
+
+Su responsabilidad general es centralizar la gestión del inventario de una
+PYME.
+
+Entre las capacidades previstas se encuentran:
+
+- gestión de productos;
+- gestión de proveedores;
+- registro de entradas;
+- registro de salidas;
+- consulta del inventario actual;
+- gestión de usuarios;
+- historial de movimientos;
+- trazabilidad de operaciones;
+- alertas de stock bajo.
+
+En este nivel InvenTrack se representa como una sola unidad porque todavía no
+se está mostrando su estructura interna.
+
+La separación de:
+
+- `productos`
+- `proveedores`
+- `inventario`
+- `usuarios`
+- `alertas`
+
+pertenece al nivel arquitectónico interno y será desarrollada en el
+**C4 Nivel 2 — Diagrama de Contenedores**.
+
+---
+
+### 4.5 Servicio de correo electrónico
+
+**Tipo:** External Software System  
+**Alcance:** Fuera del proyecto
+
+El servicio de correo electrónico representa el sistema externo utilizado para
+entregar las alertas de stock bajo.
+
+InvenTrack genera una solicitud de envío cuando un producto alcanza o pasa por
+debajo del umbral crítico configurado.
+
+La responsabilidad de InvenTrack termina en la solicitud de envío al servicio
+externo. La infraestructura necesaria para entregar físicamente el correo
+pertenece al servicio externo.
+
+La relación se representa así:
+
+**InvenTrack → Servicio de correo electrónico**
+
+con la descripción:
+
+**"Solicita envío de alertas de stock bajo"**
+
+Esto permite mostrar claramente que el sistema externo no queda aislado en el
+diagrama y que existe una relación directa con InvenTrack.
+
+---
+
+# 5. Relaciones del contexto
+
+## 5.1 Dueño de la PYME → InvenTrack
+
+**Relación:** Administra usuarios, productos y proveedores.
+
+El Administrador utiliza InvenTrack para gestionar la información principal
+del negocio y supervisar las operaciones de inventario.
+
+---
+
+## 5.2 Vendedor → InvenTrack
+
+**Relación:** Registra ventas y consulta stock.
+
+El Operador de Ventas consulta la disponibilidad de productos y registra las
+salidas generadas por las ventas.
+
+Esta relación es relevante para el aspecto prioritario de:
+
+**Consistencia de datos.**
+
+---
+
+## 5.3 Empleado de bodega → InvenTrack
+
+**Relación:** Registra entradas y ajustes de inventario.
+
+El Operador de Inventario utiliza el sistema para reflejar los movimientos
+físicos realizados en la bodega.
+
+Esta operación también puede modificar el inventario y, por lo tanto, forma
+parte del problema de consistencia cuando existen operaciones concurrentes.
+
+---
+
+## 5.4 InvenTrack → Servicio de correo electrónico
+
+**Relación:** Solicita envío de alertas de stock bajo.
+
+Cuando un producto alcanza un nivel crítico, InvenTrack solicita al sistema
+externo de correo la entrega de la alerta correspondiente.
+
+El servicio de correo está fuera del alcance de InvenTrack.
+
+---
+
+# 6. Por qué se separaron los actores
+
+En la primera versión del diagrama existía el riesgo de representar de manera
+demasiado genérica a los usuarios del sistema.
+
+Para esta versión se decidió separar explícitamente:
+
+**Dueño de la PYME**
+→ **Administrador**
+
+**Vendedor**
+→ **Operador de Ventas**
+
+**Empleado de bodega**
+→ **Operador de Inventario**
+
+Esta separación es importante porque no todos los usuarios tienen las mismas
+responsabilidades ni deberían tener necesariamente los mismos permisos.
+
+Además, permite que el modelo de contexto sea coherente con el escenario
+**ESC-05 — Control de acceso por rol**, definido en el árbol de utilidad y en
+los requisitos de calidad.
+
+También permite representar de forma más clara el escenario **ESC-01**, donde
+diferentes operadores pueden realizar movimientos de inventario de manera
+concurrente.
+
+---
+
+# 7. Por qué InvenTrack utiliza el azul oscuro
+
+InvenTrack es el sistema principal que se está construyendo y, por decisión
+visual del equipo, se representa con **azul oscuro** para diferenciarlo de
+las personas y de los sistemas externos.
+
+La convención utilizada en este documento es:
+
+```text
+AZUL MEDIO
+Personas / actores humanos
+        ↓
+AZUL OSCURO
+InvenTrack / sistema dentro del alcance
+        ↓
+GRIS
+Sistema externo / fuera del alcance
+```
+
+El uso del color es una ayuda visual y no sustituye la identificación textual
+del tipo de elemento.
+
+---
+
+# 8. Por qué las personas tienen un símbolo diferente
+
+Los tres usuarios principales se representan mediante una forma circular con
+el símbolo:
+
+**👤**
+
+Esto permite identificar inmediatamente que se trata de **Person** y no de
+un sistema de software.
+
+Los tres actores tienen además su rol escrito explícitamente debajo del nombre.
+
+Por ejemplo:
+
+```text
+👤
+Vendedor
+Operador de Ventas
+```
+
+De esta manera se evita utilizar únicamente cuadrados o cajas para representar
+a todos los elementos del contexto.
+
+---
+
+# 9. Por qué no se muestran los módulos internos
+
+Este documento corresponde al **C4 Nivel 1**.
+
+Por lo tanto, no se incluyen directamente:
+
+- `app/inventario/`
+- `app/productos/`
+- `app/proveedores/`
+- `app/usuarios/`
+- `app/alertas/`
+- `domain/`
+- `application/`
+- `infrastructure/`
+- FastAPI
+- clases
+- repositorios
+- base de datos
+- puertos
+- adaptadores.
+
+Esos elementos pertenecen a niveles de mayor detalle.
+
+Mostrar todos esos elementos en el contexto mezclaría diferentes niveles de
+abstracción y haría que el diagrama dejara de cumplir su propósito.
+
+---
+
+# 10. Relación con el problema del proyecto
+
+El contexto representa directamente la situación planteada en la ficha del
+problema.
+
+InvenTrack busca centralizar las operaciones que actualmente pueden realizarse
+mediante Excel, papel o registros manuales.
+
+Los actores representan las personas que intervienen en esas operaciones:
+
+- el **Administrador** supervisa y administra;
+- el **Operador de Ventas** registra salidas;
+- el **Operador de Inventario** registra entradas y ajustes.
+
+InvenTrack centraliza estas operaciones y mantiene la trazabilidad de los
+movimientos.
+
+El servicio de correo permite entregar las alertas de stock bajo previstas en
+el alcance del MVP.
+
+---
+
+# 11. Relación con los atributos de calidad
+
+El contexto también permite identificar dónde aparecen los principales
+escenarios de calidad del proyecto.
+
+| Escenario | Elementos relacionados | Relación |
+|---|---|---|
+| ESC-01 — Concurrencia | Vendedor, Empleado de bodega, InvenTrack | Diferentes operadores pueden modificar el inventario de manera simultánea |
+| ESC-02 — Integridad referencial | Administrador, InvenTrack | El Administrador gestiona productos que pueden tener historial de movimientos |
+| ESC-03 — Disponibilidad | Usuarios, InvenTrack | Los usuarios necesitan acceder al sistema durante la operación comercial |
+| ESC-04 — Rendimiento | Vendedor, Empleado de bodega, InvenTrack | Las consultas de inventario deben responder oportunamente durante la operación |
+| ESC-05 — Seguridad | Administrador, Vendedor, Empleado de bodega, InvenTrack | Cada actor debe tener permisos acordes con su rol |
+
+El escenario prioritario continúa siendo **ESC-01 — Registro simultáneo de
+salida del mismo producto**, porque corresponde al aspecto de calidad declarado
+como prioritario: **Consistencia de datos**.
+
+---
+
+# 12. Relación con el ADR-0001
+
+El contexto es consistente con el **ADR-0001 — Monolito Modular con Hexagonal
+por módulo**.
+
+El ADR establece que InvenTrack se organizará como un único sistema con
+módulos funcionales separados:
+
+- productos;
+- proveedores;
+- inventario;
+- usuarios;
+- alertas.
+
+Sin embargo, esos módulos no aparecen individualmente en este diagrama porque
+este documento representa el **Nivel 1 — Contexto**.
+
+La decisión arquitectónica interna se podrá visualizar con mayor detalle en el
+C4 Nivel 2.
+
+---
+
+# 13. Relación con la estructura actual del repositorio
+
+La estructura actual del proyecto contiene:
+
+```text
+app/
+├── main.py
+├── alertas/
+│   ├── application/
+│   ├── domain/
+│   └── infrastructure/
+├── inventario/
+│   ├── application/
+│   ├── domain/
+│   └── infrastructure/
+├── productos/
+│   ├── application/
+│   ├── domain/
+│   └── infrastructure/
+├── proveedores/
+│   ├── application/
+│   ├── domain/
+│   └── infrastructure/
+├── usuarios/
+│   ├── application/
+│   ├── domain/
+│   └── infrastructure/
+└── shared/
+```
+
+Esta estructura no se dibuja directamente en el C4 Nivel 1.
+
+El propósito del contexto es establecer primero el límite del sistema y sus
+interacciones externas.
+
+Posteriormente, el **C4 Nivel 2** deberá abrir la caja de InvenTrack y mostrar
+cómo se organiza internamente el sistema.
+
+---
+
+# 14. Decisión sobre los nombres de los actores
+
+Para evitar ambigüedades, el equipo utilizará los siguientes nombres de manera
+consistente en la documentación:
+
+| Nombre visible | Tipo C4 | Rol |
+|---|---|---|
+| Dueño de la PYME | Person | Administrador |
+| Vendedor | Person | Operador de Ventas |
+| Empleado de bodega | Person | Operador de Inventario |
+| InvenTrack | Software System | Sistema de Gestión de Inventarios |
+| Servicio de correo electrónico | External Software System | Servicio externo de notificaciones |
+
+Estos nombres deben mantenerse consistentes con el arc42, el árbol de utilidad,
+los escenarios de calidad y los diagramas C4 posteriores.
+
+---
+
+# 15. Qué se corrigió respecto a la versión anterior
+
+Esta versión corrige los principales puntos observados durante la revisión del
+diagrama anterior:
+
+1. Se separó claramente al **Vendedor** del **Empleado de bodega**.
+2. Se definieron roles explícitos:
+   - Administrador.
+   - Operador de Ventas.
+   - Operador de Inventario.
+3. Se incorporó un símbolo visual de **Person (👤)** para los actores humanos.
+4. Se eliminó la representación excesivamente cuadrada de los actores.
+5. InvenTrack se representa con **azul oscuro**.
+6. Las personas utilizan un color diferente al sistema principal.
+7. El sistema externo utiliza un color diferenciado.
+8. Se incorporó una **leyenda** que explica formas, colores y relaciones.
+9. El sistema externo está conectado directamente con InvenTrack.
+10. Se reemplazó la relación genérica por relaciones que explican qué hace cada
+    actor.
+11. Se especificó la responsabilidad de cada elemento.
+12. Se explicó por qué cada actor aparece en el contexto.
+13. Se relacionaron los actores con los escenarios ESC-01 a ESC-05.
+14. Se explicó qué pertenece al contexto y qué debe quedar para niveles
+    posteriores.
+15. Se mantuvo InvenTrack como una única unidad, respetando el nivel de
+    abstracción del C4 Nivel 1.
+
+---
+
+# 16. Qué NO debe hacerse en este nivel
+
+No se deben agregar todavía dentro del diagrama de contexto:
+
+- tablas de base de datos;
+- clases Python;
+- FastAPI como componente separado;
+- Uvicorn como componente;
+- repositorios;
+- servicios internos;
+- módulos `inventario`, `productos`, `usuarios`, etc.;
+- `domain`;
+- `application`;
+- `infrastructure`;
+- endpoints internos;
+- detalles de implementación.
+
+Esos elementos corresponden a niveles posteriores.
+
+El objetivo del C4 Nivel 1 es responder:
+
+> **¿Quién utiliza InvenTrack y con qué sistemas externos interactúa?**
+
+No:
+
+> **¿Cómo está construido InvenTrack internamente?**
+
+---
+
+# 17. Siguiente paso — C4 Nivel 2
+
+Una vez aprobado este contexto, el siguiente paso natural para la Semana 4 es
+crear:
+
+`docs/c4/containers.md`
+
+Ese documento debe abrir la caja de InvenTrack y mostrar los principales
+contenedores de software y datos, manteniendo coherencia con el ADR-0001 y con
+la estructura real del repositorio.
+
+El Nivel 2 será especialmente importante porque uno de los criterios de
+evaluación de la Semana 4 exige que exista un **C4 Nivel 2 coherente con el
+código y con los límites definidos por la arquitectura**.
+
+El contexto y el nivel de contenedores deben contar la misma historia:
+
+**Nivel 1**
+Personas → InvenTrack → Sistema externo
+
+**Nivel 2**
+Personas → Contenedores de InvenTrack → Base de datos / servicios externos
+
+No se debe inventar en el Nivel 2 una tecnología que todavía no haya sido
+decidida por el equipo.
+
+---
+
+# 18. Referencia conceptual
+
+Este diagrama sigue la idea del C4 System Context Diagram: un único sistema
+dentro del alcance, rodeado por las personas y sistemas de software con los que
+interactúa directamente.
+
+La notación C4 es independiente de una herramienta concreta, por lo que
+Mermaid se utiliza aquí como mecanismo de representación dentro de GitHub
+Markdown.
+
+La información visual se complementa con esta documentación para que el
+diagrama pueda entenderse incluso sin depender únicamente de colores o formas.
