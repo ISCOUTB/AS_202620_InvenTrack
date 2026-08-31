@@ -404,11 +404,55 @@ Por tanto, el corte vertical actual demuestra la arquitectura general, mientras 
 
 ## Infrastructure Level 1
 
-*(Pendiente — se completa en la Semana 8 del curso, con la "Guía de
-despliegue y costos" de Inicio y orientación. Depende de la restricción C7
-(conectividad e infraestructura de las PYMEs piloto), aún por confirmar.)*
+Para el incremento actual, InvenTrack se ejecuta como una única aplicación backend.
 
-## Infrastructure Level 2
+```mermaid
+flowchart LR
+
+    DEV["Equipo de desarrollo"]
+
+    subgraph LOCAL["Máquina local"]
+
+        APP["InvenTrack<br/>FastAPI + Uvicorn"]
+
+    end
+
+    DEV -->|"Ejecuta y prueba"| APP
+```
+
+La aplicación se inicia mediante:
+
+python -m uvicorn app.main:app --reload
+
+El despliegue productivo, el hosting y la infraestructura definitiva permanecen pendientes de decisión, debido a la restricción C7 sobre la disponibilidad técnica de las PYMEs piloto.
+
+6.2 Infrastructure Level 2
+
+Dentro del proceso de InvenTrack se encuentran los módulos definidos por la arquitectura:
+
+```mermaid
+flowchart TB
+
+    USER["Usuario<br/>Cliente web"]
+
+    subgraph SERVER["Nodo de ejecución"]
+
+        APP["InvenTrack<br/><br/>FastAPI + Uvicorn<br/>Monolito Modular"]
+
+    end
+
+    USER -->|"HTTP / HTTPS"| APP
+```
+
+Todos los módulos se ejecutan inicialmente dentro del mismo proceso.
+
+Esta decisión reduce:
+
+Complejidad operativa.
+Costos de infraestructura.
+Comunicación distribuida.
+
+A cambio, la aplicación comparte el mismo ciclo de despliegue y recuperación.
 
 # Cross-cutting Concepts
 
