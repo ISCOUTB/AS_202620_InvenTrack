@@ -1,14 +1,17 @@
 """Punto de entrada de InvenTrack.
 
-Este esqueleto solo ensambla FastAPI y expone un endpoint de salud.
-La logica de negocio se implementara dentro de los modulos funcionales.
+Este archivo ensambla la aplicación y registra los routers de cada módulo.
+La lógica de negocio vive dentro de los módulos funcionales, siguiendo la
+arquitectura hexagonal adoptada en el ADR-0001.
 """
 
 from fastapi import FastAPI
 
+from app.productos.infrastructure.router import router as productos_router
+
 app = FastAPI(
     title="InvenTrack",
-    description="Sistema de gestion de inventarios para pequenas empresas.",
+    description="Sistema de gestión de inventarios para pequeñas empresas.",
     version="0.1.0",
 )
 
@@ -16,3 +19,6 @@ app = FastAPI(
 @app.get("/health", tags=["infraestructura"])
 def health_check() -> dict[str, str]:
     return {"status": "ok", "service": "InvenTrack"}
+
+
+app.include_router(productos_router, tags=["productos"])
