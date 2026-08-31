@@ -89,7 +89,7 @@ deja los tres roles de ESC-05 con un actor real detrás de cada uno.
 - **SMTP** hacia Notificaciones: protocolo estándar de envío de correo;
   se mantiene simple porque la decisión de stack (y si se usa un
   proveedor transaccional con API propia en vez de SMTP directo) todavía
-  está pendiente, se documentará como ADR cuando se decida.
+  está pendiente — se documentará como ADR cuando se decida.
 
 ## Qué falta y qué sigue
 
