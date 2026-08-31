@@ -6,17 +6,14 @@ Plantilla arc42 v9.0-EN (versión académica). Fuente: <https://arc42.org>.
 
 Este archivo es la **narrativa completa** de la arquitectura de InvenTrack:
 aquí se explica en texto qué decisiones de calidad se tomaron y por qué.
-Los **diagramas** (C4 de contexto, árbol de utilidad) viven como archivos
+Los **diagramas** (C4 de contexto, nivel 2 de contenedores y árbol de utilidad) viven como archivos
 aparte en [`docs/c4/`](../c4/) y [`docs/utility-tree.md`](../utility-tree.md)
-y se enlazan desde aquí en vez de repetirse. Las **decisiones arquitectónicas
-concretas** (ADR) se documentan por separado en [`docs/adr/`](../adr/) a
-medida que el equipo las tome. El archivo [`docs/aspectos.md`](../aspectos.md)
+y se enlazan desde aquí. Las **decisiones arquitectónicas
+concretas** (ADR) se documentan por separado en [`docs/adr/`](../adr/). El archivo [`docs/aspectos.md`](../aspectos.md)
 es el índice que conecta todo: por cada aspecto de calidad declarado, enlaza
 su requisito, su C4, su ADR, su código y sus pruebas.
 
-Por ahora (Semana 2 del curso) están completas las secciones 1, 2, 3 y 10.
-El resto queda marcado como pendiente y se completa en semanas
-posteriores, conforme el curso lo va pidiendo.
+Se encuentran redactadas y actualizadas las secciones de alcance, contexto, estrategia, bloques de construcción, vistas de ejecución, despliegue, decisiones arquitectónicas, requisitos de calidad y glosario.
 
 # Introduction and Goals
 
@@ -460,11 +457,11 @@ A cambio, la aplicación comparte el mismo ciclo de despliegue y recuperación.
 errores, logging o el mecanismo de autenticación una vez definido, ligado
 a ESC-05.)*
 
-# Architecture Decisions
+# 9. Architecture Decisions
 
-Las decisiones arquitectónicas de InvenTrack se documentan mediante **Architecture Decision Records (ADR)**.
+Las decisiones arquitectónicas de InvenTrack se documentan formalmente mediante **Architecture Decision Records (ADR)** almacenados en [`docs/adr/`](../adr/).
 
-El modelo de trazabilidad utilizado es:
+El modelo de trazabilidad utilizado en el proyecto es:
 
 ```text
 Aspecto → Requisito → C4 → ADR → Código → Pruebas → Evidencia
@@ -690,6 +687,11 @@ propios escenarios, antes incluso de haber elegido una táctica concreta:
   roles añade fricción para usuarios no técnicos (restricción C6). Se
   buscará que el mecanismo de control de acceso sea simple de usar sin
   debilitar la medida de ESC-05.
+  - **Mantenibilidad / Arquitectura Hexagonal vs. Rendimiento inicial:** la separación 
+  en capas (`domain`, `application`, `infrastructure`) introduce indirección y mapeo de 
+  objetos entre límites. Esto añade una penalización insignificante en microsegundos 
+  durante la ejecución, pero la ganancia en desacoplamiento, testabilidad y Mantenibilidad 
+  justifica plenamente la elección táctica.
 
 Estas tensiones no se resuelven todavía: se documentarán como ADR en
 [`docs/adr/`](../adr/) cuando el equipo decida la táctica concreta para
@@ -700,7 +702,7 @@ cada atributo.
 *(Pendiente — se completa una vez existan decisiones de arquitectura y
 componentes de código sobre los cuales identificar riesgos concretos.)*
 
-# Glossary
+# 12. Glossary
 
 | Término | Definición |
 |---|---|
