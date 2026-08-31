@@ -7,6 +7,7 @@ arquitectura hexagonal adoptada en el ADR-0001.
 
 from fastapi import FastAPI
 
+from app.inventario.infrastructure.router import router as inventario_router
 from app.productos.infrastructure.router import router as productos_router
 
 app = FastAPI(
@@ -22,3 +23,4 @@ def health_check() -> dict[str, str]:
 
 
 app.include_router(productos_router, tags=["productos"])
+app.include_router(inventario_router, tags=["inventario"])
