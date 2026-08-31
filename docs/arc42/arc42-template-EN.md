@@ -687,7 +687,7 @@ propios escenarios, antes incluso de haber elegido una táctica concreta:
   roles añade fricción para usuarios no técnicos (restricción C6). Se
   buscará que el mecanismo de control de acceso sea simple de usar sin
   debilitar la medida de ESC-05.
-  - **Mantenibilidad / Arquitectura Hexagonal vs. Rendimiento inicial:** la separación 
+- **Mantenibilidad / Arquitectura Hexagonal vs. Rendimiento inicial:** la separación 
   en capas (`domain`, `application`, `infrastructure`) introduce indirección y mapeo de 
   objetos entre límites. Esto añade una penalización insignificante en microsegundos 
   durante la ejecución, pero la ganancia en desacoplamiento, testabilidad y Mantenibilidad 
