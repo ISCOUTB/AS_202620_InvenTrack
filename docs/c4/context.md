@@ -1,101 +1,278 @@
 # C4 Nivel 1 — Diagrama de Contexto — InvenTrack
 
-## Qué muestra este nivel y por qué
+## 1. Propósito del diagrama
 
-El modelo C4 documenta la arquitectura en niveles de zoom: Contexto
-(Nivel 1) → Contenedores (Nivel 2) → Componentes (Nivel 3) → Código
-(Nivel 4). Cada nivel abstrae detalle del anterior en vez de repetirlo.
+El modelo C4 permite representar la arquitectura de un sistema mediante
+diferentes niveles de abstracción. Cada nivel responde una pregunta diferente
+y evita mezclar información de contexto con detalles de implementación.
 
-Este diagrama es el **Nivel 1: Contexto**. Responde una sola pregunta:
-*¿quién usa el sistema y con qué otros sistemas se conecta?* Por diseño,
-**no** muestra nada de lo que hay adentro de InvenTrack (eso es el Nivel 2,
-Contenedores, que se documentará más adelante cuando el equipo decida el
-stack). Tratar a InvenTrack como una caja cerrada en este nivel es
-intencional: sirve para acordar el alcance del sistema con los
-interesados antes de discutir cómo se construye por dentro.
+Los cuatro niveles principales son:
+
+1. **Nivel 1 — Contexto:** ¿quién utiliza el sistema y con qué sistemas
+   externos se relaciona?
+2. **Nivel 2 — Contenedores:** ¿qué partes principales componen el sistema?
+3. **Nivel 3 — Componentes:** ¿qué componentes existen dentro de cada
+   contenedor?
+4. **Nivel 4 — Código:** ¿cómo se implementan concretamente los componentes?
+
+Este documento corresponde al:
+
+> **C4 Nivel 1 — Diagrama de Contexto de InvenTrack**
+
+El objetivo de este nivel es mostrar el sistema desde una perspectiva
+externa, identificando claramente:
+
+- Los actores humanos.
+- Los roles específicos de cada actor.
+- Las responsabilidades principales de cada actor.
+- El sistema que está siendo desarrollado.
+- Los sistemas externos relacionados.
+- Las relaciones entre los elementos.
+- El propósito de cada comunicación.
+- Los protocolos o medios de comunicación.
+- El límite entre InvenTrack y los elementos externos.
+
+En este nivel, **InvenTrack se considera una caja negra**. No se muestran
+todavía sus módulos internos, clases, base de datos, endpoints ni capas
+arquitectónicas, ya que estos elementos pertenecen a niveles posteriores
+del modelo C4.
+
+---
+
+# 2. Diagrama de contexto
+
+El siguiente diagrama utiliza la notación C4 directamente mediante:
+
+- `Person` para representar personas.
+- `System` para representar el sistema principal.
+- `System_Ext` para representar sistemas externos.
+- `Rel` para representar relaciones entre los elementos.
 
 ```mermaid
-flowchart TB
-    Dueno["Dueño de la PYME
-    Rol: Administrador"]
-    Vendedor["Vendedor
-    Rol: Operador de Ventas"]
-    Empleado["Empleado de bodega
-    Rol: Operador de Inventario"]
-    InvenTrack[["InvenTrack
-    Gestión de inventario"]]
-    Notif(["Notificaciones
-    Sistema externo (correo)"])
-    Bandeja(["Bandeja
-    Endpoint final"])
+C4Context
 
-    Dueno -- HTTPS --> InvenTrack
-    Vendedor -- HTTPS --> InvenTrack
-    Empleado -- HTTPS --> InvenTrack
-    InvenTrack -- SMTP --> Notif
-    Notif -- entrega --> Bandeja
+title Diagrama de Contexto — InvenTrack
 
-    classDef person fill:#1168bd,stroke:#0b4884,color:#ffffff,font-weight:bold
-    classDef system fill:#08427b,stroke:#052e56,color:#ffffff,font-weight:bold
-    classDef external fill:#999999,stroke:#6b6b6b,color:#ffffff,font-weight:bold
+' ============================================================
+' PERSONAS / ACTORES HUMANOS
+' ============================================================
 
-    class Dueno,Vendedor,Empleado person
-    class InvenTrack system
-    class Notif,Bandeja external
-```
+Person(
+    dueno,
+    "Dueño de la PYME",
+    "Administrador del sistema. Gestiona usuarios, productos, proveedores e inventario; consulta reportes, historial y recibe alertas."
+)
 
-## Leyenda
+Person(
+    vendedor,
+    "Vendedor",
+    "Operador de Ventas. Consulta el stock y registra salidas de inventario generadas por las ventas."
+)
 
-| Color | Hex | Significado |
-|---|---|---|
-| Azul medio | `#1168bd` | **Persona** — actor humano que usa el sistema |
-| Azul oscuro | `#08427b` | **Sistema** — InvenTrack, el proyecto que estamos documentando |
-| Gris | `#999999` | **Externo** — sistema o endpoint fuera de nuestro control |
+Person(
+    bodeguero,
+    "Empleado de bodega",
+    "Operador de Inventario. Registra entradas de mercancía, ajustes y consulta las existencias."
+)
 
-> **Nota sobre la convención de color:** el estándar original del modelo
-> C4 (Simon Brown / Structurizr) usa persona en azul oscuro y sistema en
-> azul medio. Aquí se invierte a pedido del curso, para que el sistema en
-> desarrollo (InvenTrack) resalte visualmente como protagonista del
-> diagrama.
+' ============================================================
+' SISTEMA PRINCIPAL
+' ============================================================
 
-## Roles y actores, explicados uno por uno
+System(
+    inventrack,
+    "InvenTrack",
+    "Sistema de gestión de inventarios para PYMEs. Centraliza productos, proveedores, movimientos, usuarios, trazabilidad y alertas de stock bajo."
+)
 
-| Actor | Tipo | Rol en el sistema | Qué hace | Por qué está en el diagrama |
-|---|---|---|---|---|
-| Dueño de la PYME | Persona | **Administrador** | Gestiona usuarios, proveedores y catálogo de productos; consulta reportes e historial completo de movimientos. | Es el interesado principal (ver Stakeholders en el arc42): sin su rol, no habría razón de negocio para el sistema. |
-| Vendedor | Persona | **Operador de Ventas** | Registra salidas de inventario por venta; consulta stock actual. | Dispara el escenario de mayor prioridad del proyecto (ESC-01): dos operadores registrando salidas al mismo tiempo es la situación que pone a prueba la Consistencia de datos. |
-| Empleado de bodega | Persona | **Operador de Inventario** | Registra entradas de mercancía y ajustes de inventario. | Junto con Vendedor, es el segundo actor que puede generar concurrencia sobre el mismo producto (ESC-01), y es quien opera físicamente el almacén. |
-| InvenTrack | Sistema (este proyecto) | — | Centraliza productos, proveedores, movimientos de inventario, usuarios y alertas de stock bajo. | Es el sistema que se está documentando; en este nivel se trata como caja cerrada a propósito. |
-| Notificaciones | Sistema externo | — | Recibe la solicitud de alerta cuando un producto baja del umbral crítico y la entrega por correo electrónico. | Es el único sistema externo real del MVP: sin él, la funcionalidad "alertas de stock bajo" (declarada en el alcance de la ficha del problema) no se podría entregar. |
-| Bandeja | Endpoint | — | Bandeja de correo donde finalmente llega la alerta (del Dueño, Vendedor o Empleado, según a quién se configure notificar). | Cierra el ciclo de la notificación: sin este endpoint, "Notificaciones" quedaría como una caja que solo recibe, sin mostrar a dónde entrega. |
+' ============================================================
+' SISTEMA EXTERNO
+' ============================================================
 
-**Por qué tres roles y no solo "Dueño" y "Empleado":** el escenario ESC-05
-(control de acceso por rol, en la sección Quality Requirements del arc42)
-exige verificar permisos sobre roles específicos. Con solo dos actores
-genéricos, "Dueño" y "Administrador" terminaban confundiéndose como si
-fueran roles distintos sin serlo realmente. Separar Vendedor y Empleado
-de bodega, y nombrar el rol de cada uno explícitamente (Administrador,
-Operador de Ventas, Operador de Inventario), elimina esa ambigüedad y
-deja los tres roles de ESC-05 con un actor real detrás de cada uno.
+System_Ext(
+    correo,
+    "Servicio de correo electrónico",
+    "Servicio externo utilizado para entregar las alertas de stock bajo a los usuarios configurados."
+)
 
-## Por qué se eligieron esos protocolos en las flechas
+' ============================================================
+' RELACIONES DE LOS ACTORES CON INVENTRACK
+' ============================================================
 
-- **HTTPS** entre las personas e InvenTrack: es el protocolo estándar para
-  cualquier interfaz web, y es consistente con la restricción C5 (sin
-  presupuesto para servicios de pago) — no requiere licencias ni
-  infraestructura adicional. También conecta con la restricción C1 (Ley
-  1581 de 2012): HTTPS cifra los datos en tránsito, protegiendo
-  credenciales y datos personales.
-- **SMTP** hacia Notificaciones: protocolo estándar de envío de correo;
-  se mantiene simple porque la decisión de stack (y si se usa un
-  proveedor transaccional con API propia en vez de SMTP directo) todavía
-  está pendiente — se documentará como ADR cuando se decida.
+Rel(
+    dueno,
+    inventrack,
+    "Administra y consulta información del negocio",
+    "HTTPS"
+)
 
-## Qué falta y qué sigue
+Rel(
+    vendedor,
+    inventrack,
+    "Consulta stock y registra salidas por ventas",
+    "HTTPS"
+)
 
-Este es solo el Nivel 1. Cuando el equipo decida el stack tecnológico
-(ver "Stack de Desarrollo" en Inicio y orientación), este mismo archivo o
-uno nuevo (`docs/c4/containers.md`) documentará el **Nivel 2: Contenedores**
-— por ejemplo, si InvenTrack se divide en un frontend web, una API backend
-y una base de datos, cada uno sería un contenedor separado dentro de la
-caja que hoy aparece como una sola unidad.
+Rel(
+    bodeguero,
+    inventrack,
+    "Registra entradas, ajustes y consulta existencias",
+    "HTTPS"
+)
+
+' ============================================================
+' RELACIÓN ENTRE INVENTRACK Y SISTEMA EXTERNO
+' ============================================================
+
+Rel(
+    inventrack,
+    correo,
+    "Solicita el envío de alertas de stock bajo",
+    "SMTP / HTTPS"
+)
+
+' ============================================================
+' ENTREGA DE ALERTAS A LOS USUARIOS
+' ============================================================
+
+Rel(
+    correo,
+    dueno,
+    "Entrega alertas configuradas",
+    "Correo electrónico"
+)
+
+Rel(
+    correo,
+    vendedor,
+    "Entrega alertas configuradas",
+    "Correo electrónico"
+)
+
+Rel(
+    correo,
+    bodeguero,
+    "Entrega alertas configuradas",
+    "Correo electrónico"
+)
+
+' ============================================================
+' ESTILOS
+' ============================================================
+
+' ------------------------------------------------------------
+' PERSONAS
+' Azul medio
+' ------------------------------------------------------------
+
+UpdateElementStyle(
+    dueno,
+    $bgColor="#1168BD",
+    $fontColor="#FFFFFF",
+    $borderColor="#0B4884",
+    $shadowing="false"
+)
+
+UpdateElementStyle(
+    vendedor,
+    $bgColor="#1168BD",
+    $fontColor="#FFFFFF",
+    $borderColor="#0B4884",
+    $shadowing="false"
+)
+
+UpdateElementStyle(
+    bodeguero,
+    $bgColor="#1168BD",
+    $fontColor="#FFFFFF",
+    $borderColor="#0B4884",
+    $shadowing="false"
+)
+
+' ------------------------------------------------------------
+' SISTEMA PRINCIPAL
+' Azul oscuro
+' ------------------------------------------------------------
+
+UpdateElementStyle(
+    inventrack,
+    $bgColor="#08427B",
+    $fontColor="#FFFFFF",
+    $borderColor="#052E56",
+    $shadowing="false"
+)
+
+' ------------------------------------------------------------
+' SISTEMA EXTERNO
+' Gris
+' ------------------------------------------------------------
+
+UpdateElementStyle(
+    correo,
+    $bgColor="#999999",
+    $fontColor="#FFFFFF",
+    $borderColor="#6B6B6B",
+    $shadowing="false"
+)
+
+' ============================================================
+' ESTILOS DE RELACIONES
+' ============================================================
+
+UpdateRelStyle(
+    dueno,
+    inventrack,
+    $textColor="#333333",
+    $lineColor="#1168BD"
+)
+
+UpdateRelStyle(
+    vendedor,
+    inventrack,
+    $textColor="#333333",
+    $lineColor="#1168BD"
+)
+
+UpdateRelStyle(
+    bodeguero,
+    inventrack,
+    $textColor="#333333",
+    $lineColor="#1168BD"
+)
+
+UpdateRelStyle(
+    inventrack,
+    correo,
+    $textColor="#333333",
+    $lineColor="#666666"
+)
+
+UpdateRelStyle(
+    correo,
+    dueno,
+    $textColor="#333333",
+    $lineColor="#666666"
+)
+
+UpdateRelStyle(
+    correo,
+    vendedor,
+    $textColor="#333333",
+    $lineColor="#666666"
+)
+
+UpdateRelStyle(
+    correo,
+    bodeguero,
+    $textColor="#333333",
+    $lineColor="#666666"
+)
+
+' ============================================================
+' CONFIGURACIÓN DE DISTRIBUCIÓN
+' ============================================================
+
+UpdateLayoutConfig(
+    $c4ShapeInRow="3",
+    $c4BoundaryInRow="1"
+)
