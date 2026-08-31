@@ -10,119 +10,63 @@ Este diagrama es el **Nivel 1: Contexto**. Responde una sola pregunta:
 *¿quién usa el sistema y con qué otros sistemas se conecta?* Por diseño,
 **no** muestra nada de lo que hay adentro de InvenTrack (eso es el Nivel 2,
 Contenedores, que se documentará más adelante cuando el equipo decida el
-stack). Tratar a InvenTrack como una caja cerrada en este nivel es
-intencional: sirve para acordar el alcance del sistema con los
-interesados antes de discutir cómo se construye por dentro.
+stack).
+
+Este diagrama se mantiene como **código Mermaid**, no como imagen, para
+que sea versionable y editable directamente en el repositorio.
 
 ```mermaid
-<svg width="680" height="590" viewBox="0 0 680 590" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, Arial, sans-serif">
-<title>Diagrama de contexto C4 Nivel 1 de InvenTrack</title>
-<desc>Tres personas (Dueño-Administrador, Vendedor-Operador de Ventas, Empleado de bodega-Operador de Inventario) usan InvenTrack por HTTPS. InvenTrack envía alertas por SMTP a Notificaciones, que entrega a una Bandeja final.</desc>
+flowchart TB
+    Dueno(("👤 Dueño de la PYME
+    Rol: Administrador"))
+    Vendedor(("👤 Vendedor
+    Rol: Operador de Ventas"))
+    Empleado(("👤 Empleado de bodega
+    Rol: Operador de Inventario"))
+    InvenTrack[["🖥️ InvenTrack
+    Gestión de inventario"]]
+    Notif(["✉️ Notificaciones
+    Vía correo"])
+    Bandeja(["📥 Bandeja
+    Endpoint final"])
 
-<rect width="680" height="590" fill="#ffffff"/>
+    Dueno -- HTTPS --> InvenTrack
+    Vendedor -- HTTPS --> InvenTrack
+    Empleado -- HTTPS --> InvenTrack
+    InvenTrack -- SMTP --> Notif
+    Notif -- entrega --> Bandeja
 
-<defs>
-<marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-  <path d="M2 1L8 5L2 9" fill="none" stroke="#555555" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-</marker>
-</defs>
+    classDef person fill:#1168bd,stroke:#0b4884,color:#ffffff,font-weight:bold
+    classDef system fill:#08427b,stroke:#052e56,color:#ffffff,font-weight:bold
+    classDef external fill:#999999,stroke:#6b6b6b,color:#ffffff,font-weight:bold
 
-<!-- Dueño de la PYME -->
-<rect x="30" y="30" width="200" height="130" rx="10" fill="#1168bd" stroke="#0b4884" stroke-width="1"/>
-<circle cx="130" cy="64" r="21" fill="#ffffff" stroke="#0b4884" stroke-width="1"/>
-<circle cx="130" cy="57" r="7" fill="#1168bd"/>
-<path d="M118,78 Q118,62 130,62 Q142,62 142,78 Z" fill="#1168bd"/>
-<text x="130" y="105" text-anchor="middle" dominant-baseline="central" font-size="15" font-weight="600" fill="#ffffff">Dueño de la PYME</text>
-<text x="130" y="128" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#d6e6f8">Rol: Administrador</text>
-
-<!-- Vendedor -->
-<rect x="30" y="190" width="200" height="130" rx="10" fill="#1168bd" stroke="#0b4884" stroke-width="1"/>
-<circle cx="130" cy="224" r="21" fill="#ffffff" stroke="#0b4884" stroke-width="1"/>
-<circle cx="130" cy="217" r="7" fill="#1168bd"/>
-<path d="M118,238 Q118,222 130,222 Q142,222 142,238 Z" fill="#1168bd"/>
-<text x="130" y="265" text-anchor="middle" dominant-baseline="central" font-size="15" font-weight="600" fill="#ffffff">Vendedor</text>
-<text x="130" y="288" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#d6e6f8">Rol: Operador de Ventas</text>
-
-<!-- Empleado de bodega -->
-<rect x="30" y="350" width="200" height="130" rx="10" fill="#1168bd" stroke="#0b4884" stroke-width="1"/>
-<circle cx="130" cy="384" r="21" fill="#ffffff" stroke="#0b4884" stroke-width="1"/>
-<circle cx="130" cy="377" r="7" fill="#1168bd"/>
-<path d="M118,398 Q118,382 130,382 Q142,382 142,398 Z" fill="#1168bd"/>
-<text x="130" y="425" text-anchor="middle" dominant-baseline="central" font-size="15" font-weight="600" fill="#ffffff">Empleado de bodega</text>
-<text x="130" y="448" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#d6e6f8">Rol: Operador de Inventario</text>
-
-<!-- InvenTrack -->
-<rect x="280" y="190" width="180" height="130" rx="10" fill="#08427b" stroke="#052e56" stroke-width="1"/>
-<circle cx="370" cy="224" r="21" fill="#ffffff" stroke="#052e56" stroke-width="1"/>
-<rect x="357" y="214" width="26" height="17" rx="2" fill="none" stroke="#08427b" stroke-width="2.2"/>
-<rect x="366" y="231" width="8" height="4" fill="#08427b"/>
-<line x1="361" y1="235" x2="379" y2="235" stroke="#08427b" stroke-width="2.2" stroke-linecap="round"/>
-<text x="370" y="265" text-anchor="middle" dominant-baseline="central" font-size="15" font-weight="600" fill="#ffffff">InvenTrack</text>
-<text x="370" y="288" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#cfe0f0">Gestión de inventario</text>
-
-<!-- Notificaciones -->
-<rect x="490" y="190" width="150" height="130" rx="10" fill="#999999" stroke="#6b6b6b" stroke-width="1"/>
-<circle cx="565" cy="224" r="21" fill="#ffffff" stroke="#6b6b6b" stroke-width="1"/>
-<rect x="552" y="216" width="26" height="18" rx="2" fill="none" stroke="#5a5a5a" stroke-width="2.2"/>
-<path d="M552,216 L565,228 L578,216" fill="none" stroke="#5a5a5a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-<text x="565" y="265" text-anchor="middle" dominant-baseline="central" font-size="15" font-weight="600" fill="#ffffff">Notificaciones</text>
-<text x="565" y="288" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#eeeeee">Vía correo</text>
-
-<!-- Bandeja -->
-<rect x="490" y="350" width="150" height="100" rx="10" fill="#999999" stroke="#6b6b6b" stroke-width="1"/>
-<circle cx="565" cy="382" r="18" fill="#ffffff" stroke="#6b6b6b" stroke-width="1"/>
-<path d="M553,375 L553,384 L560,391 L570,391 L577,384 L577,375" fill="none" stroke="#5a5a5a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-<line x1="553" y1="380" x2="577" y2="380" stroke="#5a5a5a" stroke-width="2.2"/>
-<text x="565" y="418" text-anchor="middle" dominant-baseline="central" font-size="15" font-weight="600" fill="#ffffff">Bandeja</text>
-<text x="565" y="438" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#eeeeee">Endpoint final</text>
-
-<!-- Flechas -->
-<line x1="230" y1="95" x2="278" y2="205" stroke="#555555" stroke-width="1.5" marker-end="url(#arrow)"/>
-<line x1="230" y1="255" x2="278" y2="255" stroke="#555555" stroke-width="1.5" marker-end="url(#arrow)"/>
-<line x1="230" y1="415" x2="278" y2="270" stroke="#555555" stroke-width="1.5" marker-end="url(#arrow)"/>
-<line x1="460" y1="255" x2="488" y2="255" stroke="#555555" stroke-width="1.5" marker-end="url(#arrow)"/>
-<line x1="565" y1="320" x2="565" y2="348" stroke="#555555" stroke-width="1.5" marker-end="url(#arrow)"/>
-
-<text x="242" y="150" font-size="12" fill="#555555">HTTPS</text>
-<text x="242" y="245" font-size="12" fill="#555555">HTTPS</text>
-<text x="242" y="350" font-size="12" fill="#555555">HTTPS</text>
-<text x="474" y="245" text-anchor="middle" font-size="12" fill="#555555">SMTP</text>
-<text x="565" y="336" text-anchor="middle" font-size="12" fill="#555555">entrega</text>
-
-<!-- Leyenda -->
-<line x1="30" y1="505" x2="640" y2="505" stroke="#dddddd" stroke-width="1"/>
-<text x="30" y="525" font-size="14" font-weight="700" fill="#1a1a1a">Leyenda</text>
-
-<circle cx="46" cy="548" r="12" fill="#1168bd" stroke="#0b4884" stroke-width="1"/>
-<circle cx="46" cy="544" r="4" fill="#ffffff"/>
-<path d="M40,553 Q40,547 46,547 Q52,547 52,553 Z" fill="#ffffff"/>
-<text x="66" y="553" font-size="12" fill="#333333">Persona (actor humano)</text>
-
-<circle cx="290" cy="548" r="12" fill="#08427b" stroke="#052e56" stroke-width="1"/>
-<rect x="284" y="542" width="12" height="8" rx="1" fill="none" stroke="#ffffff" stroke-width="1.4"/>
-<text x="310" y="553" font-size="12" fill="#333333">Sistema (InvenTrack)</text>
-
-<circle cx="500" cy="548" r="12" fill="#999999" stroke="#6b6b6b" stroke-width="1"/>
-<rect x="494" y="543" width="12" height="8" rx="1" fill="none" stroke="#ffffff" stroke-width="1.4"/>
-<path d="M494,543 L500,548 L506,543" fill="none" stroke="#ffffff" stroke-width="1.4"/>
-<text x="520" y="553" font-size="12" fill="#333333">Externo (fuera de nuestro control)</text>
-
-</svg>
+    class Dueno,Vendedor,Empleado person
+    class InvenTrack system
+    class Notif,Bandeja external
 ```
 
 ## Leyenda
 
-| Color | Hex | Significado |
-|---|---|---|
-| Azul medio | `#1168bd` | **Persona** — actor humano que usa el sistema |
-| Azul oscuro | `#08427b` | **Sistema** — InvenTrack, el proyecto que estamos documentando |
-| Gris | `#999999` | **Externo** — sistema o endpoint fuera de nuestro control |
+| Símbolo | Forma | Color (hex) | Significado |
+|---|---|---|---|
+| 👤 | Círculo doble | Azul medio `#1168bd` | **Persona** — actor humano que usa el sistema |
+| 🖥️ | Rectángulo de doble borde | Azul oscuro `#08427b` | **Sistema** — InvenTrack, el proyecto que estamos documentando |
+| ✉️ / 📥 | Óvalo (estadio) | Gris `#999999` | **Externo** — sistema o endpoint fuera de nuestro control |
 
 > **Nota sobre la convención de color:** el estándar original del modelo
 > C4 (Simon Brown / Structurizr) usa persona en azul oscuro y sistema en
 > azul medio. Aquí se invierte a pedido del curso, para que el sistema en
 > desarrollo (InvenTrack) resalte visualmente como protagonista del
 > diagrama.
+>
+> **Nota sobre las formas:** Mermaid no permite insertar íconos
+> personalizados dentro de los nodos (como las insignias circulares con
+> silueta rellena de un diagrama C4 profesional hecho a mano). Como
+> alternativa dentro de lo que el código sí puede hacer, cada tipo de
+> elemento usa una **forma de nodo distinta** (círculo doble para
+> personas, rectángulo de doble borde para el sistema, óvalo para lo
+> externo) combinada con un emoji, para que la distinción sea reconocible
+> de un vistazo sin depender solo del color.
 
 ## Roles y actores, explicados uno por uno
 
