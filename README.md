@@ -90,6 +90,7 @@ La documentación sigue la plantilla **arc42**, disponible completa en [`docs/ar
 | 4 · Solution Strategy | Resumen fundamental de las decisiones clave de arquitectura (Monolito Modular, Hexagonal por módulo, desacoplamiento de framework) |
 | 5 · Building Block View | Descomposición en subsistemas y módulos internos (Productos, Inventario, Proveedores, Usuarios, Alertas) |
 | 6 · Runtime View | Diagramas de secuencia para los flujos críticos (ej. Registro de Movimiento de Inventario) |
+|7 · Deployment View | Despliegue inicial como una única aplicación InvenTrack (FastAPI + Uvicorn) ejecutada localmente. La arquitectura adopta un Monolito Modular, reduciendo complejidad y costos de infraestructura.|
 | 9 · Architecture Decisions | Enlace y matriz de trazabilidad con los Registros de Decisiones de Arquitectura (ADRs) |
 | 10 · Quality Requirements | Árbol de utilidad, 5 escenarios de calidad de seis partes cada uno (Fuente, Estímulo, Artefacto, Entorno, Respuesta, Medida), y trade-offs identificados entre atributos |
 | 12 · Glossary | Glosario de términos de dominio técnico y de negocio (Stock, Quiebre, SKU, Ajuste, etc.) |
@@ -149,7 +150,8 @@ docs/
 │   └── images/
 │       └── arc42-logo.png
 ├── c4/
-│   └── context.md              # C4 Nivel 1 — Diagrama de contexto
+│   ├── context.md              # C4 Nivel 1 — Diagrama de contexto
+|   └── containers.md           # C4 Nivel 2 — Diagrama de contenedores
 ├── adr/
 │   └── 0001-usar-monolito-modular-con-hexagonal-por-modulo.md
 ├── ficha_problema.md            # Planteamiento del problema (1 página)
