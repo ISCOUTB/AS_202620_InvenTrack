@@ -8,9 +8,7 @@ El modelo C4 documenta la arquitectura en niveles de zoom: Contexto
 
 Este diagrama es el **Nivel 1: Contexto**. Responde una sola pregunta:
 *¿quién usa el sistema y con qué otros sistemas se conecta?* Por diseño,
-**no** muestra nada de lo que hay adentro de InvenTrack (eso es el Nivel 2,
-Contenedores, que se documentará más adelante cuando el equipo decida el
-stack).
+**no** muestra nada de lo que hay adentro de InvenTrack (eso es el Nivel 2, Contenedores [`c4/containers.md`](./containers.md)).
 
 Este diagrama se mantiene como **código Mermaid**, no como imagen, para
 que sea versionable y editable directamente en el repositorio.
@@ -100,12 +98,3 @@ deja los tres roles de ESC-05 con un actor real detrás de cada uno.
   se mantiene simple porque la decisión de stack (y si se usa un
   proveedor transaccional con API propia en vez de SMTP directo) todavía
   está pendiente — se documentará como ADR cuando se decida.
-
-## Qué falta y qué sigue
-
-Este es solo el Nivel 1. Cuando el equipo decida el stack tecnológico
-(ver "Stack de Desarrollo" en Inicio y orientación), este mismo archivo o
-uno nuevo (`docs/c4/containers.md`) documentará el **Nivel 2: Contenedores**
-— por ejemplo, si InvenTrack se divide en un frontend web, una API backend
-y una base de datos, cada uno sería un contenedor separado dentro de la
-caja que hoy aparece como una sola unidad.
