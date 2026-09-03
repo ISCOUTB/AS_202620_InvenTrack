@@ -458,7 +458,7 @@ A cambio, la aplicación comparte el mismo ciclo de despliegue y recuperación.
 errores, logging o el mecanismo de autenticación una vez definido, ligado
 a ESC-05.)*
 
-# 9. Architecture Decisions
+# Architecture Decisions
 
 Las decisiones arquitectónicas de InvenTrack se documentan formalmente mediante **Architecture Decision Records (ADR)** almacenados en [`docs/adr/`](../adr/).
 

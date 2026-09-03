@@ -89,7 +89,7 @@ La documentación sigue la plantilla **arc42**, disponible completa en [`docs/ar
 | 3 · Context and Scope | Contexto de negocio (actores que interactúan con el sistema) y contexto técnico (canales y protocolos) |
 | 4 · Solution Strategy | Resumen fundamental de las decisiones clave de arquitectura (Monolito Modular, Hexagonal por módulo, desacoplamiento de framework) |
 | 5 · Building Block View | Descomposición en subsistemas y módulos internos (Productos, Inventario, Proveedores, Usuarios, Alertas) |
-| 6 · Runtime View | Diagramas de secuencia para los flujos críticos (ej. Registro de Movimiento de Inventario) |
+| 6 · Runtime View | Diagramas de secuencia para los flujos críticos (ej. Consulta de producto) |
 |7 · Deployment View | Despliegue inicial como una única aplicación InvenTrack (FastAPI + Uvicorn) ejecutada localmente. La arquitectura adopta un Monolito Modular, reduciendo complejidad y costos de infraestructura.|
 | 9 · Architecture Decisions | Enlace y matriz de trazabilidad con los Registros de Decisiones de Arquitectura (ADRs) |
 | 10 · Quality Requirements | Árbol de utilidad, 5 escenarios de calidad de seis partes cada uno (Fuente, Estímulo, Artefacto, Entorno, Respuesta, Medida), y trade-offs identificados entre atributos |
