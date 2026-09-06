@@ -42,6 +42,7 @@
 | [C4 — Nivel 2 (Contenedores)](docs/c4/container.md) | Diagrama de contenedores: frontend, API backend, DB y notificaciones |
 | [Árbol de utilidad](docs/utility-tree.md) | Priorización de atributos de calidad por impacto y riesgo |
 | [ADR-0001](docs/adr/0001-usar-monolito-modular-con-hexagonal-por-modulo.md) | Registro de decisión: Monolito modular con hexagonal por módulo (Aceptado) |
+| [ADR-0002](docs/adr/0002-control-concurrencia-memoria-inventario.md) | Registro de decisión: Control de concurrencia en memoria para inventario (Aceptado) |
 | [Uso de IA](docs/ia.md) | Registro transparente del uso de IA en el proyecto |
 
 ---
@@ -205,7 +206,8 @@ python -m pytest -v
 | S1 | Equipo, problema y repositorio | Completo |
 | S2 | Escenarios de calidad y restricciones | Completo |
 | S3 | Estrategia, matriz, ADR y esqueleto ejecutable | Completo |
-| S4 | Vista de Contenedores (C4 N2), Secciones arc42 (4, 5, 6, 9, 12) y Corte Vertical |  Completo |
+| S4 | Vista de Contenedores (C4 N2), Secciones arc42 (4, 5, 6, 9, 12) y Corte Vertical | Completo |
+| Corte 1 | Reto de concurrencia e integración de inventario (ADR-0002 + Medición) | Completo |
 
 ## Uso de IA
 
