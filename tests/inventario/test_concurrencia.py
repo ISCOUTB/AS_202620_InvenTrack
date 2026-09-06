@@ -1,6 +1,6 @@
 import pytest
 import asyncio
-from httpx import AsyncClient
+from httpx import AsyncClient, ASGITransport
 from app.main import app
 
 @pytest.mark.asyncio
@@ -10,7 +10,8 @@ async def test_concurrencia_20_usuarios_simultaneos():
     Simula 20 peticiones concurrentes reduciendo stock sobre el mismo SKU.
     Verifica atomicidad, ausencia de race conditions y consistencia final.
     """
-    async with AsyncClient(app=app, base_url="http://test") as ac:
+    # Se añade ASGITransport para evitar la advertencia de DeprecationWarning
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         # 1. Crear producto base con stock inicial de 100 unidades
         prod_resp = await ac.post("/productos/", json={
             "nombre": "SKU-CONCURRENTE", 
@@ -20,9 +21,9 @@ async def test_concurrencia_20_usuarios_simultaneos():
         assert prod_resp.status_code == 200
         prod_id = prod_resp.json()["id"]
 
-        # 2. Definir corrutina para descontar 1 unidad de stock
+        # 2. Definir corrutina para descontar 1 unidad de stock (con barra / al final)
         async def descontar_stock():
-            return await ac.post("/inventario/movimientos", json={
+            return await ac.post("/inventario/movimientos/", json={
                 "producto_id": prod_id, 
                 "cantidad": -1, 
                 "tipo": "SALIDA"
