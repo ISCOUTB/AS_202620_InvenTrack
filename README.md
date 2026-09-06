@@ -39,7 +39,7 @@
 | [Aspecto de calidad declarado](docs/aspectos.md) | Consistencia de datos: descripción, justificación, escenarios y estado |
 | [Documentación arc42](docs/arc42/arc42-template-EN.md) | Objetivos, stakeholders, restricciones, contexto, estrategia, vistas y calidad |
 | [C4 — Nivel 1 (Contexto)](docs/c4/context.md) | Diagrama de contexto: actores, sistema y sistema externo |
-| [C4 — Nivel 2 (Contenedores)](docs/c4/container.md) | Diagrama de contenedores: frontend, API backend, DB y notificaciones |
+| [C4 — Nivel 2 (Contenedores)](docs/c4/containers.md) | Diagrama de contenedores: frontend, API backend, DB y notificaciones |
 | [Árbol de utilidad](docs/utility-tree.md) | Priorización de atributos de calidad por impacto y riesgo |
 | [ADR-0001](docs/adr/0001-usar-monolito-modular-con-hexagonal-por-modulo.md) | Registro de decisión: Monolito modular con hexagonal por módulo (Aceptado) |
 | [Uso de IA](docs/ia.md) | Registro transparente del uso de IA en el proyecto |
@@ -104,7 +104,7 @@ La comparación entre arquitectura por capas, hexagonal y monolito modular está
 ## Diagramas C4
 
 - **[Nivel 1 — Contexto](docs/c4/context.md):** actores del sistema, InvenTrack, y el único sistema externo (servicio de notificaciones). Incluye la explicación de por qué cada actor está ahí y por qué el Proveedor, aunque es un interesado real, no aparece como actor externo en este nivel.
-- **[Nivel 2 — Contenedores](docs/c4/container.md):** desglose de los contenedores ejecutables (Frontend Web/Móvil, API Backend FastAPI, Base de Datos PostgreSQL/SQLite y Servicio de Notificaciones), detallando protocolos de comunicación y límites tecnológicos.
+- **[Nivel 2 — Contenedores](docs/c4/containers.md):** desglose de los contenedores ejecutables (Frontend Web/Móvil, API Backend FastAPI, Base de Datos PostgreSQL/SQLite y Servicio de Notificaciones), detallando protocolos de comunicación y límites tecnológicos.
 - **[Árbol de utilidad](docs/utility-tree.md):** priorización de los cinco escenarios de calidad por impacto de negocio y riesgo técnico, coloreada por prioridad, con una tabla que explica el razonamiento detrás de cada nivel de prioridad.
 
 Todos los diagramas están escritos en Mermaid y se renderizan directamente al abrir el archivo en GitHub.
