@@ -15,11 +15,13 @@ async def test_concurrencia_20_usuarios_simultaneos():
         base_url="http://test",
         follow_redirects=True
     ) as ac:
-        # 1. Crear producto base con stock inicial de 100 unidades
-        prod_resp = await ac.post("/productos", json={
+        # 1. Crear producto base con stock inicial de 100 unidades y campos del esquema Pydantic
+        prod_resp = await ac.post("/productos/", json={
             "nombre": "SKU-CONCURRENTE", 
+            "sku": "SKU-CONC-01",
             "stock": 100, 
-            "precio": 15.0
+            "precio": 15.0,
+            "precio_venta": 15.0
         })
         assert prod_resp.status_code == 200
         prod_id = prod_resp.json()["id"]
