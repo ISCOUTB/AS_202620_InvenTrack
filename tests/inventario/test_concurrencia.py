@@ -15,7 +15,7 @@ async def test_concurrencia_20_usuarios_simultaneos():
         base_url="http://test",
         follow_redirects=True
     ) as ac:
-        # 1. Crear producto base incluyendo el campo 'id' exigido por la API
+        # 1. Crear producto base
         prod_payload = {
             "id": "prod-conc-001",
             "nombre": "SKU-CONCURRENTE", 
@@ -31,9 +31,9 @@ async def test_concurrencia_20_usuarios_simultaneos():
 
         prod_id = prod_resp.json()["id"]
 
-        # 2. Definir corrutina para descontar 1 unidad de stock
+        # 2. Definir corrutina para descontar 1 unidad de stock (sin barra al final)
         async def descontar_stock():
-            return await ac.post("/inventario/movimientos/", json={
+            return await ac.post("/inventario/movimientos", json={
                 "producto_id": prod_id, 
                 "cantidad": -1, 
                 "tipo": "SALIDA"
