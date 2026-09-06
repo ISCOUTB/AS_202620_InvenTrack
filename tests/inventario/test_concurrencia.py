@@ -15,40 +15,25 @@ async def test_concurrencia_20_usuarios_simultaneos():
         base_url="http://test",
         follow_redirects=True
     ) as ac:
-        # 1. Crear producto base
-        prod_payload = {
-            "id": "prod-conc-001",
-            "nombre": "SKU-CONCURRENTE", 
-            "descripcion": "Producto de prueba de concurrencia",
-            "precio": 15.0,
-            "stock": 100
-        }
-        
-        prod_resp = await ac.post("/productos/", json=prod_payload)
-        
-        if prod_resp.status_code not in (200, 201):
-            pytest.fail(f"Error creando producto ({prod_resp.status_code}): {prod_resp.json()}")
+        prod_id = "prod-conc-001"
 
-        prod_id = prod_resp.json()["id"]
+        # 1. Cargar stock inicial de 100 unidades mediante el endpoint de entradas
+        ingreso_resp = await ac.post(f"/inventario/{prod_id}/entradas", json={"cantidad": 100})
+        assert ingreso_resp.status_code == 200, f"Error preparando stock inicial: {ingreso_resp.json()}"
 
-        # 2. Definir corrutina para registrar movimiento de salida
-        # Intentamos golpear la ruta con trailing slash para evitar redirecciones 404/307
+        # 2. Definir corrutina para realizar una salida de 1 unidad
         async def descontar_stock():
-            return await ac.post("/inventario/movimientos/", json={
-                "producto_id": prod_id, 
-                "cantidad": 1, 
-                "tipo": "SALIDA"
-            })
+            return await ac.post(f"/inventario/{prod_id}/salidas", json={"cantidad": 1})
 
-        # 3. Disparar 20 peticiones concurrentes
+        # 3. Disparar 20 peticiones concurrentes en el event loop
         tasks = [descontar_stock() for _ in range(20)]
         results = await asyncio.gather(*tasks)
 
-        # 4. Validar respuestas exitosas
+        # 4. Validar que todas las peticiones devolvieron HTTP 200 OK
         for response in results:
-            assert response.status_code in (200, 201), f"Fallo en movimiento ({response.status_code}): {response.json()}"
+            assert response.status_code == 200, f"Fallo en salida ({response.status_code}): {response.json()}"
 
-        # 5. Validar consistencia de stock final (100 - 20 = 80 exactos)
-        final_resp = await ac.get(f"/productos/{prod_id}")
-        assert final_resp.status_code == 200
-        assert final_resp.json()["stock"] == 80
+        # 5. Validar que la consulta final refleje exactamente 80 unidades de stock
+        consulta_resp = await ac.get(f"/inventario/{prod_id}")
+        assert consulta_resp.status_code == 200
+        assert consulta_resp.json()["cantidad"] == 80
