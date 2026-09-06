@@ -267,14 +267,15 @@ flowchart TB
 | `shared`      | Contener elementos realmente compartidos entre módulos, evitando convertirlo en un módulo de dependencias indiscriminadas. |
 | `main.py`     | Componer y arrancar la aplicación.                                                                                         |
 
-## Level 2 — Módulo Inventario
+## Level 2 — Módulo Productos
 
-El módulo `inventario` es arquitectónicamente relevante porque concentra el aspecto de calidad prioritario del proyecto: Consistencia de datos.
+El módulo `productos` constituye el corte vertical seleccionado para
+demostrar la estructura arquitectónica del sistema.
 
 Su estructura sigue la separación:
 
 ```text
-inventario/
+productos/
 ├── domain/
 ├── application/
 └── infrastructure/
@@ -282,7 +283,7 @@ inventario/
 
 ### Domain
 
-Contiene los conceptos y reglas propias del dominio de inventario.
+Contiene los conceptos y reglas propias del dominio de productos.
 
 No debe depender de:
 
@@ -296,7 +297,7 @@ No debe depender de:
 
 Contiene los casos de uso y coordina el flujo entre el dominio y los puertos necesarios.
 
-En el incremento actual, el caso de uso mínimo es la consulta de inventario de un producto.
+En el incremento actual, el caso de uso mínimo es la consulta de información de un producto.
 
 ### Infrastructure
 
@@ -312,7 +313,7 @@ La infraestructura depende de la aplicación, pero el dominio no depende de la i
 ```mermaid
 flowchart TB
 
-    subgraph INV["Módulo Inventario"]
+    subgraph INV["Módulo Productos"]
 
         INF["Infrastructure"]
         APP["Application"]
@@ -327,7 +328,7 @@ flowchart TB
 ```
 ## Level 3 — Corte vertical inicial
 
-El primer corte vertical implementado recorre las tres partes del módulo `inventario`.
+El primer corte vertical implementado recorre las tres partes del módulo `productos`.
 
 ```mermaid
 flowchart LR
@@ -350,13 +351,13 @@ flowchart LR
     APP --> INF
     INF --> RESP
 ```
-Este corte no pretende implementar todavía toda la gestión del inventario. Su objetivo es demostrar que la arquitectura definida por el ADR-0001 puede ejecutarse mediante un flujo completo de punta a punta.
+Este corte no pretende implementar todavía toda la gestión de productos. Su objetivo es demostrar que la arquitectura definida por el ADR-0001 puede ejecutarse mediante un flujo completo de punta a punta.
 
 # Runtime View
 
-## Consulta de inventario
+## Consulta de producto
 
-El primer escenario de ejecución implementado corresponde a una consulta mínima del inventario.
+El primer escenario de ejecución implementado corresponde a una consulta mínima de productos.
 
 ```mermaid
 sequenceDiagram
@@ -366,15 +367,15 @@ sequenceDiagram
     participant APP as Application
     participant DOM as Domain
 
-    U->>API: GET /inventario/{id}
+    U->>API: GET /productos/{id}
 
-    API->>APP: Consultar inventario
+    API->>APP: Consultar productos
 
     APP->>DOM: Ejecutar caso de uso
 
-    DOM-->>APP: Resultado
+    DOM-->>APP: Producto
 
-    APP-->>API: Resultado
+    APP-->>API: Producto
 
     API-->>U: HTTP Response
 ```
@@ -384,7 +385,7 @@ sequenceDiagram
 2. El adaptador HTTP recibe la solicitud.
 3. El adaptador delega la operación al caso de uso de la capa `application`.
 4. El caso de uso utiliza el modelo o servicio correspondiente del dominio.
-5. Se obtiene el resultado.
+5. Se obtiene información del producto.
 6. La infraestructura transforma el resultado en una respuesta HTTP.
 
 Este escenario demuestra el flujo de dependencias definido en el ADR-0001 sin incorporar todavía lógica relacionada con movimientos concurrentes.
@@ -393,9 +394,9 @@ Este escenario demuestra el flujo de dependencias definido en el ADR-0001 sin in
 
 El escenario ESC-01 continúa siendo el principal escenario arquitectónico para el aspecto Consistencia de datos.
 
-Sin embargo, su mecanismo concreto de ejecución permanece pendiente del ADR-0003, donde se decidirá la estrategia de concurrencia.
+Sin embargo, su mecanismo concreto de ejecución permanece pendiente del ADR-0002, donde se decidirá la estrategia de concurrencia.
 
-Por tanto, el corte vertical actual demuestra la arquitectura general, mientras que la serialización, bloqueo o control de concurrencia será incorporado posteriormente sobre el módulo `inventario`.
+Por tanto, el corte vertical actual demuestra la arquitectura general mediante el módulo `productos`, mientras que la serialización, bloqueo o control de concurrencia será incorporado posteriormente sobre el módulo `inventario`.
 
 # Deployment View
 
@@ -457,7 +458,7 @@ A cambio, la aplicación comparte el mismo ciclo de despliegue y recuperación.
 errores, logging o el mecanismo de autenticación una vez definido, ligado
 a ESC-05.)*
 
-# 9. Architecture Decisions
+# Architecture Decisions
 
 Las decisiones arquitectónicas de InvenTrack se documentan formalmente mediante **Architecture Decision Records (ADR)** almacenados en [`docs/adr/`](../adr/).
 
@@ -491,7 +492,7 @@ La decisión completa se encuentra en:
 
 Sigue pendiente cómo se garantiza la consistencia en movimientos
 concurrentes para el aspecto declarado (ver ESC-01 y la sección 10.3 de
-trade-offs) — será el ADR-0003.
+trade-offs) — será el ADR-0002.
 
 ```mermaid
 flowchart TB
@@ -510,7 +511,7 @@ flowchart TB
 
     CODE --> TEST
 
-    ADR3["ADR-0003<br/>Concurrencia<br/>(Pendiente)"]
+    ADR3["ADR-0002<br/>Concurrencia<br/>(Pendiente)"]
 
     REQ -.-> ADR3
 ```

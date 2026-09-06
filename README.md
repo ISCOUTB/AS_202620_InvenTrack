@@ -39,7 +39,7 @@
 | [Aspecto de calidad declarado](docs/aspectos.md) | Consistencia de datos: descripción, justificación, escenarios y estado |
 | [Documentación arc42](docs/arc42/arc42-template-EN.md) | Objetivos, stakeholders, restricciones, contexto, estrategia, vistas y calidad |
 | [C4 — Nivel 1 (Contexto)](docs/c4/context.md) | Diagrama de contexto: actores, sistema y sistema externo |
-| [C4 — Nivel 2 (Contenedores)](docs/c4/container.md) | Diagrama de contenedores: frontend, API backend, DB y notificaciones |
+| [C4 — Nivel 2 (Contenedores)](docs/c4/containers.md) | Diagrama de contenedores: frontend, API backend, DB y notificaciones |
 | [Árbol de utilidad](docs/utility-tree.md) | Priorización de atributos de calidad por impacto y riesgo |
 | [ADR-0001](docs/adr/0001-usar-monolito-modular-con-hexagonal-por-modulo.md) | Registro de decisión: Monolito modular con hexagonal por módulo (Aceptado) |
 | [ADR-0002](docs/adr/0002-control-concurrencia-memoria-inventario.md) | Registro de decisión: Control de concurrencia en memoria para inventario (Aceptado) |
@@ -90,7 +90,8 @@ La documentación sigue la plantilla **arc42**, disponible completa en [`docs/ar
 | 3 · Context and Scope | Contexto de negocio (actores que interactúan con el sistema) y contexto técnico (canales y protocolos) |
 | 4 · Solution Strategy | Resumen fundamental de las decisiones clave de arquitectura (Monolito Modular, Hexagonal por módulo, desacoplamiento de framework) |
 | 5 · Building Block View | Descomposición en subsistemas y módulos internos (Productos, Inventario, Proveedores, Usuarios, Alertas) |
-| 6 · Runtime View | Diagramas de secuencia para los flujos críticos (ej. Registro de Movimiento de Inventario) |
+| 6 · Runtime View | Diagramas de secuencia para los flujos críticos (ej. Consulta de producto) |
+|7 · Deployment View | Despliegue inicial como una única aplicación InvenTrack (FastAPI + Uvicorn) ejecutada localmente. La arquitectura adopta un Monolito Modular, reduciendo complejidad y costos de infraestructura.|
 | 9 · Architecture Decisions | Enlace y matriz de trazabilidad con los Registros de Decisiones de Arquitectura (ADRs) |
 | 10 · Quality Requirements | Árbol de utilidad, 5 escenarios de calidad de seis partes cada uno (Fuente, Estímulo, Artefacto, Entorno, Respuesta, Medida), y trade-offs identificados entre atributos |
 | 12 · Glossary | Glosario de términos de dominio técnico y de negocio (Stock, Quiebre, SKU, Ajuste, etc.) |
@@ -104,7 +105,7 @@ La comparación entre arquitectura por capas, hexagonal y monolito modular está
 ## Diagramas C4
 
 - **[Nivel 1 — Contexto](docs/c4/context.md):** actores del sistema, InvenTrack, y el único sistema externo (servicio de notificaciones). Incluye la explicación de por qué cada actor está ahí y por qué el Proveedor, aunque es un interesado real, no aparece como actor externo en este nivel.
-- **[Nivel 2 — Contenedores](docs/c4/container.md):** desglose de los contenedores ejecutables (Frontend Web/Móvil, API Backend FastAPI, Base de Datos PostgreSQL/SQLite y Servicio de Notificaciones), detallando protocolos de comunicación y límites tecnológicos.
+- **[Nivel 2 — Contenedores](docs/c4/containers.md):** desglose de los contenedores ejecutables (Frontend Web/Móvil, API Backend FastAPI, Base de Datos PostgreSQL/SQLite y Servicio de Notificaciones), detallando protocolos de comunicación y límites tecnológicos.
 - **[Árbol de utilidad](docs/utility-tree.md):** priorización de los cinco escenarios de calidad por impacto de negocio y riesgo técnico, coloreada por prioridad, con una tabla que explica el razonamiento detrás de cada nivel de prioridad.
 
 Todos los diagramas están escritos en Mermaid y se renderizan directamente al abrir el archivo en GitHub.
@@ -150,7 +151,8 @@ docs/
 │   └── images/
 │       └── arc42-logo.png
 ├── c4/
-│   └── context.md              # C4 Nivel 1 — Diagrama de contexto
+│   ├── context.md              # C4 Nivel 1 — Diagrama de contexto
+|   └── containers.md           # C4 Nivel 2 — Diagrama de contenedores
 ├── adr/
 │   └── 0001-usar-monolito-modular-con-hexagonal-por-modulo.md
 ├── ficha_problema.md            # Planteamiento del problema (1 página)
