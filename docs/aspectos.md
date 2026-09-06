@@ -8,8 +8,6 @@ Aspecto → Requisito → C4 → ADR → Código → Pruebas → Evidencia
 
 Un **aspecto** no es una capa del sistema ni un módulo — es un corte vertical, de punta a punta, que se puede recorrer completo: desde la necesidad que lo justifica hasta la evidencia que demuestra que se cumplió. La tabla de abajo tiene una fila por aspecto declarado, con las ocho columnas que exige el curso; cada celda enlaza al artefacto real.
 
-Por ahora el equipo ha declarado **un solo aspecto**: Consistencia de datos. Puede haber más aspectos declarados en semanas futuras si el equipo decide convertir otro atributo de calidad priorizado en su propio corte vertical.
-
 ---
 
 ## Tabla de trazabilidad
@@ -17,6 +15,7 @@ Por ahora el equipo ha declarado **un solo aspecto**: Consistencia de datos. Pue
 | ID | Aspecto | Requisito | C4 | ADR | Código | Pruebas | Evidencia |
 |---|---|---|---|---|---|---|---|
 | ASP-01 | [Consistencia de datos](#asp-01--consistencia-de-datos) | [ESC-01, ESC-02](arc42/arc42-template-EN.md#quality-scenarios) | [C4 Nivel 2](c4/containers.md) — módulo `productos` y backend | [ADR-0001](adr/0001-usar-monolito-modular-con-hexagonal-por-modulo.md) — Monolito Modular con Hexagonal por Módulo | [`app/productos/`](../app/productos/) — Corte vertical funcional (Dominio, Aplicación e Infraestructura) | [`tests/productos/test_api_corte_vertical.py`](../tests/productos/test_api_corte_vertical.py) | Prueba de corte vertical (API + Hexagonal) en verde en la suite de pruebas automatizada |
+| ASP-02 | [Control de Concurrencia e Inventario (Reto Corte 1)](#asp-02--control-de-concurrencia-e-inventario-reto-corte-1) | [ESC-01](arc42/arc42-template-EN.md#quality-scenarios) — Latencia $p95 \le 400\text{ ms}$ con 20 usuarios | [C4 Nivel 2](c4/containers.md) — módulos `inventario` y `productos` | [ADR-0002](adr/0002-control-concurrencia-memoria-inventario.md) — Control de concurrencia en memoria para inventario | [`app/inventario/`](../app/inventario/) — Gestión de movimientos y stock atómico | [`tests/inventario/test_concurrencia.py`](../tests/inventario/test_concurrencia.py) | [`docs/retos/corte-1-medicion.md`](retos/corte-1-medicion.md) — Reporte de medición con $p95 = 28\text{ ms}$ |
 
 ---
 
@@ -83,3 +82,55 @@ El aspecto está cubierto y validado mediante la suite de pruebas automatizadas:
 - [x] Módulo del corte vertical implementado (`app/productos/`)
 - [x] Reglas de consistencia (borrado lógico/físico ESC-02) implementadas
 - [x] Pruebas de integración E2E del corte vertical en verde
+
+---
+
+## ASP-02 — Control de Concurrencia e Inventario (Reto Corte 1)
+
+### Descripción
+
+Garantizar la actualización atómica del stock y la prevención de *race conditions* cuando 20 peticiones concurrentes intentan registrar movimientos de inventario sobre el mismo producto (SKU), asegurando que el tiempo de respuesta en el percentil 95 ($p95$) no supere los $400\text{ ms}$.
+
+---
+
+### Por qué se eligió este aspecto
+
+Atiende directamente la restricción asignada para el **Corte 1**. Demuestra cómo la arquitectura monolítica modular soporta aislamiento transaccional a nivel de aplicación sin comprometer los tiempos de respuesta exigidos por los escenarios de calidad del sistema.
+
+---
+
+### Requisito: escenario de calidad
+
+- **ESC-01 (Rendimiento y Concurrencia):** 20 peticiones simultáneas reduciendo inventario sobre el mismo SKU.
+- **Umbral de Aceptación:** Latencia $p95 \le 400\text{ ms}$ y stock final resultante exacto (cero inconsistencias o descuadres).
+
+---
+
+### C4: dónde vive este aspecto
+
+Vive en la interacción entre los módulos `app/inventario/` y `app/productos/` dentro del contenedor de la **API Backend (FastAPI)** [C4 Nivel 2](c4/containers.md).
+
+---
+
+### ADR: decisiones aplicadas
+
+El [ADR-0002](adr/0002-control-concurrencia-memoria-inventario.md) establece el mecanismo de **exclusión mutua (Mutex/Lock asíncrono) por SKU** en la capa de aplicación/dominio, evitando condiciones de carrera en memoria.
+
+---
+
+### Código, Pruebas y Evidencia
+
+- **Código:** Módulos de [`app/inventario/`](../app/inventario/) y [`app/productos/`](../app/productos/).
+- **Prueba Automatizada:** [`tests/inventario/test_concurrencia.py`](../tests/inventario/test_concurrencia.py) (simula 20 llamadas asíncronas concurrentes).
+- **Evidencia Medida:** Reporte en [`docs/retos/corte-1-medicion.md`](retos/corte-1-medicion.md) que acredita $p95 = 28\text{ ms}$ bajo carga.
+
+---
+
+### Estado
+
+- [x] Aspecto de concurrencia e inventario declarado
+- [x] Escenario de rendimiento verificado (ESC-01)
+- [x] Decisiones de arquitectura registradas en ADR-0002
+- [x] Módulo `app/inventario/` integrado a la trazabilidad
+- [x] Prueba automatizada de 20 peticiones concurrentes en verde
+- [x] Reporte de medición reproducible publicado en la documentación
