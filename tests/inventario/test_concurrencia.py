@@ -10,10 +10,13 @@ async def test_concurrencia_20_usuarios_simultaneos():
     Simula 20 peticiones concurrentes reduciendo stock sobre el mismo SKU.
     Verifica atomicidad, ausencia de race conditions y consistencia final.
     """
-    # Se añade ASGITransport para evitar la advertencia de DeprecationWarning
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+    async with AsyncClient(
+        transport=ASGITransport(app=app), 
+        base_url="http://test",
+        follow_redirects=True
+    ) as ac:
         # 1. Crear producto base con stock inicial de 100 unidades
-        prod_resp = await ac.post("/productos/", json={
+        prod_resp = await ac.post("/productos", json={
             "nombre": "SKU-CONCURRENTE", 
             "stock": 100, 
             "precio": 15.0
@@ -21,7 +24,7 @@ async def test_concurrencia_20_usuarios_simultaneos():
         assert prod_resp.status_code == 200
         prod_id = prod_resp.json()["id"]
 
-        # 2. Definir corrutina para descontar 1 unidad de stock (con barra / al final)
+        # 2. Definir corrutina para descontar 1 unidad de stock
         async def descontar_stock():
             return await ac.post("/inventario/movimientos/", json={
                 "producto_id": prod_id, 
@@ -29,7 +32,7 @@ async def test_concurrencia_20_usuarios_simultaneos():
                 "tipo": "SALIDA"
             })
 
-        # 3. Disparar 20 peticiones en el mismo loop de eventos asíncronos (al mismo tiempo)
+        # 3. Disparar 20 peticiones en el mismo loop de eventos asíncronos
         tasks = [descontar_stock() for _ in range(20)]
         results = await asyncio.gather(*tasks)
 
