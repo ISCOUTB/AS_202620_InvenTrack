@@ -33,7 +33,7 @@ async def test_concurrencia_20_usuarios_simultaneos():
 
         # 2. Definir corrutina para registrar movimiento de salida
         async def descontar_stock():
-            return await ac.post("/inventario/", json={
+            return await ac.post("/inventario", json={
                 "producto_id": prod_id, 
                 "cantidad": 1, 
                 "tipo": "SALIDA"
