@@ -32,8 +32,9 @@ async def test_concurrencia_20_usuarios_simultaneos():
         prod_id = prod_resp.json()["id"]
 
         # 2. Definir corrutina para registrar movimiento de salida
+        # Intentamos golpear la ruta con trailing slash para evitar redirecciones 404/307
         async def descontar_stock():
-            return await ac.post("/inventario", json={
+            return await ac.post("/inventario/movimientos/", json={
                 "producto_id": prod_id, 
                 "cantidad": 1, 
                 "tipo": "SALIDA"
