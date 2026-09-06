@@ -15,15 +15,20 @@ async def test_concurrencia_20_usuarios_simultaneos():
         base_url="http://test",
         follow_redirects=True
     ) as ac:
-        # 1. Crear producto base con stock inicial de 100 unidades y campos del esquema Pydantic
-        prod_resp = await ac.post("/productos/", json={
+        # 1. Crear producto base
+        prod_payload = {
             "nombre": "SKU-CONCURRENTE", 
-            "sku": "SKU-CONC-01",
-            "stock": 100, 
+            "descripcion": "Producto de prueba de concurrencia",
             "precio": 15.0,
-            "precio_venta": 15.0
-        })
-        assert prod_resp.status_code == 200
+            "stock": 100
+        }
+        
+        prod_resp = await ac.post("/productos/", json=prod_payload)
+        
+        # Si la API devuelve un status distinto a 200/201, mostramos el detalle exacto que pide FastAPI
+        if prod_resp.status_code not in (200, 201):
+            pytest.fail(f"Error creando producto ({prod_resp.status_code}): {prod_resp.json()}")
+
         prod_id = prod_resp.json()["id"]
 
         # 2. Definir corrutina para descontar 1 unidad de stock
@@ -38,9 +43,9 @@ async def test_concurrencia_20_usuarios_simultaneos():
         tasks = [descontar_stock() for _ in range(20)]
         results = await asyncio.gather(*tasks)
 
-        # 4. Validar que todas las peticiones respondieron exitosamente (HTTP 200)
+        # 4. Validar que todas las peticiones respondieron exitosamente
         for response in results:
-            assert response.status_code == 200
+            assert response.status_code in (200, 201), f"Fallo en movimiento: {response.json()}"
 
         # 5. Validar consistencia estricta de stock (100 - 20 = 80 exactos)
         final_resp = await ac.get(f"/productos/{prod_id}")
