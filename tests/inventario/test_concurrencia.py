@@ -31,23 +31,23 @@ async def test_concurrencia_20_usuarios_simultaneos():
 
         prod_id = prod_resp.json()["id"]
 
-        # 2. Definir corrutina para descontar 1 unidad de stock (sin barra al final)
+        # 2. Definir corrutina para registrar movimiento de salida
         async def descontar_stock():
-            return await ac.post("/inventario/movimientos", json={
+            return await ac.post("/inventario/", json={
                 "producto_id": prod_id, 
-                "cantidad": -1, 
+                "cantidad": 1, 
                 "tipo": "SALIDA"
             })
 
-        # 3. Disparar 20 peticiones en el mismo loop de eventos asíncronos
+        # 3. Disparar 20 peticiones concurrentes
         tasks = [descontar_stock() for _ in range(20)]
         results = await asyncio.gather(*tasks)
 
-        # 4. Validar que todas las peticiones respondieron exitosamente
+        # 4. Validar respuestas exitosas
         for response in results:
             assert response.status_code in (200, 201), f"Fallo en movimiento ({response.status_code}): {response.json()}"
 
-        # 5. Validar consistencia estricta de stock (100 - 20 = 80 exactos)
+        # 5. Validar consistencia de stock final (100 - 20 = 80 exactos)
         final_resp = await ac.get(f"/productos/{prod_id}")
         assert final_resp.status_code == 200
         assert final_resp.json()["stock"] == 80
