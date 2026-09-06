@@ -15,8 +15,9 @@ async def test_concurrencia_20_usuarios_simultaneos():
         base_url="http://test",
         follow_redirects=True
     ) as ac:
-        # 1. Crear producto base
+        # 1. Crear producto base incluyendo el campo 'id' exigido por la API
         prod_payload = {
+            "id": "prod-conc-001",
             "nombre": "SKU-CONCURRENTE", 
             "descripcion": "Producto de prueba de concurrencia",
             "precio": 15.0,
@@ -25,7 +26,6 @@ async def test_concurrencia_20_usuarios_simultaneos():
         
         prod_resp = await ac.post("/productos/", json=prod_payload)
         
-        # Si la API devuelve un status distinto a 200/201, mostramos el detalle exacto que pide FastAPI
         if prod_resp.status_code not in (200, 201):
             pytest.fail(f"Error creando producto ({prod_resp.status_code}): {prod_resp.json()}")
 
@@ -45,7 +45,7 @@ async def test_concurrencia_20_usuarios_simultaneos():
 
         # 4. Validar que todas las peticiones respondieron exitosamente
         for response in results:
-            assert response.status_code in (200, 201), f"Fallo en movimiento: {response.json()}"
+            assert response.status_code in (200, 201), f"Fallo en movimiento ({response.status_code}): {response.json()}"
 
         # 5. Validar consistencia estricta de stock (100 - 20 = 80 exactos)
         final_resp = await ac.get(f"/productos/{prod_id}")
