@@ -26,3 +26,15 @@ Adoptar la **Opción 3 (Mutex/Lock asíncrono por SKU)** para el corte vertical 
 
 - **Consecuencias Positivas:** Cumple holgadamente el umbral de rendimiento ($p95 \le 400\text{ ms}$), elimina *race conditions* de stock negativo en entornos de una sola instancia y mantiene simple la arquitectura del Monolito Modular.
 - **Límites / Costo de Reversión:** Si la aplicación escala horizontalmente a múltiples réplicas/contenedores de FastAPI, este mecanismo deberá ser reemplazado por un cerrojo distribuido (ej. Redis Distributed Lock) o cierres a nivel de Base de Datos SQL, cuya migración estará encapsulada dentro de los adaptadores de infraestructura sin alterar la capa de dominio.
+
+## Trazabilidad
+
+``` mermaid
+   graph TD
+      ASP["ASP-02"] --> ESC["ESC-01"]
+      ESC --> ADR["ADR-0002"]
+      ADR --> Inv["Módulo inventario"]
+      Inv --> Lock["Lock por SKU"]
+      Lock --> Test["Prueba concurrente"]
+      Test --> P95["Medición p95"]
+```
