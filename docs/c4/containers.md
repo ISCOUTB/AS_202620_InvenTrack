@@ -81,18 +81,15 @@ vigente, no es el caso.
 
 | Contenedor en el diagrama | Corresponde a | Estado |
 |---|---|---|
-| API Backend | Toda la carpeta [`app/`](../../app/) — un único proceso FastAPI que ensambla los módulos en `app/main.py` | Funcional con Corte Vertical en [`app/productos/`](../../app/productos/) (Arquitectura Hexagonal completa) |
+| API Backend | Toda la carpeta [`app/`](../../app/) — un único proceso FastAPI que ensambla los módulos en `app/main.py` | Funcional con cortes verticales en [`app/productos/`](../../app/productos/) y [`app/inventario/`](../../app/inventario/) (Arquitectura Hexagonal + Mutex para concurrencia) |
 | Interfaz web | Aún no existe en el repositorio | Pendiente — depende de la decisión de stack de frontend |
-| Base de datos | Módulo compartidos y repositorios en memoria | Implementado con adaptadores *In-Memory* para el corte vertical en `app/productos/infrastructure/` |
+| Base de datos | Módulo compartidos y repositorios en memoria | Implementado con adaptadores *In-Memory* en `app/productos/infrastructure/` y `app/inventario/infrastructure/` |
 
 ## Qué falta y qué sigue
 
 - **Nivel 3 (Componentes):** abrir la caja "API Backend" y mostrar los
-  cinco módulos como componentes, cada uno con sus tres capas
+  módulos como componentes, cada uno con sus tres capas
   (`domain`, `application`, `infrastructure`) — esto es lo que
   demuestra visualmente que la estructura de carpetas ya creada
   corresponde a la arquitectura hexagonal decidida en el ADR-0001.
-- **Interfaz web y Base de datos:** ambas están como "Por definir"
-  porque el stack de frontend y de persistencia todavía no se ha
-  decidido (ver Technical Context en el arc42). Cuando se decida, este
-  archivo se actualiza y probablemente se registre como un nuevo ADR.
+- **Interfaz web y Base de datos:** La interfaz web continúa pendiente de decisión de stack. Para la base de datos en este Primer Corte, la persistencia se gestiona mediante repositorios *In-Memory* con control de concurrencia en `app/inventario/`; la selección del motor relacional definitivo se evaluará en entregas posteriores.
