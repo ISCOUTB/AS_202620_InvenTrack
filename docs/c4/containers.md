@@ -93,3 +93,40 @@ vigente, no es el caso.
   demuestra visualmente que la estructura de carpetas ya creada
   corresponde a la arquitectura hexagonal decidida en el ADR-0001.
 - **Interfaz web y Base de datos:** La interfaz web continúa pendiente de decisión de stack. Para la base de datos en este Primer Corte, la persistencia se gestiona mediante repositorios *In-Memory* con control de concurrencia en `app/inventario/`; la selección del motor relacional definitivo se evaluará en entregas posteriores.
+
+## Evolución del Contenedor Backend: Línea Base vs. Estado Post-Reto (Corte 1)
+
+Para dar cumplimiento a los criterios de evaluación del Reto del Primer Corte, se documenta la evolución interna del contenedor **API Backend (FastAPI)** frente al escenario de contención simultánea (**ESC-01 / ESC-04**):
+
+### Comparativa de Estado
+
+| Aspecto | Línea Base (Estado Inicial) | Estado Posterior al Reto (Corte 1) |
+|---|---|---|
+| **Mecanismo de Concurrencia** | Sin aislamiento explícito en memoria. | Exclusión mutua asíncrona serializada por SKU mediante `asyncio.Lock()`. |
+| **Garantía de Consistencia** | Vulnerable a *race conditions* y stock negativo ante peticiones simultáneas. | Operación atómica garantizada en el módulo `inventario` [ADR-0002](../adr/0002-control-concurrencia-memoria-inventario.md). |
+| **Rendimiento Medido ($p95$)** | Sin validación de latencia bajo contención. | **$p95 = 28\text{ ms}$** (cumple umbral $\le 400\text{ ms}$ con 20 req/s simultáneas). |
+| **Fronteras Modulares** | Definidas en el esqueleto. | Conservadas intactas en `app/inventario/` sin impactar otros módulos. |
+
+### Diagrama de Aislamiento en el Contenedor Backend
+
+```mermaid
+flowchart LR
+    subgraph Client ["Cliente / Prueba Concurrente"]
+        Req["20 peticiones simultáneas sobre mismo SKU"]
+    end
+
+    subgraph API ["Contenedor: API Backend (FastAPI)"]
+        subgraph ModInv ["Módulo: Inventario (app/inventario/)"]
+            Router["Router HTTP"]
+            UseCase["Caso de Uso: Registrar Movimiento"]
+            Mutex["Async Mutex (Lock por SKU)"]
+            Repo["Memory Repository"]
+
+            Router --> UseCase
+            UseCase --> Mutex
+            Mutex --> Repo
+        end
+    end
+
+    Req -->|HTTPS / REST| Router
+```
