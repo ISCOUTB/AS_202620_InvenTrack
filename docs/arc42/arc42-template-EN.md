@@ -392,11 +392,9 @@ Este escenario demuestra el flujo de dependencias definido en el ADR-0001 sin in
 
 ## Movimiento concurrente de inventario
 
-El escenario ESC-01 continúa siendo el principal escenario arquitectónico para el aspecto Consistencia de datos.
+El escenario ESC-01 es el principal escenario arquitectónico para el aspecto de Consistencia de Datos y Rendimiento.
 
-Sin embargo, su mecanismo concreto de ejecución permanece pendiente del ADR-0002, donde se decidirá la estrategia de concurrencia.
-
-Por tanto, el corte vertical actual demuestra la arquitectura general mediante el módulo `productos`, mientras que la serialización, bloqueo o control de concurrencia será incorporado posteriormente sobre el módulo `inventario`.
+Su mecanismo concreto de ejecución se resolvió en el [ADR-0002](../adr/0002-control-concurrencia-memoria-inventario.md) mediante un esquema de exclusión mutua asíncrona (`asyncio.Lock`) por SKU en el módulo `app/inventario/`. Cuando ocurren peticiones simultáneas sobre el mismo producto, el sistema serializa el procesamiento en memoria de forma atómica. Esto garantiza 0 inconsistencias de stock y mantiene la latencia $p95$ en $28\text{ ms}$ (ampliamente por debajo del umbral de $400\text{ ms}$ exigido), como se demuestra en el reporte de medición [`docs/retos/corte-1-medicion.md`](../retos/corte-1-medicion.md).
 
 # Deployment View
 
@@ -490,30 +488,34 @@ La decisión completa se encuentra en:
 [ADR-0001 — Monolito Modular con Hexagonal por módulo](../adr/0001-usar-monolito-modular-con-hexagonal-por-modulo.md)
 
 
-Sigue pendiente cómo se garantiza la consistencia en movimientos
-concurrentes para el aspecto declarado (ver ESC-01 y la sección 10.3 de
-trade-offs) — será el ADR-0002.
+```markdown
+## ADR-0002 — Control de Concurrencia en Memoria para Inventario
+
+Se definió el mecanismo para garantizar la atomicidad del stock bajo peticiones simultáneas:
+
+> InvenTrack utiliza exclusión mutua asíncrona (`asyncio.Lock`) por SKU dentro del caso de uso de actualización de stock en el módulo `inventario`.
+
+Esta decisión permite:
+* Prevenir condiciones de carrera (*race conditions*) sin impactar el rendimiento.
+* Mantener la arquitectura simple sin añadir dependencias externas de infraestructura para el MVP.
+* Asegurar que 20 peticiones simultáneas procesen el descuento de inventario con consistencia exacta y latencias $p95 \le 400\text{ ms}$.
+
+La decisión completa se encuentra en:
+[ADR-0002 — Control de Concurrencia en Memoria para Inventario](../adr/0002-control-concurrencia-memoria-inventario.md)
 
 ```mermaid
 flowchart TB
-
     REQ["Requisitos y<br/>Escenarios de calidad"]
-
     ADR1["ADR-0001<br/>Monolito Modular +<br/>Hexagonal por módulo"]
-
-    CODE["Estructura del código"]
-
-    TEST["Pruebas"]
+    ADR2["ADR-0002<br/>Control Concurrencia<br/>en Memoria (Mutex)"]
+    CODE["Estructura del código<br/>(app/inventario)"]
+    TEST["Pruebas automatizadas<br/>(test_concurrencia.py)"]
 
     REQ --> ADR1
-
+    REQ --> ADR2
     ADR1 --> CODE
-
+    ADR2 --> CODE
     CODE --> TEST
-
-    ADR3["ADR-0002<br/>Concurrencia<br/>(Pendiente)"]
-
-    REQ -.-> ADR3
 ```
 
 # Quality Requirements
@@ -671,13 +673,8 @@ y que la decisión se justifica con escenarios y evidencia, no con reglas
 absolutas. Estas son las tensiones que ya identificamos entre nuestros
 propios escenarios, antes incluso de haber elegido una táctica concreta:
 
-- **Consistencia (ESC-01) vs. Rendimiento (ESC-04):** garantizar
-  consistencia estricta en movimientos concurrentes (por ejemplo, bloqueos
-  pesimistas o transacciones serializables) puede aumentar la latencia de
-  las escrituras bajo carga. Es el trade-off que responde a la pregunta
-  guía "¿qué atributo sacrificarían y a cambio de qué?": este equipo
-  prioriza Consistencia sobre Rendimiento, porque el aspecto declarado del
-  proyecto es la integridad del dato, no la velocidad.
+- **Consistencia (ESC-01) vs. Rendimiento (ESC-04):** Garantizar consistencia estricta en movimientos concurrentes puede aumentar la latencia de las escrituras bajo carga. En InvenTrack se resolvió este trade-off priorizando un mecanismo de bloqueo liviano en memoria (`asyncio.Lock`) respaldado por el ADR-0002, logrando consistencia estricta de datos (0 descuadres) sacrificando una fracción mínima de tiempo pero manteniendo el $p95$ en $28\text{ ms}$, muy por debajo del límite tolerable de $400\text{ ms}$.
+- **Simplicidad de Infraestructura (C5) vs. Escalabilidad Horizontal:** La adopción de un estado de concurrencia en memoria para el MVP simplifica el despliegue y elimina costos de servicios externos, pero limita el escalamiento a una sola instancia de servidor. Si en el futuro el sistema requiere múltiples réplicas, este lock en memoria deberá migrarse a un mecanismo distribuido (ej. Redis o pesimista en base de datos).
 - **Consistencia (ESC-01/ESC-02) vs. Disponibilidad (ESC-03):** el ejemplo
   visto en clase — "Réplicas: disponibilidad ↑; costo y consistencia se
   tensionan" — aplica directamente aquí. Si más adelante el equipo decide
