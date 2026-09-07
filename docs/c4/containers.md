@@ -16,7 +16,7 @@ flowchart TB
     Rol: Operador de Inventario"))
 
     subgraph InvenTrack["InvenTrack — Monolito Modular (ADR-0001)"]
-        [["🖥️ Frontend
+        Web[["🖥️ Frontend
         Flutter"]]
         Api[["⚙️ API Backend
         FastAPI + Uvicorn"]]
