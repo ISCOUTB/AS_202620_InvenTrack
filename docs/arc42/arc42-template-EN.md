@@ -452,9 +452,13 @@ A cambio, la aplicación comparte el mismo ciclo de despliegue y recuperación.
 
 # Cross-cutting Concepts
 
-*(Pendiente — aquí se documentarán decisiones transversales como manejo de
-errores, logging o el mecanismo de autenticación una vez definido, ligado
-a ESC-05.)*
+## Control de Concurrencia en Memoria (Mutex por SKU)
+Para dar cumplimiento a los escenarios **ESC-01** y **ESC-04**, la consistencia de los movimientos de inventario se gestiona de forma transversal en el módulo `app/inventario/` mediante un diccionario en memoria de bloqueos asíncronos (`asyncio.Lock()`) asignados por cada SKU. 
+
+Este concepto garantiza que cualquier operación de entrada, salida o ajuste sobre el mismo producto sea ejecutada de manera atómica, evitando condiciones de carrera (*race conditions*) sin necesidad de incluir capas pesadas de infraestructura como Redis o bloqueos a nivel de base de datos relacional para el MVP (conforme al **ADR-0002**).
+
+## Manejo de Excepciones y Respuestas de Error
+Los errores de dominio (como `StockInsuficienteError` o `ProductoNoEncontradoError`) son capturados de forma transparente en la capa de infraestructura mediante *exception handlers* de FastAPI, retornando respuestas HTTP estandarizadas con códigos de estado adecuados (`400 Bad Request`, `404 Not Found`) y un formato de error consistente en JSON.
 
 # Architecture Decisions
 
