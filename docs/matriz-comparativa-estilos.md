@@ -32,8 +32,10 @@ las restricciones C1-C7 y los escenarios ESC-01 a ESC-05 de
 
 Se elige **Monolito Modular + Hexagonal por módulo**. Combina la simplicidad de
 un solo despliegue con límites funcionales explícitos y aislamiento de dominio.
-FastAPI será un adaptador de entrada HTTP; la persistencia y la estrategia de
-concurrencia se decidirán posteriormente.
+FastAPI actúa como adaptador de entrada HTTP; la persistencia se abstrae mediante
+puertos y adaptadores, y la estrategia de concurrencia fue resuelta a nivel de
+aplicación mediante el [ADR-0002](adr/0002-control-concurrencia-memoria-inventario.md)
+para cumplir con los requisitos de rendimiento del Reto del Corte 1.
 
 Las alternativas se descartan por estas razones:
 
