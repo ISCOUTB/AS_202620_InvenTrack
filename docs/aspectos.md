@@ -95,58 +95,58 @@ Para alinearse rigurosamente con la evaluación técnica, el diagnóstico se des
 - **Síntoma:** Bajo carga simultánea sobre un mismo SKU, se presentan lecturas/escrituras solapadas que generan stock negativo o descuadres en la cifra final de inventario.
 - **Causa Raíz:** Ausencia de un mecanismo de serialización / exclusión mutua asíncrona sobre el repositorio en memoria durante operaciones concurrentes.
 - **Riesgo Prioritario:** Pérdida de integridad del dato central del negocio (el stock) y degradación de la latencia por peticiones bloqueadas o fallidas.
-- **Línea Base Verificable:** La ejecución previa sin control de concurrencia permitía escrituras sucias (*dirty writes*). El escenario de calidad fijó el umbral en ráfagas de 20 peticiones concurrentes con $p95 \le 400\text{ ms}$ y 0 descuadres[cite: 2].
+- **Línea Base Verificable:** La ejecución previa sin control de concurrencia permitía escrituras sucias (*dirty writes*). El escenario de calidad fijó el umbral en ráfagas de 20 peticiones concurrentes con $p95 \le 400\text{ ms}$ y 0 descuadres.
 
 ---
 
 ### Por qué se eligió este aspecto
 
-Atiende directamente la restricción asignada para el **Corte 1**. Demuestra cómo la arquitectura monolítica modular soporta aislamiento transaccional a nivel de aplicación sin comprometer los tiempos de respuesta exigidos por los escenarios de calidad del sistema[cite: 2].
+Atiende directamente la restricción asignada para el **Corte 1**. Demuestra cómo la arquitectura monolítica modular soporta aislamiento transaccional a nivel de aplicación sin comprometer los tiempos de respuesta exigidos por los escenarios de calidad del sistema.
 
 ---
 
 ### Requisito: escenario de calidad
 
-- **ESC-01 (Rendimiento y Concurrencia):** 20 peticiones simultáneas reduciendo inventario sobre el mismo SKU[cite: 2].
-- **Umbral de Aceptación:** Latencia $p95 \le 400\text{ ms}$ y stock final resultante exacto (cero inconsistencias o descuadres)[cite: 2].
+- **ESC-01 (Rendimiento y Concurrencia):** 20 peticiones simultáneas reduciendo inventario sobre el mismo SKU.
+- **Umbral de Aceptación:** Latencia $p95 \le 400\text{ ms}$ y stock final resultante exacto (cero inconsistencias o descuadres).
 
 ---
 
 ### C4: dónde vive este aspecto
 
-Vive en la interacción entre los módulos `app/inventario/` y `app/productos/` dentro del contenedor de la **API Backend (FastAPI)** [C4 Nivel 2](c4/containers.md)[cite: 2].
+Vive en la interacción entre los módulos `app/inventario/` y `app/productos/` dentro del contenedor de la **API Backend (FastAPI)** [C4 Nivel 2](c4/containers.md).
 
 ---
 
 ### ADR: decisiones aplicadas
 
-El [ADR-0002](adr/0002-control-concurrencia-memoria-inventario.md) establece el mecanismo de **exclusión mutua (Mutex/Lock asíncrono) por SKU** en la capa de aplicación/dominio, evitando condiciones de carrera en memoria[cite: 2].
+El [ADR-0002](adr/0002-control-concurrencia-memoria-inventario.md) establece el mecanismo de **exclusión mutua (Mutex/Lock asíncrono) por SKU** en la capa de aplicación/dominio, evitando condiciones de carrera en memoria.
 
 ---
 
 ### Degradación Controlada y Resiliencia
 
 En caso de que la carga supere la capacidad de atención o el tiempo de espera por el cerrojo asíncrono exceda el límite razonable:
-- El sistema encola ordenadamente las peticiones sobre el *event loop* de FastAPI sin bloquear el hilo principal[cite: 2].
-- Ante saturación extrema o timeouts de espera sobre el lock, el servicio responde con estados HTTP controlados (`429 Too Many Requests` o `503 Service Unavailable`), protegiendo la consistencia del inventario y evitando el colapso del proceso[cite: 2].
+- El sistema encola ordenadamente las peticiones sobre el *event loop* de FastAPI sin bloquear el hilo principal.
+- Ante saturación extrema o timeouts de espera sobre el lock, el servicio responde con estados HTTP controlados (`429 Too Many Requests` o `503 Service Unavailable`), protegiendo la consistencia del inventario y evitando el colapso del proceso.
 
 ---
 
 ### Código, Pruebas y Evidencia
 
-- **Código:** Módulos de [`app/inventario/`](../app/inventario/) y [`app/productos/`](../app/productos/)[cite: 2].
-- **Prueba Automatizada:** [`tests/inventario/test_concurrencia.py`](../tests/inventario/test_concurrencia.py) (simula 20 llamadas asíncronas concurrentes)[cite: 2].
-- **Evidencia Medida:** Reporte en [`docs/retos/corte-1-medicion.md`](retos/corte-1-medicion.md) que acredita $p95 = 28\text{ ms}$ bajo carga (superando ampliamente el umbral exigido de $400\text{ ms}$)[cite: 2].
+- **Código:** Módulos de [`app/inventario/`](../app/inventario/) y [`app/productos/`](../app/productos/).
+- **Prueba Automatizada:** [`tests/inventario/test_concurrencia.py`](../tests/inventario/test_concurrencia.py) (simula 20 llamadas asíncronas concurrentes).
+- **Evidencia Medida:** Reporte en [`docs/retos/corte-1-medicion.md`](retos/corte-1-medicion.md) que acredita $p95 = 28\text{ ms}$ bajo carga (superando ampliamente el umbral exigido de $400\text{ ms}$).
 
 ---
 
 ### Estado
 
-- [x] Aspecto de concurrencia e inventario declarado[cite: 2]
-- [x] Diagnóstico técnico detallado (Síntoma, Causa Raíz, Riesgo, Línea Base)[cite: 2]
-- [x] Escenario de rendimiento verificado (ESC-01)[cite: 2]
-- [x] Decisiones de arquitectura registradas en ADR-0002[cite: 2]
-- [x] Módulo `app/inventario/` integrado a la trazabilidad[cite: 2]
-- [x] Estrategia de degradación controlada documentada[cite: 2]
-- [x] Prueba automatizada de 20 peticiones concurrentes en verde[cite: 2]
-- [x] Reporte de medición reproducible publicado en la documentación[cite: 2]
+- [x] Aspecto de concurrencia e inventario declarado
+- [x] Diagnóstico técnico detallado (Síntoma, Causa Raíz, Riesgo, Línea Base)
+- [x] Escenario de rendimiento verificado (ESC-01)
+- [x] Decisiones de arquitectura registradas en ADR-0002
+- [x] Módulo `app/inventario/` integrado a la trazabilidad
+- [x] Estrategia de degradación controlada documentada
+- [x] Prueba automatizada de 20 peticiones concurrentes en verde
+- [x] Reporte de medición reproducible publicado en la documentación
