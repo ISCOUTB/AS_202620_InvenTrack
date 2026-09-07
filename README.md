@@ -202,6 +202,16 @@ python -m pytest -v
 
 Este proyecto documenta el uso de herramientas de IA de forma transparente en [`docs/ia.md`](docs/ia.md), detallando propuestas aceptadas y correcciones técnicas aplicadas por el equipo.
 
+## Análisis estático
+
+[![SonarCloud](https://sonarcloud.io/images/project_badges/sonarcloud-black.svg)](https://sonarcloud.io/project/overview?id=ISCOUTB_AS_202620_InvenTrack)
+
+- Proyecto en SonarCloud: https://sonarcloud.io/project/overview?id=ISCOUTB_AS_202620_InvenTrack
+- Project Key: `ISCOUTB_AS_202620_InvenTrack`
+- Organization Key: `isco-utb`
+
+La configuración del análisis estático incluye Python 3.11 y la separación entre `app` (fuente) y `tests` (pruebas) para una evaluación más precisa.
+
 ## Licencia y uso académico
 
 Este repositorio es un proyecto académico desarrollado para el curso Arquitectura de Software (AS_202620) de la Universidad Tecnológica de Bolívar. Su contenido está sujeto a la política de uso responsable de IA y a las rúbricas del curso.
