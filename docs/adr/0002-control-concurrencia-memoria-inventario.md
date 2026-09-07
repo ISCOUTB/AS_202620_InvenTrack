@@ -1,4 +1,4 @@
-# ADR-0002: Control de Concurrencia e Aislamiento en Memoria para el Módulo de Inventario
+# ADR-0002: Control de Concurrencia y Aislamiento en Memoria para el Módulo de Inventario
 
 - **Estado:** Aceptado
 - **Fecha:** 2026-09-06
@@ -16,7 +16,7 @@
 
 3. **Mecanismo de Exclusión Mutua en Memoria (Mutex/Lock asíncrono por SKU):**
    - *Ventajas:* Serializa atómicamente el procesamiento de las peticiones concurrentes a nivel del caso de uso / aplicación mediante `asyncio.Lock()`. Cero dependencias externas e impacto mínimo en latencia ($< 50\text{ ms}$).
-   - *Desventajas:* Efecivo únicamente dentro de una sola instancia de ejecución del backend.
+   - *Desventajas:* Efectivo únicamente dentro de una sola instancia de ejecución del backend.
 
 ## Decisión
 
@@ -29,12 +29,12 @@ Adoptar la **Opción 3 (Mutex/Lock asíncrono por SKU)** para el corte vertical 
 
 ## Trazabilidad
 
-``` mermaid
-   graph TD
-      ASP["ASP-02"] --> ESC["ESC-01"]
-      ESC --> ADR["ADR-0002"]
-      ADR --> Inv["Módulo inventario"]
-      Inv --> Lock["Lock por SKU"]
-      Lock --> Test["Prueba concurrente"]
-      Test --> P95["Medición p95"]
+```mermaid
+graph TD
+    ASP["ASP-02"] --> ESC["ESC-01"]
+    ESC --> ADR["ADR-0002"]
+    ADR --> Inv["Módulo inventario"]
+    Inv --> Lock["Lock por SKU"]
+    Lock --> Test["Prueba concurrente"]
+    Test --> P95["Medición p95"]
 ```
