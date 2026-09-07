@@ -13,9 +13,9 @@
 
 * **Estilo Arquitectónico:** Monolito Modular con Arquitectura Hexagonal por Módulo ([ADR-0001](docs/adr/0001-usar-monolito-modular-con-hexagonal-por-modulo.md)).
 * **Mecanismo de Concurrencia:** Exclusión mutua asíncrona por SKU (`asyncio.Lock()`) ([ADR-0002](docs/adr/0002-control-concurrencia-memoria-inventario.md)).
-* **Resultados de Medición:** **$p95 = 28\text{ ms}$** bajo ráfagas de 20 peticiones simultáneas sobre el mismo SKU (Umbral exigido: $\le 400\text{ ms}$) ([Reporte de Medición](docs/retos/corte-1-medicion.md))[cite: 2].
-* **Matriz de Trazabilidad:** Cadena navegable `Aspecto → Requisito → C4 → ADR → Código → Pruebas → Evidencia` ([Aspectos de Calidad](docs/aspectos.md))[cite: 2].
-* **Transparencia en Uso de IA:** Prompts, decisiones aceptadas, correcciones y rechazos por criterio técnico ([Registro de IA](docs/ia.md))[cite: 2].
+* **Resultados de Medición:** **$p95 = 28\text{ ms}$** bajo ráfagas de 20 peticiones simultáneas sobre el mismo SKU (Umbral exigido: $\le 400\text{ ms}$) ([Reporte de Medición](docs/retos/corte-1-medicion.md)).
+* **Matriz de Trazabilidad:** Cadena navegable `Aspecto → Requisito → C4 → ADR → Código → Pruebas → Evidencia` ([Aspectos de Calidad](docs/aspectos.md)).
+* **Transparencia en Uso de IA:** Prompts, decisiones aceptadas, correcciones y rechazos por criterio técnico ([Registro de IA](docs/ia.md)).
 
 ---
 
@@ -47,15 +47,15 @@
 | Documento | Contenido |
 |---|---|
 | [Ficha del problema](docs/ficha_problema.md) | Problema, solución propuesta, alcance del MVP y usuarios objetivo |
-| [Aspecto de calidad declarado](docs/aspectos.md) | Consistencia de datos: descripción, diagnóstico, escenarios y trazabilidad[cite: 2] |
-| [Documentación arc42](docs/arc42/arc42-template-EN.md) | Objetivos, stakeholders, restricciones, contexto, estrategia, vistas y calidad[cite: 2] |
-| [C4 — Nivel 1 (Contexto)](docs/c4/context.md) | Diagrama de contexto: actores, sistema y sistema externo[cite: 2] |
-| [C4 — Nivel 2 (Contenedores)](docs/c4/containers.md) | Diagrama de contenedores, evolución post-reto y aislamiento en memoria[cite: 2] |
-| [Árbol de utilidad](docs/utility-tree.md) | Priorización de atributos de calidad por impacto y riesgo[cite: 2] |
-| [ADR-0001](docs/adr/0001-usar-monolito-modular-con-hexagonal-por-modulo.md) | Registro de decisión: Monolito modular con hexagonal por módulo (Aceptado)[cite: 2] |
-| [ADR-0002](docs/adr/0002-control-concurrencia-memoria-inventario.md) | Control de concurrencia en memoria, criterios de revisión y costo de reversión (Aceptado)[cite: 2] |
-| [Medición Reto Corte 1](docs/retos/corte-1-medicion.md) | Diagnóstico, pruebas de concurrencia, degradación controlada y comando de reproducción[cite: 2] |
-| [Uso de IA](docs/ia.md) | Registro transparente de IA (sugerencias aceptadas vs. rechazadas)[cite: 2] |
+| [Aspecto de calidad declarado](docs/aspectos.md) | Consistencia de datos: descripción, diagnóstico, escenarios y trazabilidad |
+| [Documentación arc42](docs/arc42/arc42-template-EN.md) | Objetivos, stakeholders, restricciones, contexto, estrategia, vistas y calidad |
+| [C4 — Nivel 1 (Contexto)](docs/c4/context.md) | Diagrama de contexto: actores, sistema y sistema externo |
+| [C4 — Nivel 2 (Contenedores)](docs/c4/containers.md) | Diagrama de contenedores, evolución post-reto y aislamiento en memoria |
+| [Árbol de utilidad](docs/utility-tree.md) | Priorización de atributos de calidad por impacto y riesgo |
+| [ADR-0001](docs/adr/0001-usar-monolito-modular-con-hexagonal-por-modulo.md) | Registro de decisión: Monolito modular con hexagonal por módulo (Aceptado) |
+| [ADR-0002](docs/adr/0002-control-concurrencia-memoria-inventario.md) | Control de concurrencia en memoria, criterios de revisión y costo de reversión (Aceptado) |
+| [Medición Reto Corte 1](docs/retos/corte-1-medicion.md) | Diagnóstico, pruebas de concurrencia, degradación controlada y comando de reproducción |
+| [Uso de IA](docs/ia.md) | Registro transparente de IA (sugerencias aceptadas vs. rechazadas)|
 
 ---
 
@@ -69,10 +69,10 @@ Resuelve problemas concretos de las PYMEs objetivo: descuadres de stock, quiebre
 
 | Integrante | Rol en el proyecto |
 |---|---|
-| Esteban Peluffo | Equipo de desarrollo[cite: 2] |
-| Felix Taborda | Equipo de desarrollo[cite: 2] |
-| Jose Vargas | Equipo de desarrollo[cite: 2] |
-| Javier Carta | Equipo de desarrollo[cite: 2] |
+| Esteban Peluffo | Equipo de desarrollo |
+| Felix Taborda | Equipo de desarrollo |
+| Jose Vargas | Equipo de desarrollo |
+| Javier Carta | Equipo de desarrollo |
 
 ## Aspecto de calidad declarado
 
