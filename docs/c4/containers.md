@@ -16,8 +16,8 @@ flowchart TB
     Rol: Operador de Inventario"))
 
     subgraph InvenTrack["InvenTrack — Monolito Modular (ADR-0001)"]
-        Web[["🖥️ Interfaz web
-        Por definir"]]
+        Web[["🖥️ Frontend
+        Flutter"]]
         Api[["⚙️ API Backend
         FastAPI + Uvicorn"]]
         Db[("🗄️ Base de datos
@@ -68,9 +68,9 @@ Si en el futuro el equipo decide extraer algún módulo a su propio servicio (po
 
 | Contenedor en el diagrama | Corresponde a | Estado |
 |---|---|---|
-| **API Backend** | Toda la carpeta [`app/`](../../app/) — un único proceso FastAPI que ensambla los módulos en `app/main.py` | Funcional con cortes verticales en [`app/productos/`](../../app/productos/) y [`app/inventario/`](../../app/inventario/) (Arquitectura Hexagonal + Mutex para concurrencia) |
-| **Interfaz web** | Aún no existe en el repositorio | Pendiente — depende de la decisión de stack de frontend |
-| **Base de datos** | Módulo compartidos y repositorios en memoria | Implementado con adaptadores *In-Memory* en `app/productos/infrastructure/` y `app/inventario/infrastructure/` |
+| API Backend | Toda la carpeta [`app/`](../../app/) — un único proceso FastAPI que ensambla los módulos en `app/main.py` | Funcional con cortes verticales en [`app/productos/`](../../app/productos/) y [`app/inventario/`](../../app/inventario/) (Arquitectura Hexagonal + Mutex para concurrencia) |
+| Frontend | Aún no existe en el repositorio | Flutter planificado como aplicación cliente; pendiente de implementación |
+| Base de datos | Módulo compartidos y repositorios en memoria | Implementado con adaptadores *In-Memory* en `app/productos/infrastructure/` y `app/inventario/infrastructure/` |
 
 ---
 
