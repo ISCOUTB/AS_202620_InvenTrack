@@ -487,8 +487,6 @@ La decisión completa se encuentra en:
 
 [ADR-0001 — Monolito Modular con Hexagonal por módulo](../adr/0001-usar-monolito-modular-con-hexagonal-por-modulo.md)
 
-
-```markdown
 ## ADR-0002 — Control de Concurrencia en Memoria para Inventario
 
 Se definió el mecanismo para garantizar la atomicidad del stock bajo peticiones simultáneas:
