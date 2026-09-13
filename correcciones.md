@@ -1,4 +1,4 @@
-# Feedback de revisión — InvenTrack
+# Correcciones de revisión — InvenTrack
 
 Este documento compara las observaciones publicadas en el repositorio de feedback con la evolución real del repositorio `AS_202620_InvenTrack`.
 

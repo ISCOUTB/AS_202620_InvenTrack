@@ -17,8 +17,10 @@ def test_corte_vertical_eliminar_producto_sin_movimientos():
 
 
 def test_corte_vertical_eliminar_producto_con_movimientos_lo_desactiva():
+    # A partir del ADR-0003, el movimiento se registra en el módulo real
+    # de inventario (ya no se simula con un endpoint de prueba).
     client.post("/productos", json={"id": "api-p2", "nombre": "Azúcar 1kg"})
-    client.post("/productos/api-p2/_marcar-con-movimientos")
+    client.post("/inventario/api-p2/entradas", json={"cantidad": 5})
 
     response = client.delete("/productos/api-p2")
 

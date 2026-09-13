@@ -5,17 +5,20 @@ from app.main import app
 
 @pytest.mark.asyncio
 async def test_concurrencia_20_usuarios_simultaneos():
-    """
-    Prueba E2E del Reto de Corte 1:
-    Simula 20 peticiones concurrentes reduciendo stock sobre el mismo SKU.
-    Verifica atomicidad, ausencia de race conditions y consistencia final.
-    """
+
     async with AsyncClient(
         transport=ASGITransport(app=app), 
         base_url="http://test",
         follow_redirects=True
     ) as ac:
         prod_id = "prod-conc-001"
+
+        # 0. El producto debe existir y estar activo en `productos` antes de
+        #    que `inventario` acepte movimientos sobre él (ADR-0003).
+        producto_resp = await ac.post(
+            "/productos", json={"id": prod_id, "nombre": "Producto de prueba de concurrencia"}
+        )
+        assert producto_resp.status_code == 201, f"No se pudo crear el producto: {producto_resp.json()}"
 
         # 1. Cargar stock inicial de 100 unidades mediante el endpoint de entradas
         ingreso_resp = await ac.post(f"/inventario/{prod_id}/entradas", json={"cantidad": 100})

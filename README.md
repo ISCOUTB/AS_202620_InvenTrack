@@ -131,7 +131,7 @@ Las decisiones arquitectónicas se documentan como archivos individuales en [`do
 
 | Capa | Tecnología | Estado |
 |---|---|---|
-| Frontend | Por definir | Pendiente |
+| Frontend | Flutter | Pendiente |
 | Backend | FastAPI + Uvicorn | Implementado |
 | Base de datos | Adaptador In-Memory (Transición a PostgreSQL/SQLite) | Implementado para MVP |
 | Hosting / despliegue | Por definir | Pendiente |
