@@ -1,4 +1,4 @@
-name: Run Tests & SonarCloud Scan
+name: Run Tests
 
 on:
   push:
@@ -9,8 +9,6 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    env:
-      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
     steps:
     - uses: actions/checkout@v4
@@ -29,14 +27,3 @@ jobs:
     - name: Run Pytest
       run: |
         PYTHONPATH=. pytest -v
-
-    - name: SonarCloud Scan
-      if: ${{ env.SONAR_TOKEN != '' }}
-      uses: SonarSource/sonarcloud-github-action@ba3875ecf642b2129de2b589510c81a8b53dbf4e
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        SONAR_TOKEN: ${{ env.SONAR_TOKEN }}
-      with:
-        args: >
-          -Dsonar.organization=isco-utb
-          -Dsonar.projectKey=ISCOUTB_AS_202620_InvenTrack
