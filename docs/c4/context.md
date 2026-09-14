@@ -23,16 +23,13 @@ flowchart TB
     Rol: Operador de Inventario"))
     InvenTrack[["🖥️ InvenTrack
     Gestión de inventario"]]
-    Notif(["✉️ Notificaciones
-    Vía correo"])
-    Bandeja(["📥 Bandeja
-    Endpoint final"])
+    Notif(["✉️ Servicio de notificaciones
+    Objetivo del MVP"])
 
     Dueno -- HTTPS --> InvenTrack
     Vendedor -- HTTPS --> InvenTrack
     Empleado -- HTTPS --> InvenTrack
     InvenTrack -- SMTP --> Notif
-    Notif -- entrega --> Bandeja
 
     classDef person fill:#1168bd,stroke:#0b4884,color:#ffffff,font-weight:bold
     classDef system fill:#08427b,stroke:#052e56,color:#ffffff,font-weight:bold
@@ -40,7 +37,7 @@ flowchart TB
 
     class Dueno,Vendedor,Empleado person
     class InvenTrack system
-    class Notif,Bandeja external
+    class Notif external
 ```
 
 ## Leyenda
@@ -49,7 +46,7 @@ flowchart TB
 |---|---|---|---|
 | 👤 | Círculo doble | Azul medio `#1168bd` | **Persona** — actor humano que usa el sistema |
 | 🖥️ | Rectángulo de doble borde | Azul oscuro `#08427b` | **Sistema** — InvenTrack, el proyecto que estamos documentando |
-| ✉️ / 📥 | Óvalo (estadio) | Gris `#999999` | **Externo** — sistema o endpoint fuera de nuestro control |
+| ✉️ | Óvalo (estadio) | Gris `#999999` | **Externo objetivo** — servicio fuera de nuestro control, aún no integrado |
 
 > **Nota sobre la convención de color:** el estándar original del modelo
 > C4 (Simon Brown / Structurizr) usa persona en azul oscuro y sistema en
@@ -74,8 +71,7 @@ flowchart TB
 | Vendedor | Persona | **Operador de Ventas** | Registra salidas de inventario por venta; consulta stock actual. | Dispara el escenario de mayor prioridad del proyecto (ESC-01): dos operadores registrando salidas al mismo tiempo es la situación que pone a prueba la Consistencia de datos. |
 | Empleado de bodega | Persona | **Operador de Inventario** | Registra entradas de mercancía y ajustes de inventario. | Junto con Vendedor, es el segundo actor que puede generar concurrencia sobre el mismo producto (ESC-01), y es quien opera físicamente el almacén. |
 | InvenTrack | Sistema (este proyecto) | — | Centraliza productos, proveedores, movimientos de inventario, usuarios y alertas de stock bajo. | Es el sistema que se está documentando; en este nivel se trata como caja cerrada a propósito. |
-| Notificaciones | Sistema externo | — | Recibe la solicitud de alerta cuando un producto baja del umbral crítico y la entrega por correo electrónico. | Es el único sistema externo real del MVP: sin él, la funcionalidad "alertas de stock bajo" (declarada en el alcance de la ficha del problema) no se podría entregar. |
-| Bandeja | Endpoint | — | Bandeja de correo donde finalmente llega la alerta (del Dueño, Vendedor o Empleado, según a quién se configure notificar). | Cierra el ciclo de la notificación: sin este endpoint, "Notificaciones" quedaría como una caja que solo recibe, sin mostrar a dónde entrega. |
+| Servicio de notificaciones | Sistema externo objetivo | — | Recibirá solicitudes de alerta cuando un producto baje del umbral crítico. | Está en el alcance futuro, pero el módulo `alertas` y su adaptador todavía no están implementados. |
 
 **Por qué tres roles y no solo "Dueño" y "Empleado":** el escenario ESC-05
 (control de acceso por rol, en la sección Quality Requirements del arc42)
@@ -94,7 +90,6 @@ deja los tres roles de ESC-05 con un actor real detrás de cada uno.
   infraestructura adicional. También conecta con la restricción C1 (Ley
   1581 de 2012): HTTPS cifra los datos en tránsito, protegiendo
   credenciales y datos personales.
-- **SMTP** hacia Notificaciones: protocolo estándar de envío de correo;
-  se mantiene simple porque la decisión de stack (y si se usa un
-  proveedor transaccional con API propia en vez de SMTP directo) todavía
-  está pendiente — se documentará como ADR cuando se decida.
+- **SMTP** hacia el servicio de notificaciones: protocolo objetivo para el
+  envío de correo. La integración todavía está pendiente y se documentará
+  mediante un ADR cuando se seleccione el proveedor.

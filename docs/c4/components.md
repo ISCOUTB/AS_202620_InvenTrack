@@ -1,77 +1,86 @@
 # C4 Nivel 3: Diagrama de Componentes — API Backend InvenTrack
 
-**Propósito:** Descomponer la arquitectura interna del contenedor **API Backend (FastAPI)**, mostrando cómo interactúan las capas de los módulos `productos` e `inventario` mediante **Puertos y Adaptadores (Arquitectura Hexagonal)** y el desacoplamiento definido en el **ADR-0003**[cite: 1, 2].
-
----
-
-## Diagrama de Componentes 
+Este nivel abre el contenedor `API Backend` del [C4 Nivel 2](containers.md) y
+muestra los componentes implementados actualmente. Los módulos `proveedores`,
+`usuarios` y `alertas` todavía no tienen componentes de código.
 
 ```mermaid
-graph TD
-    %% Clientes externos
-    Client[Cliente HTTP / Frontend / Postman]
+flowchart TB
+    Client["Cliente HTTP"]
 
-    subgraph Backend_FastAPI ["Contenedor: API Backend (Python / FastAPI)"]
-        
-        %% Módulo Productos
-        subgraph Modulo_Productos ["Módulo: app/productos (Contexto Catálogo)"]
-            ProdController["ProdController <br> (REST Endpoints)"]
-            ProdUseCase["ProdUseCase / Servicio <br> (Casos de Uso Productos)"]
-            HistorialAdapter["HistorialMovimientosAdapter <br> (Adaptador de Infraestructura)"]
-            ProdRepoPort["ProductosRepositoryPort <br> (Puerto de Dominio/Persistencia)"]
+    subgraph API["API Backend · FastAPI + Uvicorn"]
+        subgraph Productos["Contexto productos"]
+            ProdRouter["productos.infrastructure.router\ncrear_router"]
+            Crear["CrearProducto"]
+            Consultar["ConsultarProducto"]
+            Eliminar["EliminarProducto"]
+            ProductoRepo["ProductoRepository\nInMemoryProductoRepository"]
+            Historial["HistorialMovimientosAdapter"]
         end
 
-        %% Módulo Inventario
-        subgraph Modulo_Inventario ["Módulo: app/inventario (Contexto Stock)"]
-            InvController["InvController <br> (REST Endpoints)"]
-            InvUseCase["InvUseCase / Servicio <br> (Casos de Uso Inventario)"]
-            LockManager["LockManager por SKU <br> (Control de Concurrencia - ADR-0002)"]
-            ValidadorAdapter["ValidadorDeProductoAdapter <br> (Adaptador de Infraestructura)"]
-            InvRepoPort["InventarioRepositoryPort <br> (Puerto de Dominio/Persistencia)"]
+        subgraph Inventario["Contexto inventario"]
+            InvRouter["inventario.infrastructure.router\ncrear_router"]
+            Registrar["RegistrarMovimientoInventario"]
+            ConsultarHistorial["ConsultarHistorialMovimientos"]
+            StockRepo["StockRepository\nInMemoryStockRepository"]
+            MovimientoRepo["MovimientoRepository\nInMemoryMovimientoRepository"]
+            Validador["ValidadorDeProductoAdapter"]
+            Lock["asyncio.Lock por producto_id"]
         end
 
-        %% Puertos de Aplicación Inter-módulo (ADR-0003)
-        PuertoInvApp["Puerto Aplicación Inventario <br> (ConsultarHistorialMovimientos)"]
-        PuertoProdApp["Puerto Aplicación Productos <br> (ConsultarProducto)"]
-
+        Root["app/main.py\nComposition root"]
     end
 
-    %% Base de Datos Externa
-    Database[(Base de Datos PostgreSQL / SQLite)]
-
-    %% Relaciones HTTP Clientes
-    Client -->|HTTP / REST| ProdController
-    Client -->|HTTP / REST| InvController
-
-    %% Flujos Módulo Productos
-    ProdController --> ProdUseCase
-    ProdUseCase --> ProdRepoPort
-    ProdUseCase -->|Petición de verificación ESC-02| HistorialAdapter
-    HistorialAdapter -->|Invoca puerto de app| PuertoInvApp
-    PuertoInvApp --> InvUseCase
-
-    %% Flujos Módulo Inventario
-    InvController --> InvUseCase
-    InvUseCase --> LockManager
-    LockManager --> InvRepoPort
-    InvUseCase -->|Validación de SKU pre-escritura| ValidadorAdapter
-    ValidadorAdapter -->|Invoca puerto de app| PuertoProdApp
-    PuertoProdApp --> ProdUseCase
-
-    %% Relaciones de Persistencia
-    ProdRepoPort --> Database
-    InvRepoPort --> Database
+    Client --> ProdRouter
+    Client --> InvRouter
+    ProdRouter --> Crear
+    ProdRouter --> Eliminar
+    Crear --> ProductoRepo
+    Eliminar --> ProductoRepo
+    Eliminar --> Historial
+    Historial --> ConsultarHistorial
+    InvRouter --> Registrar
+    InvRouter --> StockRepo
+    Registrar --> Validador
+    Registrar --> Lock
+    Lock --> StockRepo
+    Registrar --> MovimientoRepo
+    Validador --> Consultar
+    Root -. ensambla .-> ProductoRepo
+    Root -. ensambla .-> StockRepo
+    Root -. ensambla .-> MovimientoRepo
+    Root -. ensambla .-> Historial
+    Root -. ensambla .-> Validador
 ```
 
-## Descripción Técnica de Componentes
+## Correspondencia con el código
 
-### **Módulo `productos` (`app/productos/`)**
-* **`ProdController`:** Expone los endpoints HTTP (`/productos`) para la gestión del catálogo.
-* **`ProdUseCase`:** Aplica la lógica de negocio (creación, edición, eliminación lógica) y valida reglas de dominio.
-* **`HistorialMovimientosAdapter`:** Implementación en infraestructura que consulta el puerto expuesto por `inventario` para verificar si un producto tiene transacciones registradas antes de ser borrado (`ESC-02`)[cite: 2].
+| Componente | Implementación actual |
+|---|---|
+| Router de productos | `app/productos/infrastructure/router.py` |
+| Casos de uso de productos | `CrearProducto`, `ConsultarProducto`, `EliminarProducto` |
+| Repositorio de productos | `InMemoryProductoRepository` |
+| Router de inventario | `app/inventario/infrastructure/router.py` |
+| Registro de movimientos | `RegistrarMovimientoInventario` |
+| Consulta de historial | `ConsultarHistorialMovimientos` |
+| Repositorios de inventario | `InMemoryStockRepository`, `InMemoryMovimientoRepository` |
+| Integración entre contextos | `HistorialMovimientosAdapter`, `ValidadorDeProductoAdapter` |
+| Composición | `app/main.py` |
 
-### **Módulo `inventario` (`app/inventario/`)**
-* **`InvController`:** Expone los endpoints HTTP (`/inventario/movimientos`, `/inventario/stock`) para operaciones de almacén.
-* **`InvUseCase`:** Procesa entradas, salidas y ajustes de stock.
-* **`LockManager`:** Implementa exclusión mutua (`asyncio.Lock`) por SKU para prevenir condiciones de carrera ante llamadas simultáneas (`ADR-0002`).
-* **`ValidadorDeProductoAdapter`:** Implementación en infraestructura que invoca el puerto expuesto por `productos` para garantizar que no se registren movimientos sobre SKUs inactivos o inexistentes (`ADR-0003`)[cite: 2].
+## Reglas de dependencia
+
+- Los routers reciben sus dependencias desde `app/main.py`.
+- Los casos de uso dependen de puertos y dominio, no de FastAPI.
+- `HistorialMovimientosAdapter` consume `ConsultarHistorialMovimientos`.
+- `ValidadorDeProductoAdapter` consume `ConsultarProducto`.
+- `asyncio.Lock` se crea dentro de `RegistrarMovimientoInventario` y se
+  mantiene por `producto_id` para serializar movimientos del mismo producto.
+- La persistencia actual es in-memory. PostgreSQL o SQLite son alternativas
+  futuras que deberán implementarse como adaptadores detrás de los puertos.
+
+## Alcance actual y objetivo
+
+El diagrama representa el estado implementado del backend. La persistencia
+relacional, el frontend Flutter, las alertas, los usuarios y los proveedores
+pertenecen a la arquitectura objetivo y no se presentan como componentes
+existentes.

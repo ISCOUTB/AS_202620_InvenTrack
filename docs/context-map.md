@@ -2,8 +2,8 @@
 
 Vista de los *bounded contexts* del monolito modular (cada carpeta bajo
 `app/<modulo>/` es un contexto, según [ADR-0001](adr/0001-usar-monolito-modular-con-hexagonal-por-modulo.md)).
-No es un diagrama C4 — el C4 (`docs/c4/`) muestra contenedores desplegables;
-este muestra los límites de dominio y cómo se relacionan entre sí.
+No es un diagrama C4: el C4 (`docs/c4/`) muestra contenedores desplegables;
+este muestra los límites de dominio y cómo se relacionan mediante contratos.
 
 ```mermaid
 flowchart LR
@@ -20,8 +20,8 @@ flowchart LR
         vacío — sin código"]
     end
 
-    Productos -- "HistorialMovimientosAdapter → ConsultarHistorialMovimientos" --> Inventario
-    Inventario -- "ValidadorDeProductoAdapter → ConsultarProducto" --> Productos
+    Productos -- "Cliente-proveedor · HistorialMovimientosAdapter" --> Inventario
+    Inventario -- "Cliente-proveedor · ValidadorDeProductoAdapter" --> Productos
 
     classDef implementado fill:#1a6fc4,stroke:#0e4d8a,color:#ffffff,font-weight:bold
     classDef vacio fill:#999999,stroke:#6b6b6b,color:#ffffff,font-weight:bold,stroke-dasharray: 4 3
@@ -48,6 +48,15 @@ flowchart LR
   paquetes creados pero sin ninguna línea de código todavía. `usuarios`
   respondería a ESC-05 (control de acceso por rol), hoy sin implementar.
 
+## Relaciones tipificadas
+
+| Tipo | Cliente | Proveedor | Contrato | Responsabilidad |
+|---|---|---|---|---|
+| Cliente-proveedor | `productos` | `inventario` | `ConsultarHistorialMovimientos` | `HistorialMovimientosAdapter` consulta el historial real antes de decidir el borrado lógico. |
+| Cliente-proveedor | `inventario` | `productos` | `ConsultarProducto` | `ValidadorDeProductoAdapter` valida que el producto exista y esté activo antes de registrar stock. |
+| Capa anticorrupción | Ambos adaptadores | Contexto contrario | Puertos de aplicación | Los adaptadores traducen la integración y evitan importar `domain` o `infrastructure` del otro módulo. |
+| Núcleo compartido | Ninguno | Ninguno | No aplica | `shared` no contiene entidades compartidas; cada contexto conserva la propiedad de sus datos. |
+
 ## Dueño único de los datos
 
 | Módulo | Dato que posee | ¿Dueño único respetado? |
@@ -57,6 +66,10 @@ flowchart LR
 | `usuarios` | Usuario, roles (declarado en ESC-05) | No implementado |
 | `proveedores` | Proveedor | No implementado |
 | `alertas` | Alerta | No implementado |
+
+Regla de propiedad: cada contexto escribe únicamente sus propios datos. Una
+referencia como `producto_id` no transfiere la propiedad de `Producto`; las
+consultas cruzadas devuelven información mediante casos de uso y puertos.
 
 ## Historial
 

@@ -29,6 +29,7 @@
 - [Documentación de arquitectura](#documentación-de-arquitectura)
 - [Matriz comparativa de estilos](#matriz-comparativa-de-estilos)
 - [Diagramas C4](#diagramas-c4)
+- [Mapa de contextos y propiedad de datos](#mapa-de-contextos-y-propiedad-de-datos)
 - [Decisiones de arquitectura (ADR)](#decisiones-de-arquitectura-adr)
 - [Stack tecnológico](#stack-tecnológico)
 - [Estructura del repositorio](#estructura-del-repositorio)
@@ -51,6 +52,9 @@
 | [Documentación arc42](docs/arc42/arc42-template-EN.md) | Objetivos, stakeholders, restricciones, contexto, estrategia, vistas y calidad |
 | [C4 — Nivel 1 (Contexto)](docs/c4/context.md) | Diagrama de contexto: actores, sistema y sistema externo |
 | [C4 — Nivel 2 (Contenedores)](docs/c4/containers.md) | Diagrama de contenedores, evolución post-reto y aislamiento en memoria |
+| [C4 — Nivel 3 (Componentes)](docs/c4/components.md) | Componentes reales del API Backend y dependencias entre módulos |
+| [Mapa de contextos](docs/context-map.md) | Límites de dominio y relaciones tipificadas entre contextos |
+| [Propiedad de datos](docs/propiedad-datos.md) | Dueño único por entidad, lectores y canales de consulta |
 | [Árbol de utilidad](docs/utility-tree.md) | Priorización de atributos de calidad por impacto y riesgo |
 | [ADR-0001](docs/adr/0001-usar-monolito-modular-con-hexagonal-por-modulo.md) | Registro de decisión: Monolito modular con hexagonal por módulo (Aceptado) |
 | [ADR-0002](docs/adr/0002-control-concurrencia-memoria-inventario.md) | Control de concurrencia en memoria, criterios de revisión y costo de reversión (Aceptado) |
@@ -116,9 +120,19 @@ La comparación entre arquitectura por capas, hexagonal y monolito modular está
 
 - **[Nivel 1 — Contexto](docs/c4/context.md):** actores del sistema, InvenTrack, y el servicio de notificaciones.
 - **[Nivel 2 — Contenedores](docs/c4/containers.md):** desglose de contenedores ejecutables (Frontend Web/Móvil, API Backend FastAPI, Base de Datos y Servicio de Notificaciones).
+- **[Nivel 3 — Componentes](docs/c4/components.md):** componentes implementados de `productos` e `inventario` dentro del API Backend.
+- **[Mapa de contextos](docs/context-map.md):** relaciones cliente-proveedor, capa anticorrupción y propiedad de datos.
 - **[Árbol de utilidad](docs/utility-tree.md):** priorización de los escenarios de calidad por impacto de negocio y riesgo técnico.
 
 Todos los diagramas están escritos en Mermaid y se renderizan directamente en GitHub.
+
+## Mapa de contextos y propiedad de datos
+
+El sistema separa los contextos `productos` e `inventario`. Cada uno es dueño
+de sus entidades y las integraciones cruzadas se realizan mediante puertos de
+aplicación y adaptadores. Los contextos `usuarios`, `proveedores` y `alertas`
+están definidos como extensiones futuras y todavía no tienen implementación.
+La matriz detallada está en [`docs/propiedad-datos.md`](docs/propiedad-datos.md).
 
 ## Decisiones de arquitectura (ADR)
 
@@ -126,6 +140,7 @@ Las decisiones arquitectónicas se documentan como archivos individuales en [`do
 
 - **[ADR-0001](docs/adr/0001-usar-monolito-modular-con-hexagonal-por-modulo.md):** Selección de Monolito Modular con Hexagonal por módulo para la estructura base.
 - **[ADR-0002](docs/adr/0002-control-concurrencia-memoria-inventario.md):** Adopción de exclusión mutua asíncrona (`asyncio.Lock()`) por SKU para resolver el reto de consistencia ante peticiones simultáneas de inventario.
+- **[ADR-0003](docs/adr/0003-integracion-productos-inventario-via-puertos-de-aplicacion.md):** Integración entre productos e inventario mediante puertos de aplicación y adaptadores.
 
 ## Stack tecnológico
 
@@ -135,7 +150,7 @@ Las decisiones arquitectónicas se documentan como archivos individuales en [`do
 | Backend | FastAPI + Uvicorn | Implementado |
 | Base de datos | Adaptador In-Memory (Transición a PostgreSQL/SQLite) | Implementado para MVP |
 | Hosting / despliegue | Por definir | Pendiente |
-| CI / calidad de código | GitHub Actions + Pytest | Operativo en verde |
+| CI / calidad de código | GitHub Actions + Pytest + pytest-asyncio | Pruebas síncronas y asíncronas configuradas |
 
 ## Estructura del repositorio
 
@@ -150,7 +165,10 @@ docs/
 │       └── arc42-logo.png
 ├── c4/
 │   ├── context.md               # C4 Nivel 1 — Diagrama de contexto
-│   └── containers.md            # C4 Nivel 2 — Diagrama de contenedores
+│   ├── containers.md            # C4 Nivel 2 — Diagrama de contenedores
+│   └── components.md            # C4 Nivel 3 — Componentes reales del backend
+├── context-map.md               # Mapa de contextos y relaciones tipificadas
+├── propiedad-datos.md           # Dueño único y canales de consulta
 ├── adr/
 │   ├── 0001-usar-monolito-modular-con-hexagonal-por-modulo.md
 │   └── 0002-control-concurrencia-memoria-inventario.md
@@ -174,7 +192,7 @@ tests/                           # Batería de pruebas automatizadas
 ├── productos/
 └── inventario/
     └── test_concurrencia.py     # Pruebas de simulación concurrente (20 req)
-requirements.txt                 # Dependencias del proyecto (FastAPI, pytest, httpx, etc.)
+requirements.txt                 # Dependencias (FastAPI, pytest, pytest-asyncio, httpx)
 ```
 
 ## Cómo ejecutar el esqueleto

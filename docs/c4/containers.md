@@ -20,8 +20,9 @@ flowchart TB
         Flutter"]]
         Api[["⚙️ API Backend
         FastAPI + Uvicorn"]]
-        Db[("🗄️ Base de datos
-        Por definir")]
+        Db[("🗄️ Persistencia
+        Actual: In-Memory
+        Objetivo: PostgreSQL o SQLite")]
     end
 
     Notif(["✉️ Notificaciones
@@ -31,7 +32,7 @@ flowchart TB
     Vendedor -- HTTPS --> Web
     Empleado -- HTTPS --> Web
     Web -- "HTTPS/REST" --> Api
-    Api -- "SQL/ORM" --> Db
+    Api -- "Repositorios / futuro SQL" --> Db
     Api -- SMTP --> Notif
 
     classDef person fill:#1168bd,stroke:#0b4884,color:#ffffff,font-weight:bold
@@ -51,7 +52,7 @@ flowchart TB
 |---|---|---|---|
 | 👤 | Círculo doble | Azul medio `#1168bd` | **Persona** — igual que en el Nivel 1 |
 | 🖥️ / ⚙️ | Rectángulo de doble borde | Azul contenedor `#1a6fc4` | **Contenedor de aplicación** — algo que se ejecuta (web o API) |
-| 🗄️ | Cilindro (base de datos) | Azul base de datos `#2e86c1` | **Contenedor de datos** — forma estándar de C4 para persistencia |
+| 🗄️ | Cilindro (persistencia) | Azul base de datos `#2e86c1` | **Contenedor de datos** — actualmente repositorios in-memory; PostgreSQL o SQLite son alternativas futuras |
 | ✉️ | Óvalo (estadio) | Gris `#999999` | **Externo** — igual que en el Nivel 1 |
 
 ---
@@ -70,7 +71,7 @@ Si en el futuro el equipo decide extraer algún módulo a su propio servicio (po
 |---|---|---|
 | API Backend | Toda la carpeta [`app/`](../../app/) — un único proceso FastAPI que ensambla los módulos en `app/main.py` | Funcional con cortes verticales en [`app/productos/`](../../app/productos/) y [`app/inventario/`](../../app/inventario/) (Arquitectura Hexagonal + Mutex para concurrencia) |
 | Frontend | Aún no existe en el repositorio | Flutter planificado como aplicación cliente; pendiente de implementación |
-| Base de datos | Módulo compartidos y repositorios en memoria | Implementado con adaptadores *In-Memory* en `app/productos/infrastructure/` y `app/inventario/infrastructure/` |
+| Persistencia | Repositorios de productos e inventario | **Actual:** adaptadores *In-Memory*. **Objetivo:** seleccionar e implementar PostgreSQL o SQLite mediante los mismos puertos. |
 
 ---
 
@@ -118,7 +119,9 @@ flowchart LR
     Req -->|HTTPS / REST| Router
 ```
 
-## Qué falta y qué sigue
+## Estado y evolución
 
-- **Nivel 3 (Componentes):** abrir la caja "API Backend" y mostrar los módulos como componentes, cada uno con sus tres capas (`domain`, `application`, `infrastructure`).
-- **Interfaz web y Base de datos:** Selección del motor relacional definitivo (PostgreSQL) y stack web en entregas posteriores.
+- **Nivel 3 (Componentes):** está documentado en [components.md](components.md) y refleja los componentes implementados de `productos` e `inventario`.
+- **Interfaz web:** Flutter está planificado, pero todavía no existe en el repositorio.
+- **Persistencia:** PostgreSQL y SQLite son alternativas objetivo; actualmente solo existe persistencia in-memory.
+- **Notificaciones y módulos restantes:** `alertas`, `usuarios` y `proveedores` están definidos como extensiones futuras.
