@@ -63,7 +63,7 @@ graph TD
     InvRepoPort --> Database
 ```
 
-    ## Descripción Técnica de Componentes
+## Descripción Técnica de Componentes
 
 ### **Módulo `productos` (`app/productos/`)**
 * **`ProdController`:** Expone los endpoints HTTP (`/productos`) para la gestión del catálogo.
