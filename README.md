@@ -58,6 +58,7 @@
 | [Árbol de utilidad](docs/utility-tree.md) | Priorización de atributos de calidad por impacto y riesgo |
 | [ADR-0001](docs/adr/0001-usar-monolito-modular-con-hexagonal-por-modulo.md) | Registro de decisión: Monolito modular con hexagonal por módulo (Aceptado) |
 | [ADR-0002](docs/adr/0002-control-concurrencia-memoria-inventario.md) | Control de concurrencia en memoria, criterios de revisión y costo de reversión (Aceptado) |
+| [ADR-0003](docs/adr/0003-integracion-productos-inventario-via-puertos-de-aplicacion.md) | Integración entre productos e inventario mediante puertos de aplicación y adaptadores (Aceptado) |
 | [Medición Reto Corte 1](docs/retos/corte-1-medicion.md) | Diagnóstico, pruebas de concurrencia, degradación controlada y comando de reproducción |
 | [Uso de IA](docs/ia.md) | Registro transparente de IA (sugerencias aceptadas vs. rechazadas)|
 
@@ -90,7 +91,7 @@ Antes de entrar a cada carpeta, vale la pena explicar la lógica detrás de la e
 
 - **`docs/arc42/`** cuenta la historia completa en texto: objetivos, restricciones, contexto, estrategia de solución, vista de bloques, vista de ejecución, atributos de calidad, conceptos transversales y los escenarios que los hacen medibles.
 - **`docs/c4/`** y **`docs/utility-tree.md`** son los diagramas — representaciones visuales que se enlazan desde el arc42.
-- **`docs/adr/`** registra las decisiones arquitectónicas concretas, una por archivo (ADR-0001 para el estilo general y ADR-0002 para el control de concurrencia).
+- **`docs/adr/`** registra las decisiones arquitectónicas concretas, una por archivo: ADR-0001 para el estilo general, ADR-0002 para concurrencia y ADR-0003 para la integración entre productos e inventario.
 - **`docs/retos/`** documenta el diagnóstico, carga simulada, comandos de reproducción y resultados del reto del Corte 1.
 - **`docs/aspectos.md`** es el índice que conecta todo siguiendo la cadena navegable: `Aspecto → Requisito → C4 → ADR → Código → Pruebas → Evidencia`.
 
@@ -171,7 +172,8 @@ docs/
 ├── propiedad-datos.md           # Dueño único y canales de consulta
 ├── adr/
 │   ├── 0001-usar-monolito-modular-con-hexagonal-por-modulo.md
-│   └── 0002-control-concurrencia-memoria-inventario.md
+│   ├── 0002-control-concurrencia-memoria-inventario.md
+│   └── 0003-integracion-productos-inventario-via-puertos-de-aplicacion.md
 ├── retos/
 │   └── corte-1-medicion.md      # Diagnostico y medicion del Reto de Concurrencia
 ├── ficha_problema.md            # Planteamiento del problema
