@@ -450,15 +450,44 @@ Comunicación distribuida.
 
 A cambio, la aplicación comparte el mismo ciclo de despliegue y recuperación.
 
-# Cross-cutting Concepts
+# 8. Cross-cutting Concepts (Conceptos Transversales)
 
-## Control de Concurrencia en Memoria (Mutex por SKU)
-Para dar cumplimiento a los escenarios **ESC-01** y **ESC-04**, la consistencia de los movimientos de inventario se gestiona de forma transversal en el módulo `app/inventario/` mediante un diccionario en memoria de bloqueos asíncronos (`asyncio.Lock()`) asignados por cada SKU. 
+En esta sección se describen las decisiones y patrones de arquitectura que aplican a múltiples módulos del monolito de forma transversal.
 
-Este concepto garantiza que cualquier operación de entrada, salida o ajuste sobre el mismo producto sea ejecutada de manera atómica, evitando condiciones de carrera (*race conditions*) sin necesidad de incluir capas pesadas de infraestructura como Redis o bloqueos a nivel de base de datos relacional para el MVP (conforme al **ADR-0002**).
+---
 
-## Manejo de Excepciones y Respuestas de Error
-Los errores de dominio (como `StockInsuficienteError` o `ProductoNoEncontradoError`) son capturados de forma transparente en la capa de infraestructura mediante *exception handlers* de FastAPI, retornando respuestas HTTP estandarizadas con códigos de estado adecuados (`400 Bad Request`, `404 Not Found`) y un formato de error consistente en JSON.
+## 8.1. Lenguaje Ubicuo (Ubiquitous Language)
+
+Para garantizar la consistencia conceptual entre desarrolladores, arquitectura y dominio de negocio, se establece la siguiente tabla de términos del dominio:
+
+| Término | Contexto Delimitado | Definición Semántica en InvenTrack |
+| :--- | :--- | :--- |
+| **SKU** | `productos` / `inventario` | Código único alfanumérico que identifica la variante exacta de un producto en el catálogo y en la bodega. |
+| **Stock Disponible** | `inventario` | Cantidad física real en bodega susceptible de ser vendida o despachada inmediatamente. |
+| **Reserva / Lock** | `inventario` | Bloqueo temporal en memoria sobre un SKU (`ADR-0002`) para garantizar la consistencia en escrituras concurrentes. |
+| **Movimiento** | `inventario` | Registro inmutable (`INSERT` únicamente) de entrada, salida o ajuste que altera el saldo de stock. |
+| **Alerta de Stock** | `alertas` | Notificación automática generada cuando el `Stock Disponible` es menor o igual al `Umbral Crítico`. |
+
+---
+
+## 8.2. Mapa de Contextos y Propiedad de Datos
+
+InvenTrack se organiza como un monolito modular respetando estrictamente la regla de **Dueño Único (Single Ownership)**: cada entidad o tabla tiene un solo módulo con permisos de escritura. La comunicación entre contextos se realiza a través de **Puertos de Aplicación e Inversión de Dependencias (`ADR-0003`)**.
+
+* **Mapa de Contextos Completo:** Ver [`docs/context-map.md`](../context-map.md) para el diagrama conceptual de límites y dependencias.
+* **Matriz de Propiedad de Datos:** Ver [`docs/propiedad-datos.md`](../propiedad-datos.md) para la tabla explicativa de entidades, escritores únicos y canales de consulta.
+
+---
+
+## 8.3. Control de Concurrencia en Memoria (Mutex por SKU)
+
+Para dar cumplimiento a los escenarios **ESC-01** y **ESC-04**, la consistencia de los movimientos de inventario se gestiona de forma transversal en el módulo `app/inventario/` mediante un diccionario en memoria de bloqueos asíncronos (`asyncio.Lock()`) asignados por cada SKU (`ADR-0002`). Esto garantiza atomicidad sin introducir sobrecostos de infraestructura.
+
+---
+
+## 8.4. Manejo de Excepciones y Respuestas de Error
+
+Los errores de dominio (como `StockInsuficienteError` o `ProductoNoEncontradoError`) son capturados de forma transparente en la capa de infraestructura mediante *exception handlers* de FastAPI, retornando respuestas HTTP estandarizadas JSON con códigos de estado apropiados (`400 Bad Request`, `404 Not Found`).
 
 # Architecture Decisions
 
@@ -653,12 +682,12 @@ secciones para saber por qué un escenario importa más que otro.
 
 *Perspectiva: Operaciones y seguridad · Prioridad (M, M) · Pregunta guía: ¿qué activo, amenaza y control?*
 
-- **Fuente:** usuario sin sesión válida, o autenticado pero sin el rol requerido (ej. empleado intentando una acción de administrador).
-- **Estímulo:** intenta iniciar sesión con credenciales inválidas, o intenta ejecutar una acción restringida (gestionar usuarios, eliminar producto) sin permiso suficiente.
-- **Artefacto:** módulo de autenticación y control de acceso por roles.
-- **Entorno:** operación normal, cualquier momento, incluidos intentos repetidos.
-- **Respuesta:** el sistema rechaza la operación, no expone datos ni funciones fuera del rol del usuario, y registra el intento en el log de auditoría.
-- **Medida (verificable):** 100 % de los intentos de acceso sin sesión válida o sin rol suficiente son rechazados y quedan registrados, verificado con pruebas de control de acceso sobre los roles definidos (Dueño, Administrador, Empleado).
+- **Fuente:** usuario no autenticado o usuario autenticado sin el rol requerido.
+- **Estímulo:** intenta invocar endpoints protegidos (ej. creación/eliminación de productos o consulta de auditoría) sin enviar token o con token de rol insuficiente.
+- **Artefacto:** middleware de autenticación y casos de uso en capas de aplicación.
+- **Entorno:** operación normal.
+- **Respuesta:** el sistema intercepta la petición, deniega la ejecución de la lógica de negocio y retorna una respuesta de error estandarizada (`401 Unauthorized` o `403 Forbidden`).
+- **Medida (verificable):** 100 % de las peticiones sin token válido o permisos insuficientes son bloqueadas sin alterar el estado de la base de datos, verificado mediante pruebas automatizadas de integración.
 
 > Cada escenario se enlaza desde la fila correspondiente de
 > [`docs/aspectos.md`](../aspectos.md). ESC-01 y ESC-02 pertenecen al
