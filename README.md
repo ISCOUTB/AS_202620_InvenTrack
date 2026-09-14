@@ -151,7 +151,7 @@ Las decisiones arquitectónicas se documentan como archivos individuales en [`do
 | Backend | FastAPI + Uvicorn | Implementado |
 | Base de datos | Adaptador In-Memory (Transición a PostgreSQL/SQLite) | Implementado para MVP |
 | Hosting / despliegue | Por definir | Pendiente |
-| CI / calidad de código | GitHub Actions + Pytest + pytest-asyncio | Pruebas síncronas y asíncronas configuradas |
+| CI / calidad de código | GitHub Actions + Pytest + pytest-asyncio + SonarCloud | Pruebas síncronas y asíncronas configuradas; análisis SonarCloud completado exitosamente |
 
 ## Estructura del repositorio
 
@@ -194,7 +194,8 @@ tests/                           # Batería de pruebas automatizadas
 ├── productos/
 └── inventario/
     └── test_concurrencia.py     # Pruebas de simulación concurrente (20 req)
-requirements.txt                 # Dependencias (FastAPI, pytest, pytest-asyncio, httpx)
+requirements.in                  # Dependencias directas del proyecto
+requirements.txt                 # Lock con versiones, hashes y dependencias transitivas
 ```
 
 ## Cómo ejecutar el esqueleto
@@ -202,7 +203,7 @@ requirements.txt                 # Dependencias (FastAPI, pytest, pytest-asyncio
 Requisito: Python 3.11 o superior.
 
 ```powershell
-python -m pip install -r requirements.txt
+python -m pip install --require-hashes --only-binary :all: -r requirements.txt
 python -m uvicorn app.main:app --reload
 ```
 
@@ -241,7 +242,7 @@ Este proyecto documenta el uso de herramientas de IA de forma transparente en [`
 - Project Key: `ISCOUTB_AS_202620_InvenTrack`
 - Organization Key: `isco-utb`
 
-La configuración del análisis estático incluye Python 3.11 y la separación entre `app` (fuente) y `tests` (pruebas) para una evaluación más precisa.
+La configuración del análisis estático incluye Python 3.11 y la separación entre `app` (fuente) y `tests` (pruebas) para una evaluación más precisa. El análisis de SonarCloud se completó exitosamente en GitHub Actions después de corregir las dependencias y la configuración de autorización. En esta copia local, el workflow versionado conserva actualmente el paso de pruebas; para repetir el análisis se requiere mantener el paso de SonarCloud y un `SONAR_TOKEN` autorizado.
 
 ## Licencia y uso académico
 
