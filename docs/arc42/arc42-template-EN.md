@@ -450,13 +450,13 @@ Comunicación distribuida.
 
 A cambio, la aplicación comparte el mismo ciclo de despliegue y recuperación.
 
-# 8. Cross-cutting Concepts (Conceptos Transversales)
+# Cross-cutting Concepts (Conceptos Transversales)
 
 En esta sección se describen las decisiones y patrones de arquitectura que aplican a múltiples módulos del monolito de forma transversal.
 
 ---
 
-## 8.1. Lenguaje Ubicuo (Ubiquitous Language)
+## Lenguaje Ubicuo (Ubiquitous Language)
 
 Para garantizar la consistencia conceptual entre desarrolladores, arquitectura y dominio de negocio, se establece la siguiente tabla de términos del dominio:
 
@@ -470,7 +470,7 @@ Para garantizar la consistencia conceptual entre desarrolladores, arquitectura y
 
 ---
 
-## 8.2. Mapa de Contextos y Propiedad de Datos
+## Mapa de Contextos y Propiedad de Datos
 
 InvenTrack se organiza como un monolito modular respetando estrictamente la regla de **Dueño Único (Single Ownership)**: cada entidad o tabla tiene un solo módulo con permisos de escritura. La comunicación entre contextos se realiza a través de **Puertos de Aplicación e Inversión de Dependencias (`ADR-0003`)**.
 
@@ -479,13 +479,13 @@ InvenTrack se organiza como un monolito modular respetando estrictamente la regl
 
 ---
 
-## 8.3. Control de Concurrencia en Memoria (Mutex por SKU)
+## ontrol de Concurrencia en Memoria (Mutex por SKU)
 
 Para dar cumplimiento a los escenarios **ESC-01** y **ESC-04**, la consistencia de los movimientos de inventario se gestiona de forma transversal en el módulo `app/inventario/` mediante un diccionario en memoria de bloqueos asíncronos (`asyncio.Lock()`) asignados por cada SKU (`ADR-0002`). Esto garantiza atomicidad sin introducir sobrecostos de infraestructura.
 
 ---
 
-## 8.4. Manejo de Excepciones y Respuestas de Error
+## Manejo de Excepciones y Respuestas de Error
 
 Los errores de dominio (como `StockInsuficienteError` o `ProductoNoEncontradoError`) son capturados de forma transparente en la capa de infraestructura mediante *exception handlers* de FastAPI, retornando respuestas HTTP estandarizadas JSON con códigos de estado apropiados (`400 Bad Request`, `404 Not Found`).
 

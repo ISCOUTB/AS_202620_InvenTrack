@@ -19,12 +19,6 @@ class MovimientoResponse(BaseModel):
 
 
 def crear_router(registro: RegistrarMovimientoInventario, repositorio_stock: StockRepository) -> APIRouter:
-    """Ensambla el router de inventario a partir de dependencias ya
-    construidas por el composition root (app/main.py). Ver ADR-0003.
-
-    Los endpoints son `async` porque RegistrarMovimientoInventario ahora usa
-    un `asyncio.Lock` por producto (ADR-0002 del equipo); sin `await` en la
-    cadena completa, el lock nunca cedería el control real."""
 
     router = APIRouter()
 

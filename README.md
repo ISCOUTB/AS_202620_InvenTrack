@@ -49,7 +49,7 @@
 |---|---|
 | [Ficha del problema](docs/ficha_problema.md) | Problema, solución propuesta, alcance del MVP y usuarios objetivo |
 | [Aspecto de calidad declarado](docs/aspectos.md) | Consistencia de datos: descripción, diagnóstico, escenarios y trazabilidad |
-| [Documentación arc42](docs/arc42/arc42-template-EN.md) | Objetivos, stakeholders, restricciones, contexto, estrategia, vistas y calidad |
+| [Documentación arc42](docs/arc42/arc42-template-EN.md) | Objetivos, stakeholders, restricciones, contexto, estrategia, vistas conceptos y calidad |
 | [C4 — Nivel 1 (Contexto)](docs/c4/context.md) | Diagrama de contexto: actores, sistema y sistema externo |
 | [C4 — Nivel 2 (Contenedores)](docs/c4/containers.md) | Diagrama de contenedores, evolución post-reto y aislamiento en memoria |
 | [C4 — Nivel 3 (Componentes)](docs/c4/components.md) | Componentes reales del API Backend y dependencias entre módulos |
@@ -108,7 +108,7 @@ La documentación sigue la plantilla **arc42**, disponible completa en [`docs/ar
 | 5 · Building Block View | Descomposición en subsistemas y módulos internos (Productos, Inventario, Proveedores, etc.) |
 | 6 · Runtime View | Diagramas de secuencia para flujos críticos (ej. Registro concurrente de movimientos) |
 | 7 · Deployment View | Despliegue inicial como una única aplicación InvenTrack (FastAPI + Uvicorn) ejecutada localmente |
-| 8 · Cross-cutting Concepts | Mecanismo de exclusión mutua asíncrona por SKU y manejo unificado de excepciones |
+| 8 · Cross-cutting Concepts | Lenguaje ubicuo, mapa de contextos, mecanismo de exclusión mutua asíncrona por SKU y manejo unificado de excepciones |
 | 9 · Architecture Decisions | Enlace y matriz de trazabilidad con los ADRs |
 | 10 · Quality Requirements | Árbol de utilidad y 5 escenarios de calidad medibles |
 | 12 · Glossary | Glosario de términos de dominio técnico y de negocio |
