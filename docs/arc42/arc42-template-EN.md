@@ -479,7 +479,7 @@ InvenTrack se organiza como un monolito modular respetando estrictamente la regl
 
 ---
 
-## ontrol de Concurrencia en Memoria (Mutex por SKU)
+## Control de Concurrencia en Memoria (Mutex por SKU)
 
 Para dar cumplimiento a los escenarios **ESC-01** y **ESC-04**, la consistencia de los movimientos de inventario se gestiona de forma transversal en el módulo `app/inventario/` mediante un diccionario en memoria de bloqueos asíncronos (`asyncio.Lock()`) asignados por cada SKU (`ADR-0002`). Esto garantiza atomicidad sin introducir sobrecostos de infraestructura.
 
