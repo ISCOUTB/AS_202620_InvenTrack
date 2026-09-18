@@ -1,0 +1,264 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "InvenTrack",
+    "description": "Sistema de gestión de inventarios para pequeñas empresas.",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/productos": {
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CrearProductoRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductoResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error"
+          }
+        }
+      }
+    },
+    "/productos/{producto_id}": {
+      "delete": {
+        "parameters": [
+          {
+            "name": "producto_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Producto Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EliminarProductoResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Validation Error"
+          }
+        }
+      }
+    },
+    "/inventario/{producto_id}/entradas": {
+      "post": {
+        "parameters": [
+          {
+            "name": "producto_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Producto Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MovimientoRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MovimientoResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Validation Error"
+          },
+          "503": {
+            "description": "Service Unavailable"
+          }
+        }
+      }
+    },
+    "/inventario/{producto_id}/salidas": {
+      "post": {
+        "parameters": [
+          {
+            "name": "producto_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Producto Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MovimientoRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MovimientoResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "409": {
+            "description": "Conflict"
+          },
+          "422": {
+            "description": "Validation Error"
+          },
+          "503": {
+            "description": "Service Unavailable"
+          }
+        }
+      }
+    },
+    "/inventario/{producto_id}": {
+      "get": {
+        "parameters": [
+          {
+            "name": "producto_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Producto Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Validation Error"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CrearProductoRequest": {
+        "properties": {
+          "id": { "type": "string", "title": "Id" },
+          "nombre": { "type": "string", "title": "Nombre" }
+        },
+        "type": "object",
+        "required": ["id", "nombre"],
+        "title": "CrearProductoRequest"
+      },
+      "ProductoResponse": {
+        "properties": {
+          "id": { "type": "string", "title": "Id" },
+          "nombre": { "type": "string", "title": "Nombre" },
+          "activo": { "type": "boolean", "title": "Activo" }
+        },
+        "type": "object",
+        "required": ["id", "nombre", "activo"],
+        "title": "ProductoResponse"
+      },
+      "EliminarProductoResponse": {
+        "properties": {
+          "eliminado_fisicamente": { "type": "boolean", "title": "Eliminado Fisicamente" },
+          "desactivado": { "type": "boolean", "title": "Desactivado" },
+          "mensaje": { "type": "string", "title": "Mensaje" }
+        },
+        "type": "object",
+        "required": ["eliminado_fisicamente", "desactivado", "mensaje"],
+        "title": "EliminarProductoResponse"
+      },
+      "MovimientoRequest": {
+        "properties": {
+          "cantidad": { "type": "integer", "title": "Cantidad" }
+        },
+        "type": "object",
+        "required": ["cantidad"],
+        "title": "MovimientoRequest"
+      },
+      "MovimientoResponse": {
+        "properties": {
+          "producto_id": { "type": "string", "title": "Producto Id" },
+          "cantidad": { "type": "integer", "title": "Cantidad" },
+          "tipo": { "type": "string", "title": "Tipo" },
+          "stock_final": { "type": "integer", "title": "Stock Final" }
+        },
+        "type": "object",
+        "required": ["producto_id", "cantidad", "tipo", "stock_final"],
+        "title": "MovimientoResponse"
+      }
+    }
+  }
+}

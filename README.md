@@ -59,6 +59,7 @@
 | [ADR-0001](docs/adr/0001-usar-monolito-modular-con-hexagonal-por-modulo.md) | Registro de decisión: Monolito modular con hexagonal por módulo (Aceptado) |
 | [ADR-0002](docs/adr/0002-control-concurrencia-memoria-inventario.md) | Control de concurrencia en memoria, criterios de revisión y costo de reversión (Aceptado) |
 | [ADR-0003](docs/adr/0003-integracion-productos-inventario-via-puertos-de-aplicacion.md) | Integración entre productos e inventario mediante puertos de aplicación y adaptadores (Aceptado) |
+| [ADR-0004](docs/adr/0004-contrato-api-versionado-openapi.md) | Contrato de API versionado con OpenAPI y validación automática (Aceptado) |
 | [Medición Reto Corte 1](docs/retos/corte-1-medicion.md) | Diagnóstico, pruebas de concurrencia, degradación controlada y comando de reproducción |
 | [Uso de IA](docs/ia.md) | Registro transparente de IA (sugerencias aceptadas vs. rechazadas)|
 
@@ -94,6 +95,7 @@ Antes de entrar a cada carpeta, vale la pena explicar la lógica detrás de la e
 - **`docs/adr/`** registra las decisiones arquitectónicas concretas, una por archivo: ADR-0001 para el estilo general, ADR-0002 para concurrencia y ADR-0003 para la integración entre productos e inventario.
 - **`docs/retos/`** documenta el diagnóstico, carga simulada, comandos de reproducción y resultados del reto del Corte 1.
 - **`docs/aspectos.md`** es el índice que conecta todo siguiendo la cadena navegable: `Aspecto → Requisito → C4 → ADR → Código → Pruebas → Evidencia`.
+- **`contracts/openapi/v1.json`** contiene el contrato HTTP versionado y `tests/contract/` valida que la implementación lo cumpla.
 
 ## Documentación de arquitectura
 
@@ -181,6 +183,8 @@ docs/
 ├── matriz-comparativa-estilos.md# Comparativa de estilos arquitectónicos
 ├── utility-tree.md              # Árbol de utilidad
 └── ia.md                        # Registro de uso de IA en el proyecto
+contracts/
+└── openapi/v1.json              # Contrato versionado de la API HTTP
 app/                             # Aplicación FastAPI Monolito Modular
 ├── main.py                      # Composición y rutas principales
 ├── shared/                      # Dominio compartido y utilidades

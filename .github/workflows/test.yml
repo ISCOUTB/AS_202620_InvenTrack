@@ -27,3 +27,7 @@ jobs:
     - name: Run Pytest
       run: |
         PYTHONPATH=. pytest -v
+
+    - name: Validate versioned API contract
+      run: |
+        PYTHONPATH=. pytest -v tests/contract/test_openapi_contract.py
