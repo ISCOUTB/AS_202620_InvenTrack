@@ -142,7 +142,7 @@ El [ADR-0002](adr/0002-control-concurrencia-memoria-inventario.md) establece el 
 
 En caso de que la carga supere la capacidad de atención o el tiempo de espera por el cerrojo asíncrono exceda el límite razonable:
 - El sistema encola ordenadamente las peticiones sobre el *event loop* de FastAPI sin bloquear el hilo principal.
-- Ante saturación extrema o timeouts de espera sobre el lock, el servicio responde con estados HTTP controlados (`429 Too Many Requests` o `503 Service Unavailable`), protegiendo la consistencia del inventario y evitando el colapso del proceso.
+- Ante un timeout de espera sobre el lock, el servicio responde HTTP `503 Service Unavailable`, protegiendo la consistencia del inventario y evitando el colapso del proceso.
 
 ---
 

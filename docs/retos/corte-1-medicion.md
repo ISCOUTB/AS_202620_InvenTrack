@@ -46,7 +46,7 @@ Para lograr estos resultados sin introducir sobreingeniería de infraestructura 
 Ante picos extraordinarios de tráfico o la saturación del cerrojo asíncrono:
 
 * **Encolamiento eficiente:** Las transacciones se encolan de forma ordenada en el *event loop* asíncrono de FastAPI sin bloquear la ejecución global del servidor.
-* **Manejo de Saturación:** Si el tiempo de espera por el *lock* excede el umbral tolerado o se agotan los recursos de concurrencia, el sistema degrada respondiendo con estados HTTP `429 Too Many Requests` o `503 Service Unavailable`, garantizando que ninguna transacción a mitad de ejecución corrompa el stock.
+* **Manejo de Saturación:** Si el tiempo de espera por el *lock* excede el umbral tolerado, el sistema degrada respondiendo HTTP `503 Service Unavailable`, garantizando que ninguna transacción a mitad de ejecución corrompa el stock.
 
 ---
 

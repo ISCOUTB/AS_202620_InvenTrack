@@ -13,19 +13,15 @@ def test_api_implementa_contrato_openapi_v1() -> None:
 
     assert contrato["openapi"] == implementacion["openapi"]
     assert contrato["info"] == implementacion["info"]
+    assert set(contrato["paths"]) == set(implementacion["paths"])
 
     for ruta, operaciones in contrato["paths"].items():
-        assert ruta in implementacion["paths"]
+        assert set(operaciones) == set(implementacion["paths"][ruta])
         for metodo, contrato_operacion in operaciones.items():
             implementacion_operacion = implementacion["paths"][ruta][metodo]
-            assert set(contrato_operacion["responses"]) <= set(
-                implementacion_operacion["responses"]
-            )
+            assert contrato_operacion["responses"] == implementacion_operacion["responses"]
 
-            if "parameters" in contrato_operacion:
-                assert contrato_operacion["parameters"] == implementacion_operacion["parameters"]
-            if "requestBody" in contrato_operacion:
-                assert contrato_operacion["requestBody"] == implementacion_operacion["requestBody"]
+            assert contrato_operacion.get("parameters") == implementacion_operacion.get("parameters")
+            assert contrato_operacion.get("requestBody") == implementacion_operacion.get("requestBody")
 
-    for nombre, esquema in contrato["components"]["schemas"].items():
-        assert implementacion["components"]["schemas"][nombre] == esquema
+    assert contrato["components"]["schemas"] == implementacion["components"]["schemas"]
