@@ -28,12 +28,12 @@ flowchart TB
     Notif(["✉️ Notificaciones
     Vía correo"])
 
-    Dueno -- HTTPS --> Web
-    Vendedor -- HTTPS --> Web
-    Empleado -- HTTPS --> Web
-    Web -- "HTTPS/REST" --> Api
-    Api -- "Repositorios / futuro SQL" --> Db
-    Api -- SMTP --> Notif
+    Dueno -- "HTTPS / HTML" --> Web
+    Vendedor -- "HTTPS / HTML" --> Web
+    Empleado -- "HTTPS / HTML" --> Web
+    Web -- "HTTPS/REST / JSON" --> Api
+    Api -- "En memoria (objetos Python); futuro: protocolo de wire SQL" --> Db
+    Api -- "SMTP / MIME" --> Notif
 
     classDef person fill:#1168bd,stroke:#0b4884,color:#ffffff,font-weight:bold
     classDef container fill:#1a6fc4,stroke:#0e4d8a,color:#ffffff,font-weight:bold
