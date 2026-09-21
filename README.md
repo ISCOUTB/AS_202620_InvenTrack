@@ -175,7 +175,8 @@ docs/
 ├── adr/
 │   ├── 0001-usar-monolito-modular-con-hexagonal-por-modulo.md
 │   ├── 0002-control-concurrencia-memoria-inventario.md
-│   └── 0003-integracion-productos-inventario-via-puertos-de-aplicacion.md
+|   ├── 0003-integracion-productos-inventario-via-puertos-de-aplicacion.md
+│   └── 0004-contrato-api-versionado-openapi.md
 ├── retos/
 │   └── corte-1-medicion.md      # Diagnostico y medicion del Reto de Concurrencia
 ├── ficha_problema.md            # Planteamiento del problema
