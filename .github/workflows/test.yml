@@ -28,6 +28,12 @@ jobs:
       run: |
         PYTHONPATH=. pytest -v
 
+    - name: SonarCloud Scan
+      uses: SonarSource/sonarcloud-github-action@master
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
     - name: Validate versioned API contract
       run: |
         PYTHONPATH=. pytest -v tests/contract/test_openapi_contract.py
