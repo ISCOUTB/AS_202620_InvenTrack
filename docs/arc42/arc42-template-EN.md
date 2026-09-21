@@ -654,82 +654,56 @@ secciones para saber por qué un escenario importa más que otro.
 - **Artefacto:** módulo de gestión de productos.
 - **Entorno:** operación normal.
 - **Respuesta:** el sistema impide el borrado físico y solo permite desactivar (borrado lógico) el producto.
-- **Medida (verificable):** 100 % de los productos con movimientos asociados no pueden eliminarse físicamente; verificado con prueba automatizada.
+- **Medida (verificable):** 100 % de los intentos de borrado sobre productos con historial retornan un código de error HTTP 400/409 o aplican borrado lógico, preservando el 100 % de los registros históricos de movimientos.
 
 ### ESC-03 — Disponibilidad
 
-*Perspectiva: Usuario y negocio · Prioridad (A, M) · Pregunta guía: ¿qué fallos y recuperación?*
+*Perspectiva: Usuario y negocio · Prioridad (A, M)*
 
-- **Fuente:** falla de infraestructura (caída del servidor).
-- **Estímulo:** el servicio deja de responder mientras un empleado registra una venta.
-- **Artefacto:** sistema completo (backend).
-- **Entorno:** horario comercial pico.
-- **Respuesta:** el sistema se recupera y el movimiento no confirmado no queda aplicado parcialmente.
-- **Medida (verificable):** disponibilidad ≥ 99 % mensual en horario comercial (8 a. m.–8 p. m.) y recuperación en ≤ 5 minutos tras una falla, medido con monitoreo de uptime.
+- **Fuente:** falla inesperada de infraestructura o error no capturado en la aplicación.
+- **Estímulo:** el proceso de InvenTrack se detiene o pierde conectividad durante una transacción.
+- **Artefacto:** contenedor API Backend (FastAPI / Uvicorn).
+- **Entorno:** horario comercial.
+- **Respuesta:** el sistema reinicia el servicio y recupera su estado consistente sin corrupción de datos.
+- **Medida (verificable):** tiempo medio de recuperación ($RTO$) $\le 2\text{ minutos}$ y $0\%$ de corrupción en los registros de inventario persistidos.
 
 ### ESC-04 — Rendimiento
 
-*Perspectiva: Usuario y negocio · Prioridad (M, B) · Pregunta guía: ¿con qué carga y latencia?*
+*Perspectiva: Usuario y negocio · Prioridad (M, B)*
 
-- **Fuente:** empleado o dueño.
-- **Estímulo:** consulta el inventario actual con filtros.
-- **Artefacto:** módulo de consulta de inventario.
-- **Entorno:** hora pico, hasta 20 usuarios concurrentes.
-- **Respuesta:** el sistema retorna el listado solicitado.
-- **Medida (verificable):** ≤ 400 ms p95 con 20 usuarios concurrentes, medido con prueba de carga. (p95 = al menos el 95 % de las observaciones no supera ese tiempo; se define población, ventana, carga y método de medición para que el número sea reproducible — ver el ejemplo trabajado al inicio de esta sección.)
+- **Fuente:** múltiples usuarios (vendedores / empleados de bodega).
+- **Estímulo:** realizan consultas simultáneas sobre el catálogo o el stock de productos en hora pico.
+- **Artefacto:** módulo de productos e inventario.
+- **Entorno:** pico de carga en horario comercial (hasta 20 solicitudes/s).
+- **Respuesta:** el sistema procesa y entrega los resultados de stock de manera fluida.
+- **Medida (verificable):** latencia en el percentil 95 ($p95$) $\le 400\text{ ms}$ medida mediante pruebas de carga automatizadas.
 
 ### ESC-05 — Seguridad
 
-*Perspectiva: Operaciones y seguridad · Prioridad (M, M) · Pregunta guía: ¿qué activo, amenaza y control?*
+*Perspectiva: Operaciones y seguridad · Prioridad (M, M)*
 
-- **Fuente:** usuario no autenticado o usuario autenticado sin el rol requerido.
-- **Estímulo:** intenta invocar endpoints protegidos (ej. creación/eliminación de productos o consulta de auditoría) sin enviar token o con token de rol insuficiente.
-- **Artefacto:** middleware de autenticación y casos de uso en capas de aplicación.
+- **Fuente:** usuario no autenticado o con rol sin permisos (p. ej., Vendedor).
+- **Estímulo:** intenta acceder a endpoints administrativos o modificar la configuración de usuarios/proveedores.
+- **Artefacto:** middleware de seguridad / casos de uso en el módulo `usuarios`.
 - **Entorno:** operación normal.
-- **Respuesta:** el sistema intercepta la petición, deniega la ejecución de la lógica de negocio y retorna una respuesta de error estandarizada (`401 Unauthorized` o `403 Forbidden`).
-- **Medida (verificable):** 100 % de las peticiones sin token válido o permisos insuficientes son bloqueadas sin alterar el estado de la base de datos, verificado mediante pruebas automatizadas de integración.
+- **Respuesta:** el sistema deniega el acceso mediante rechazo explícito y registra el intento no autorizado.
+- **Medida (verificable):** 100 % de las solicitudes sin token o con rol insuficiente reciben una respuesta HTTP 401 Unauthorized o 403 Forbidden.
 
-> Cada escenario se enlaza desde la fila correspondiente de
-> [`docs/aspectos.md`](../aspectos.md). ESC-01 y ESC-02 pertenecen al
-> aspecto "Consistencia de datos" declarado en la Evidencia S1; el resto
-> (ESC-03 a ESC-05) corresponde a atributos de calidad priorizados pero
-> aún sin un aspecto propio declarado — si el equipo decide más adelante
-> convertir alguno de ellos en aspecto, se agregaría una fila nueva en
-> `aspectos.md`.
+---
 
-## Trade-offs y tensiones identificadas
+## 10.3 Trade-offs de Arquitectura
 
-En clase se vio que una táctica puede mejorar un atributo y afectar otro,
-y que la decisión se justifica con escenarios y evidencia, no con reglas
-absolutas. Estas son las tensiones que ya identificamos entre nuestros
-propios escenarios, antes incluso de haber elegido una táctica concreta:
+1. **Consistencia vs. Latencia (Prioridad Alta):** Se sacrifica un margen mínimo de tiempo de respuesta (enqueuing en event loop mediante `asyncio.Lock` en `ADR-0002`) para garantizar que nunca existan descuadres ni stock negativo en el módulo `inventario`.
+2. **Monolito Modular vs. Despliegue Independiente (Prioridad Media):** Se adopta un monolito modular (`ADR-0001`) sacrificando el despliegue independiente de microservicios a cambio de simplificar la operación, reducir los costos de infraestructura (C5) y evitar latencias por red entre componentes.
+3. **Persistencia In-Memory vs. Persistencia en Disco (Transición):** Para el Corte 1 se priorizó la velocidad de desarrollo y pruebas de concurrencia en memoria, asumiendo la volatilidad a cambio de validar el modelo de dominio antes de acoplar un ORM o motor SQL.
 
-- **Consistencia (ESC-01) vs. Rendimiento (ESC-04):** Garantizar consistencia estricta en movimientos concurrentes puede aumentar la latencia de las escrituras bajo carga. En InvenTrack se resolvió este trade-off priorizando un mecanismo de bloqueo liviano en memoria (`asyncio.Lock`) respaldado por el ADR-0002, logrando consistencia estricta de datos (0 descuadres) sacrificando una fracción mínima de tiempo pero manteniendo el $p95$ en $28\text{ ms}$, muy por debajo del límite tolerable de $400\text{ ms}$.
-- **Simplicidad de Infraestructura (C5) vs. Escalabilidad Horizontal:** La adopción de un estado de concurrencia en memoria para el MVP simplifica el despliegue y elimina costos de servicios externos, pero limita el escalamiento a una sola instancia de servidor. Si en el futuro el sistema requiere múltiples réplicas, este lock en memoria deberá migrarse a un mecanismo distribuido (ej. Redis o pesimista en base de datos).
-- **Consistencia (ESC-01/ESC-02) vs. Disponibilidad (ESC-03):** el ejemplo
-  visto en clase — "Réplicas: disponibilidad ↑; costo y consistencia se
-  tensionan" — aplica directamente aquí. Si más adelante el equipo decide
-  replicar la base de datos para mejorar disponibilidad, esa decisión
-  deberá evaluarse primero contra ESC-01 y ESC-02, porque la consistencia
-  es el aspecto declarado y no se negocia sin justificación explícita.
-- **Seguridad (ESC-05) vs. Usabilidad:** exigir autenticación y control de
-  roles añade fricción para usuarios no técnicos (restricción C6). Se
-  buscará que el mecanismo de control de acceso sea simple de usar sin
-  debilitar la medida de ESC-05.
-- **Mantenibilidad / Arquitectura Hexagonal vs. Rendimiento inicial:** la separación 
-  en capas (`domain`, `application`, `infrastructure`) introduce indirección y mapeo de 
-  objetos entre límites. Esto añade una penalización insignificante en microsegundos 
-  durante la ejecución, pero la ganancia en desacoplamiento, testabilidad y Mantenibilidad 
-  justifica plenamente la elección táctica.
+# 11. Risks and Technical Debt
 
-Estas tensiones no se resuelven todavía: se documentarán como ADR en
-[`docs/adr/`](../adr/) cuando el equipo decida la táctica concreta para
-cada atributo.
+* **Deuda Técnica de Persistencia:** La implementación actual utiliza repositorios *In-Memory* con `asyncio.Lock`. Esto resuelve la concurrencia en un solo proceso, pero requiere migrar a transacciones ACID en PostgreSQL/SQLite cuando el sistema se despliegue en múltiples réplicas.
+* **Autenticación Ficticia / Mock:** La seguridad por roles (`ESC-05`) requiere la integración definitiva con JWT en el módulo `usuarios`.
+* **Ausencia de Frontend:** El cliente Flutter está planificado, por lo que la validación actual se limita al contrato de API OpenAPI y las pruebas de integración en pytest.
 
-# Risks and Technical Debts
-
-*(Pendiente — se completa una vez existan decisiones de arquitectura y
-componentes de código sobre los cuales identificar riesgos concretos.)*
+---
 
 # 12. Glossary
 
