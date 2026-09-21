@@ -55,6 +55,8 @@
 | [C4 — Nivel 3 (Componentes)](docs/c4/components.md) | Componentes reales del API Backend y dependencias entre módulos |
 | [Mapa de contextos](docs/context-map.md) | Límites de dominio y relaciones tipificadas entre contextos |
 | [Propiedad de datos](docs/propiedad-datos.md) | Dueño único por entidad, lectores y canales de consulta |
+| [Auditoría de modularidad](docs/auditoria-modularidad.md) | Análisis de acoplamientos y corrección de violaciones entre módulos |
+| [Contrato de API](docs/api/inventrack-contrato.md) | Contrato HTTP versionado del MVP, errores, concurrencia y endpoints |
 | [Árbol de utilidad](docs/utility-tree.md) | Priorización de atributos de calidad por impacto y riesgo |
 | [ADR-0001](docs/adr/0001-usar-monolito-modular-con-hexagonal-por-modulo.md) | Registro de decisión: Monolito modular con hexagonal por módulo (Aceptado) |
 | [ADR-0002](docs/adr/0002-control-concurrencia-memoria-inventario.md) | Control de concurrencia en memoria, criterios de revisión y costo de reversión (Aceptado) |
@@ -92,9 +94,11 @@ Antes de entrar a cada carpeta, vale la pena explicar la lógica detrás de la e
 
 - **`docs/arc42/`** cuenta la historia completa en texto: objetivos, restricciones, contexto, estrategia de solución, vista de bloques, vista de ejecución, atributos de calidad, conceptos transversales y los escenarios que los hacen medibles.
 - **`docs/c4/`** y **`docs/utility-tree.md`** son los diagramas — representaciones visuales que se enlazan desde el arc42.
-- **`docs/adr/`** registra las decisiones arquitectónicas concretas, una por archivo: ADR-0001 para el estilo general, ADR-0002 para concurrencia y ADR-0003 para la integración entre productos e inventario.
+- **`docs/adr/`** registra las decisiones arquitectónicas concretas, una por archivo: ADR-0001 para el estilo general, ADR-0002 para concurrencia, ADR-0003 para la integración entre productos e inventario y ADR-0004 para el contrato versionado.
+- **`docs/api/`** reúne el contrato técnico y la vista funcional de la API de InvenTrack, incluyendo el contrato ejecutable de la versión actual.
 - **`docs/retos/`** documenta el diagnóstico, carga simulada, comandos de reproducción y resultados del reto del Corte 1.
 - **`docs/aspectos.md`** es el índice que conecta todo siguiendo la cadena navegable: `Aspecto → Requisito → C4 → ADR → Código → Pruebas → Evidencia`.
+- **`docs/auditoria-modularidad.md`** documenta la revisión de acoplamiento y las correcciones aplicadas para mantener los límites del monolito modular.
 - **`contracts/openapi/v1.json`** contiene el contrato HTTP versionado y `tests/contract/` valida que la implementación lo cumpla.
 
 ## Documentación de arquitectura
@@ -144,6 +148,7 @@ Las decisiones arquitectónicas se documentan como archivos individuales en [`do
 - **[ADR-0001](docs/adr/0001-usar-monolito-modular-con-hexagonal-por-modulo.md):** Selección de Monolito Modular con Hexagonal por módulo para la estructura base.
 - **[ADR-0002](docs/adr/0002-control-concurrencia-memoria-inventario.md):** Adopción de exclusión mutua asíncrona (`asyncio.Lock()`) por SKU para resolver el reto de consistencia ante peticiones simultáneas de inventario.
 - **[ADR-0003](docs/adr/0003-integracion-productos-inventario-via-puertos-de-aplicacion.md):** Integración entre productos e inventario mediante puertos de aplicación y adaptadores.
+- **[ADR-0004](docs/adr/0004-contrato-api-versionado-openapi.md):** Versionado del contrato de API con OpenAPI y validación automática de compatibilidad en CI.
 
 ## Stack tecnológico
 
@@ -153,7 +158,7 @@ Las decisiones arquitectónicas se documentan como archivos individuales en [`do
 | Backend | FastAPI + Uvicorn | Implementado |
 | Base de datos | Adaptador In-Memory (Transición a PostgreSQL/SQLite) | Implementado para MVP |
 | Hosting / despliegue | Por definir | Pendiente |
-| CI / calidad de código | GitHub Actions + Pytest + pytest-asyncio + SonarCloud | Pruebas síncronas y asíncronas configuradas; análisis SonarCloud completado exitosamente |
+| CI / calidad de código | GitHub Actions + Pytest + pytest-asyncio | Pruebas síncronas y asíncronas configuradas; la integración con SonarCloud queda preparada pero temporalmente desactivada hasta habilitar el secreto `SONAR_TOKEN` y los permisos del proyecto |
 
 ## Estructura del repositorio
 
@@ -170,21 +175,24 @@ docs/
 │   ├── context.md               # C4 Nivel 1 — Diagrama de contexto
 │   ├── containers.md            # C4 Nivel 2 — Diagrama de contenedores
 │   └── components.md            # C4 Nivel 3 — Componentes reales del backend
+├── api/
+│   └── inventrack-contrato.md   # Contrato funcional y técnico de la API actual
 ├── context-map.md               # Mapa de contextos y relaciones tipificadas
 ├── propiedad-datos.md           # Dueño único y canales de consulta
+├── auditoria-modularidad.md     # Revisión de desacoplamiento y plan de corrección
 ├── adr/
 │   ├── 0001-usar-monolito-modular-con-hexagonal-por-modulo.md
 │   ├── 0002-control-concurrencia-memoria-inventario.md
-|   ├── 0003-integracion-productos-inventario-via-puertos-de-aplicacion.md
+│   ├── 0003-integracion-productos-inventario-via-puertos-de-aplicacion.md
 │   └── 0004-contrato-api-versionado-openapi.md
 ├── retos/
-│   └── corte-1-medicion.md      # Diagnostico y medicion del Reto de Concurrencia
+│   └── corte-1-medicion.md      # Diagnóstico y medición del Reto de Concurrencia
 ├── ficha_problema.md            # Planteamiento del problema
 ├── aspectos.md                  # Matriz de trazabilidad navegable de 8 columnas
-├── auditoria-modularidad
-├── matriz-comparativa-estilos.md# Comparativa de estilos arquitectónicos
+├── matriz-comparativa-estilos.md # Comparativa de estilos arquitectónicos
 ├── utility-tree.md              # Árbol de utilidad
-└── ia.md                        # Registro de uso de IA en el proyecto
+├── ia.md                        # Registro de uso de IA en el proyecto
+└── auditoria-modularidad.md     # Documento de revisión modular y corrección de violaciones
 contracts/
 └── openapi/v1.json              # Contrato versionado de la API HTTP
 app/                             # Aplicación FastAPI Monolito Modular
@@ -248,7 +256,7 @@ Este proyecto documenta el uso de herramientas de IA de forma transparente en [`
 - Project Key: `ISCOUTB_AS_202620_InvenTrack`
 - Organization Key: `isco-utb`
 
-La configuración del análisis estático incluye Python 3.11 y la separación entre `app` (fuente) y `tests` (pruebas) para una evaluación más precisa. El análisis de SonarCloud se completó exitosamente en GitHub Actions después de corregir las dependencias y la configuración de autorización. En esta copia local, el workflow versionado conserva actualmente el paso de pruebas; para repetir el análisis se requiere mantener el paso de SonarCloud y un `SONAR_TOKEN` autorizado.
+La configuración del análisis estático incluye Python 3.11 y la separación entre `app` (fuente) y `tests` (pruebas) para una evaluación más precisa. El proyecto está configurado en SonarCloud con `sonar-project.properties`, y el workflow incluye la integración preparada para ese análisis; sin embargo, en esta copia local el paso de SonarCloud quedó temporalmente desactivado para asegurar que el CI siga ejecutándose mientras se resuelve la autorización del secreto `SONAR_TOKEN` y los permisos del proyecto en SonarCloud.
 
 ## Licencia y uso académico
 

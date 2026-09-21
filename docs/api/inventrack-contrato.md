@@ -28,7 +28,7 @@ InvenTrack es un sistema inteligente de gestión de inventarios para PYMEs local
 - **Formato de intercambio:** JSON.
 - **Servidor local:** `http://localhost:8000`.
 - **Autenticación:** No implementada en el MVP actual.
-- **Versionado:** `1.0.0` (Contrato OpenAPI versionado).
+- **Versionado:** `0.1.0` (Contrato OpenAPI versionado).
 - **Mecanismo de Concurrencia:** Cerrojo en memoria (`asyncio.Lock` por SKU) con tiempo límite de espera ($2\text{ s}$) para prevenir *race conditions* en ráfagas concurrentes (Reto Corte 1).
 - **Estrategia de Borrado:** Borrado físico si el producto no tiene movimientos; borrado lógico (desactivación) si cuenta con historial en inventario (Escenario ESC-02).
 

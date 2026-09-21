@@ -28,6 +28,8 @@ jobs:
       run: |
         PYTHONPATH=. pytest -v
 
+    # SonarCloud temporalmente desactivado para mantener el pipeline CI funcional
+    # mientras se resuelve la autorización del token y los permisos del proyecto.
     # - name: Set up Java 21
     #   uses: actions/setup-java@v4
     #   with:
