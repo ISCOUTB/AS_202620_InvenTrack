@@ -28,6 +28,12 @@ jobs:
       run: |
         PYTHONPATH=. pytest -v
 
+    - name: Set up Java 21
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '21'
+
     - name: SonarCloud Scan
       uses: SonarSource/sonarcloud-github-action@v2
       env:
