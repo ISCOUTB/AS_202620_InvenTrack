@@ -69,7 +69,7 @@ Si en el futuro el equipo decide extraer algún módulo a su propio servicio (po
 
 | Contenedor en el diagrama | Corresponde a | Estado |
 |---|---|---|
-| API Backend | Toda la carpeta [`app/`](../../app/) — un único proceso FastAPI que ensambla los módulos en `app/main.py` | Funcional con cortes verticales en [`app/productos/`](../../app/productos/) y [`app/inventario/`](../../app/inventario/) (Arquitectura Hexagonal + Mutex para concurrencia) |
+| API Backend | Toda la carpeta [`app/`](../../app/) — un único proceso FastAPI que ensambla los módulos en `app/main.py`. Expone la interfaz pública descrita en el [Contrato de API de InvenTrack](../api/inventrack-contrato.md). | Funcional con cortes verticales en [`app/productos/`](../../app/productos/) y [`app/inventario/`](../../app/inventario/) (Arquitectura Hexagonal + Mutex para concurrencia) |
 | Frontend | Aún no existe en el repositorio | Flutter planificado como aplicación cliente; pendiente de implementación |
 | Persistencia | Repositorios de productos e inventario | **Actual:** adaptadores *In-Memory*. **Objetivo:** seleccionar e implementar PostgreSQL o SQLite mediante los mismos puertos. |
 
@@ -92,7 +92,7 @@ Para dar cumplimiento a los criterios de evaluación del Reto del Primer Corte, 
 | **Mecanismo de Concurrencia** | Sin aislamiento explícito en memoria. | Exclusión mutua asíncrona serializada por SKU mediante `asyncio.Lock()`. |
 | **Garantía de Consistencia** | Vulnerable a *race conditions* y stock negativo ante peticiones simultáneas. | Operación atómica garantizada en el módulo `inventario` [ADR-0002](../adr/0002-control-concurrencia-memoria-inventario.md). |
 | **Rendimiento Medido ($p95$)** | Sin validación de latencia bajo contención. | **$p95 = 28\text{ ms}$** (cumple umbral $\le 400\text{ ms}$ con 20 req/s simultáneas). |
-| **Degradación Controlada** | Riesgo de bloqueo indebido o crash. | Encolamiento en *event loop*; si la espera por el lock supera el umbral, responde HTTP `503 Service Unavailable` sin corromper el stock. |
+| **Degradación Controlada** | Riesgo de bloqueo indebido o crash. | Encolamiento en *event loop*; si la espera por el lock supera el umbral, responde HTTP `503 Service Unavailable` sin corromper el stock (especificado en el [Contrato de API](../api/inventrack-contrato.md)). |
 | **Fronteras Modulares** | Definidas en el esqueleto. | Conservadas intactas en `app/inventario/` sin impactar otros módulos. |
 
 ### Diagrama de Aislamiento en el Contenedor Backend
@@ -121,7 +121,8 @@ flowchart LR
 
 ## Estado y evolución
 
-- **Nivel 3 (Componentes):** está documentado en [components.md](components.md) y refleja los componentes implementados de `productos` e `inventario`.
+- **Contrato de API:** Documentado y formalizado en [Contrato de API de InvenTrack](../api/inventrack-contrato.md) e implementado técnicamente bajo OpenAPI en `contracts/openapi/v1.json`.
+- **Nivel 3 (Componentes):** Está documentado en [components.md](components.md) y refleja los componentes implementados de `productos` e `inventario`.
 - **Interfaz web:** Flutter está planificado, pero todavía no existe en el repositorio.
 - **Persistencia:** PostgreSQL y SQLite son alternativas objetivo; actualmente solo existe persistencia in-memory.
 - **Notificaciones y módulos restantes:** `alertas`, `usuarios` y `proveedores` están definidos como extensiones futuras.

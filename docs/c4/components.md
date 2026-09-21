@@ -65,6 +65,7 @@ flowchart TB
 | Consulta de historial | `ConsultarHistorialMovimientos` |
 | Repositorios de inventario | `InMemoryStockRepository`, `InMemoryMovimientoRepository` |
 | Integración entre contextos | `HistorialMovimientosAdapter`, `ValidadorDeProductoAdapter` |
+| Contrato de API | Interfaz REST formalizada en `docs/api/inventrack-contrato.md` y `contracts/openapi/v1.json` |
 | Composición | `app/main.py` |
 
 ## Reglas de dependencia
@@ -73,14 +74,10 @@ flowchart TB
 - Los casos de uso dependen de puertos y dominio, no de FastAPI.
 - `HistorialMovimientosAdapter` consume `ConsultarHistorialMovimientos`.
 - `ValidadorDeProductoAdapter` consume `ConsultarProducto`.
-- `asyncio.Lock` se crea dentro de `RegistrarMovimientoInventario` y se
-  mantiene por `producto_id` para serializar movimientos del mismo producto.
-- La persistencia actual es in-memory. PostgreSQL o SQLite son alternativas
-  futuras que deberán implementarse como adaptadores detrás de los puertos.
+- `asyncio.Lock` se crea dentro de `RegistrarMovimientoInventario` y se mantiene por `producto_id` para serializar movimientos del mismo producto (`ADR-0002`).
+- Las respuestas y esquemas de los routers se adhieren al [Contrato de API de InvenTrack](../api/inventrack-contrato.md) (`ADR-0004`).
+- La persistencia actual es in-memory. PostgreSQL o SQLite son alternativas futuras que deberán implementarse como adaptadores detrás de los puertos.
 
 ## Alcance actual y objetivo
 
-El diagrama representa el estado implementado del backend. La persistencia
-relacional, el frontend Flutter, las alertas, los usuarios y los proveedores
-pertenecen a la arquitectura objetivo y no se presentan como componentes
-existentes.
+El diagrama representa el estado implementado del backend. La persistencia relacional, el frontend Flutter, las alertas, los usuarios y los proveedores pertenecen a la arquitectura objetivo y no se presentan como componentes existentes.
