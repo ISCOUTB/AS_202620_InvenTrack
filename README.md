@@ -181,6 +181,7 @@ docs/
 │   └── corte-1-medicion.md      # Diagnostico y medicion del Reto de Concurrencia
 ├── ficha_problema.md            # Planteamiento del problema
 ├── aspectos.md                  # Matriz de trazabilidad navegable de 8 columnas
+├── auditoria-modularidad
 ├── matriz-comparativa-estilos.md# Comparativa de estilos arquitectónicos
 ├── utility-tree.md              # Árbol de utilidad
 └── ia.md                        # Registro de uso de IA en el proyecto
