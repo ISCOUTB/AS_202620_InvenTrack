@@ -113,4 +113,4 @@ La versión actual del contrato ejecutable es **`1.0.0`** y se ubica en `contrac
 
 | Versión | Fecha | Descripción |
 |---|---|---|
-| 1.0.0 | 2026-09-20 | Versión inicial del contrato OpenAPI HTTP para InvenTrack. Incluye catálogo de productos, registro de entradas/salidas de inventario con aislamiento por Mutex, y políticas de eliminación. |
+| 0.1.0 | 2026-09-20 | Versión inicial del contrato OpenAPI HTTP para InvenTrack. Incluye catálogo de productos, registro de entradas/salidas de inventario con aislamiento por Mutex, y políticas de eliminación. |
