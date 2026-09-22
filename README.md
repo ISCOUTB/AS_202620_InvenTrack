@@ -15,6 +15,8 @@
 * **Mecanismo de Concurrencia:** Exclusión mutua asíncrona por SKU (`asyncio.Lock()`) ([ADR-0002](docs/adr/0002-control-concurrencia-memoria-inventario.md)).
 * **Resultados de Medición:** **$p95 = 28\text{ ms}$** bajo ráfagas de 20 peticiones simultáneas sobre el mismo SKU (Umbral exigido: $\le 400\text{ ms}$) ([Reporte de Medición](docs/retos/corte-1-medicion.md)).
 * **Matriz de Trazabilidad:** Cadena navegable `Aspecto → Requisito → C4 → ADR → Código → Pruebas → Evidencia` ([Aspectos de Calidad](docs/aspectos.md)).
+* **Contrato de API:** OpenAPI v1 versionado y validado automáticamente contra la implementación FastAPI ([ADR-0004](docs/adr/0004-contrato-api-versionado-openapi.md)).
+* **CI y cobertura:** GitHub Actions ejecuta la suite completa con `pytest-cov`, genera `coverage.xml` y valida el contrato OpenAPI antes del análisis SonarCloud.
 * **Transparencia en Uso de IA:** Prompts, decisiones aceptadas, correcciones y rechazos por criterio técnico ([Registro de IA](docs/ia.md)).
 
 ---
@@ -158,7 +160,7 @@ Las decisiones arquitectónicas se documentan como archivos individuales en [`do
 | Backend | FastAPI + Uvicorn | Implementado |
 | Base de datos | Adaptador In-Memory (Transición a PostgreSQL/SQLite) | Implementado para MVP |
 | Hosting / despliegue | Por definir | Pendiente |
-| CI / calidad de código | GitHub Actions + Pytest + pytest-asyncio | Pruebas síncronas y asíncronas configuradas; la integración con SonarCloud queda preparada pero temporalmente desactivada hasta habilitar el secreto `SONAR_TOKEN` y los permisos del proyecto |
+| CI / calidad de código | GitHub Actions + Pytest + pytest-asyncio + pytest-cov | Suite síncrona y asíncrona con cobertura XML (`coverage.xml`), validación del contrato OpenAPI y análisis SonarCloud configurado |
 
 ## Estructura del repositorio
 
@@ -243,6 +245,8 @@ python -m pytest -v
 | S3 | Estrategia, matriz, ADR y esqueleto ejecutable | Completo |
 | S4 | Vista de Contenedores (C4 N2), Secciones arc42 y Corte Vertical | Completo |
 | Corte 1 | Reto de concurrencia e integración de inventario (ADR-0002 + Medición) | Completo |
+| S6 | Mapa de contextos, propiedad de datos, auditoría de modularidad y C4 Nivel 3 | Completo |
+| S7 | Contrato OpenAPI versionado (ADR-0004) y validación automática en CI | Completo |
 
 ## Uso de IA
 
@@ -256,7 +260,7 @@ Este proyecto documenta el uso de herramientas de IA de forma transparente en [`
 - Project Key: `ISCOUTB_AS_202620_InvenTrack`
 - Organization Key: `isco-utb`
 
-La configuración del análisis estático incluye Python 3.11 y la separación entre `app` (fuente) y `tests` (pruebas) para una evaluación más precisa. El proyecto está configurado en SonarCloud con `sonar-project.properties`, y el workflow incluye la integración preparada para ese análisis; sin embargo, en esta copia local el paso de SonarCloud quedó temporalmente desactivado para asegurar que el CI siga ejecutándose mientras se resuelve la autorización del secreto `SONAR_TOKEN` y los permisos del proyecto en SonarCloud.
+La configuración del análisis estático incluye Python 3.11, la separación entre `app` (fuente) y `tests` (pruebas), y el reporte `coverage.xml` generado por `pytest-cov`. El proyecto está configurado en SonarCloud con `sonar-project.properties`; el workflow ejecuta el análisis mediante un commit fijado de la acción y requiere el secreto `SONAR_TOKEN` configurado en GitHub.
 
 ## Licencia y uso académico
 
