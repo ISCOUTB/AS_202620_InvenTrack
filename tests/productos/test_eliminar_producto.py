@@ -44,5 +44,7 @@ def test_eliminar_producto_con_movimientos_lo_desactiva_en_vez_de_borrar(reposit
 
 
 def test_eliminar_producto_inexistente_lanza_error(repositorio, verificador):
+    eliminar_producto = EliminarProducto(repositorio, verificador)
+
     with pytest.raises(ProductoNoEncontrado):
-        EliminarProducto(repositorio, verificador).ejecutar("no-existe")
+        eliminar_producto.ejecutar("no-existe")

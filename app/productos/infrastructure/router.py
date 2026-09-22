@@ -27,7 +27,7 @@ def crear_router(crear_producto: CrearProducto, eliminar_producto: EliminarProdu
 
     router = APIRouter()
 
-    @router.post("/productos", response_model=ProductoResponse, status_code=201)
+    @router.post("/productos", status_code=201)
     def crear(payload: CrearProductoRequest) -> ProductoResponse:
         producto = crear_producto.ejecutar(payload.id, payload.nombre)
         return ProductoResponse(id=producto.id, nombre=producto.nombre, activo=producto.activo)
