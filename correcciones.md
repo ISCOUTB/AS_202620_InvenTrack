@@ -7,7 +7,7 @@ Este documento consolida los hallazgos reportados en las evaluaciones automátic
 ## 1. Criterios de Auditoría y Verificación de Feedback
 
 > **Criterio Utilizado:** Se evalúa el estado del repositorio según el hash calificado en cada fecha de cierre. Las discrepancias encontradas entre la revisión automática y los artefactos reales se documentan a continuación para garantizar la trazabilidad del Reto Corte 1.
-> 
+
 ---
 
 ## 2. Matriz Trazable de Hallazgos y Correcciones
