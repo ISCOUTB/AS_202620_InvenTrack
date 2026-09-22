@@ -34,7 +34,6 @@ def crear_router(crear_producto: CrearProducto, eliminar_producto: EliminarProdu
 
     @router.delete(
         "/productos/{producto_id}",
-        response_model=EliminarProductoResponse,
         responses={404: {"description": "Not Found"}},
     )
     def eliminar(producto_id: str) -> EliminarProductoResponse:
