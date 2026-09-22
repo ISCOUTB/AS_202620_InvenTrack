@@ -109,7 +109,7 @@ Módulo Productos              Módulo Inventario
 ```
 ## 8. Versionado e Historial
 
-La versión actual del contrato ejecutable es **`1.0.0`** y se ubica en `contracts/openapi/v1.json`.
+La versión actual del contrato ejecutable es **`0.1.0`** y se ubica en `contracts/openapi/v1.json`.
 
 | Versión | Fecha | Descripción |
 |---|---|---|

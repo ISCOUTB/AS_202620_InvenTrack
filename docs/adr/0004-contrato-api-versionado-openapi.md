@@ -53,4 +53,15 @@ graph TD
 - **Contrato:** [`contracts/openapi/v1.json`](../../contracts/openapi/v1.json) (OpenAPI 3.1, `info.version: 0.1.0`).
 - **Prueba de contrato:** [`tests/contract/test_openapi_contract.py`](../../tests/contract/test_openapi_contract.py) — compara el contrato contra `app.openapi()`; los códigos de respuesta del contrato deben ser subconjunto de los que la implementación documenta (no falla si el código documenta más de lo prometido, solo si documenta menos).
 - **Ejecución en CI:** paso dedicado *"Validate versioned API contract"* en [`.github/workflows/test.yml`](../../.github/workflows/test.yml), además de correr dentro de la suite general (`pytest -v`).
-- **Detecta cambios incompatibles:** verificado manualmente quitando el código `503` documentado de `POST /inventario/{producto_id}/entradas` — la prueba falló (`AssertionError: Extra items in the left set: '503'`) y volvió a pasar al revertir el cambio.
+- **Detecta cambios incompatibles:** verificado manualmente en local quitando el código `503` documentado de `POST /inventario/{producto_id}/entradas`; la prueba falló con `AssertionError: Extra items in the left set: '503'` y volvió a pasar al restaurarlo. Esta comprobación no corresponde a un run histórico conservado en GitHub Actions.
+
+### Evidencia externa de S7
+
+La evidencia debe apuntar al estado actual del repositorio, no al commit evaluado originalmente por la revisión automática:
+
+- **Commit actual:** [`d824c3f`](https://github.com/ISCOUTB/AS_202620_InvenTrack/commit/d824c3fea94f4e30246cf338c086b0065a1c4cfa).
+- **Run CI exitoso:** [Run #120](https://github.com/ISCOUTB/AS_202620_InvenTrack/actions/runs/35790166924), que ejecuta la suite con cobertura y la prueba contractual.
+- **Quality Gate:** [SonarCloud — AS_202620_InvenTrack](https://sonarcloud.io/project/overview?id=ISCOUTB_AS_202620_InvenTrack), actualmente `Passed`.
+- **Contrato y prueba:** [`v1.json` rutas `/productos` y `/inventario`](https://github.com/ISCOUTB/AS_202620_InvenTrack/blob/d824c3fea94f4e30246cf338c086b0065a1c4cfa/contracts/openapi/v1.json#L29-L224), [`v1.json` esquemas](https://github.com/ISCOUTB/AS_202620_InvenTrack/blob/d824c3fea94f4e30246cf338c086b0065a1c4cfa/contracts/openapi/v1.json#L257-L341) y [`test_openapi_contract.py`](https://github.com/ISCOUTB/AS_202620_InvenTrack/blob/d824c3fea94f4e30246cf338c086b0065a1c4cfa/tests/contract/test_openapi_contract.py#L8-L27).
+- **Routers implementados:** [`productos` — POST/DELETE y retornos tipados](https://github.com/ISCOUTB/AS_202620_InvenTrack/blob/d824c3fea94f4e30246cf338c086b0065a1c4cfa/app/productos/infrastructure/router.py#L30-L39) y [`inventario` — entradas/salidas y retornos tipados](https://github.com/ISCOUTB/AS_202620_InvenTrack/blob/d824c3fea94f4e30246cf338c086b0065a1c4cfa/app/inventario/infrastructure/router.py#L25-L46).
+- **Workflow:** [`test.yml`](https://github.com/ISCOUTB/AS_202620_InvenTrack/blob/d824c3fea94f4e30246cf338c086b0065a1c4cfa/.github/workflows/test.yml#L25-L46), incluyendo `Run Pytest with coverage` y `Validate versioned API contract`.
