@@ -24,9 +24,9 @@ jobs:
       run: |
         pip install --require-hashes --only-binary :all: -r requirements.txt
 
-    - name: Run Pytest
+    - name: Run Pytest with coverage
       run: |
-        PYTHONPATH=. pytest -v
+        PYTHONPATH=. pytest -v --cov=. --cov-report=xml
 
     # SonarCloud temporalmente desactivado para mantener el pipeline CI funcional
     # mientras se resuelve la autorización del token y los permisos del proyecto.
