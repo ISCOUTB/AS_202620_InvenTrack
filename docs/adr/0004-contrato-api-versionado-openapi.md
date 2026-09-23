@@ -53,7 +53,7 @@ graph TD
 - **Contrato:** [`contracts/openapi/v1.json`](../../contracts/openapi/v1.json) (OpenAPI 3.1, `info.version: 0.1.0`).
 - **Prueba de contrato:** [`tests/contract/test_openapi_contract.py`](../../tests/contract/test_openapi_contract.py) — compara el contrato contra `app.openapi()`; los códigos de respuesta del contrato deben ser subconjunto de los que la implementación documenta (no falla si el código documenta más de lo prometido, solo si documenta menos).
 - **Ejecución en CI:** paso dedicado *"Validate versioned API contract"* en [`.github/workflows/test.yml`](../../.github/workflows/test.yml), además de correr dentro de la suite general (`pytest -v`).
-- **Detecta cambios incompatibles:** verificado manualmente en local quitando el código `503` documentado de `POST /inventario/{producto_id}/entradas`; la prueba falló con `AssertionError: Extra items in the left set: '503'` y volvió a pasar al restaurarlo. Esta comprobación no corresponde a un run histórico conservado en GitHub Actions.
+- **Detecta cambios incompatibles:** verificado y documentado de forma reproducible en [`docs/evidencia-prueba-contrato.md`](../evidencia-prueba-contrato.md) (commit, diff exacto y salida completa de `pytest` para el fallo y la recuperación). Esta comprobación se corrió en local; no corresponde a un run histórico conservado en GitHub Actions.
 
 ### Evidencia externa de S7
 
