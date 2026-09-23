@@ -111,6 +111,8 @@ Módulo Productos              Módulo Inventario
 
 La versión actual del contrato ejecutable es **`0.1.0`** y se ubica en `contracts/openapi/v1.json`.
 
+La evidencia reproducible de compatibilidad y detección de cambios incompatibles está documentada en [`docs/evidencia-prueba-contrato.md`](../evidencia-prueba-contrato.md).
+
 | Versión | Fecha | Descripción |
 |---|---|---|
 | 0.1.0 | 2026-09-20 | Versión inicial del contrato OpenAPI HTTP para InvenTrack. Incluye catálogo de productos, registro de entradas/salidas de inventario con aislamiento por Mutex, y políticas de eliminación. |

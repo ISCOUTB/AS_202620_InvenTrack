@@ -33,6 +33,7 @@
 - [Diagramas C4](#diagramas-c4)
 - [Mapa de contextos y propiedad de datos](#mapa-de-contextos-y-propiedad-de-datos)
 - [Decisiones de arquitectura (ADR)](#decisiones-de-arquitectura-adr)
+- [Evidencia de prueba contractual](#evidencia-de-prueba-contractual)
 - [Stack tecnológico](#stack-tecnológico)
 - [Estructura del repositorio](#estructura-del-repositorio)
 - [Cómo ejecutar el esqueleto](#cómo-ejecutar-el-esqueleto)
@@ -64,6 +65,7 @@
 | [ADR-0002](docs/adr/0002-control-concurrencia-memoria-inventario.md) | Control de concurrencia en memoria, criterios de revisión y costo de reversión (Aceptado) |
 | [ADR-0003](docs/adr/0003-integracion-productos-inventario-via-puertos-de-aplicacion.md) | Integración entre productos e inventario mediante puertos de aplicación y adaptadores (Aceptado) |
 | [ADR-0004](docs/adr/0004-contrato-api-versionado-openapi.md) | Contrato de API versionado con OpenAPI y validación automática (Aceptado) |
+| [Evidencia de prueba contractual](docs/evidencia-prueba-contrato.md) | Reproducción del fallo ante un cambio incompatible y recuperación de la prueba |
 | [Medición Reto Corte 1](docs/retos/corte-1-medicion.md) | Diagnóstico, pruebas de concurrencia, degradación controlada y comando de reproducción |
 | [Uso de IA](docs/ia.md) | Registro transparente de IA (sugerencias aceptadas vs. rechazadas)|
 
@@ -99,6 +101,7 @@ Antes de entrar a cada carpeta, vale la pena explicar la lógica detrás de la e
 - **`docs/adr/`** registra las decisiones arquitectónicas concretas, una por archivo: ADR-0001 para el estilo general, ADR-0002 para concurrencia, ADR-0003 para la integración entre productos e inventario y ADR-0004 para el contrato versionado.
 - **`docs/api/`** reúne el contrato técnico y la vista funcional de la API de InvenTrack, incluyendo el contrato ejecutable de la versión actual.
 - **`docs/retos/`** documenta el diagnóstico, carga simulada, comandos de reproducción y resultados del reto del Corte 1.
+- **`docs/evidencia-prueba-contrato.md`** documenta la reproducción controlada de un cambio incompatible en OpenAPI y la recuperación de la prueba contractual.
 - **`docs/aspectos.md`** es el índice que conecta todo siguiendo la cadena navegable: `Aspecto → Requisito → C4 → ADR → Código → Pruebas → Evidencia`.
 - **`docs/auditoria-modularidad.md`** documenta la revisión de acoplamiento y las correcciones aplicadas para mantener los límites del monolito modular.
 - **`contracts/openapi/v1.json`** contiene el contrato HTTP versionado y `tests/contract/` valida que la implementación lo cumpla.
@@ -187,6 +190,7 @@ docs/
 │   ├── 0002-control-concurrencia-memoria-inventario.md
 │   ├── 0003-integracion-productos-inventario-via-puertos-de-aplicacion.md
 │   └── 0004-contrato-api-versionado-openapi.md
+├── evidencia-prueba-contrato.md  # Reproducción del fallo de compatibilidad OpenAPI
 ├── retos/
 │   └── corte-1-medicion.md      # Diagnóstico y medición del Reto de Concurrencia
 ├── ficha_problema.md            # Planteamiento del problema
@@ -228,6 +232,13 @@ La prueba automatizada se ejecuta con:
 
 ```powershell
 python -m pytest -v
+```
+
+La prueba contractual aislada se ejecuta con:
+
+```powershell
+$env:PYTHONPATH='.'
+python -m pytest -v tests/contract/test_openapi_contract.py
 ```
 
 ## Flujo de trabajo del equipo

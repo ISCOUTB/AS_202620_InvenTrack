@@ -6,7 +6,8 @@ Este documento respalda la afirmación hecha en la sección "Evidencia" del
 falla de verdad cuando la implementación deja de cumplir el contrato
 publicado en `contracts/openapi/v1.json`.
 
-- **Commit verificado:** `9a5c17db1e3fc78e1a55e2739fdb39fc21a3de64` (2026-09-22T18:49:46-05:00)
+- **Commit base:** [`9a5c17d`](https://github.com/ISCOUTB/AS_202620_InvenTrack/commit/9a5c17db1e3fc78e1a55e2739fdb39fc21a3de64) (2026-09-22T18:49:46-05:00), estado limpio que contiene el contrato y el `503` original.
+- **Evidencia incorporada en:** [`c812123`](https://github.com/ISCOUTB/AS_202620_InvenTrack/commit/c8121237171f62fcde6b9adba994b6873f185f3b).
 - **Comando de referencia:** `PYTHONPATH=. pytest tests/contract/test_openapi_contract.py -v`
 - **Método:** se retiró manualmente el código `503` de las respuestas
   documentadas del endpoint `POST /inventario/{producto_id}/entradas` en
@@ -87,13 +88,16 @@ tests/contract/test_openapi_contract.py::test_api_implementa_contrato_openapi_v1
 ============================== 1 passed in 0.23s ===============================
 ```
 
-`git status` tras revertir no mostró ningún cambio pendiente — el repositorio
-quedó exactamente como estaba antes de esta verificación.
+El estado del árbol se comprobó después de restaurar el archivo y no mostró
+cambios pendientes; el repositorio quedó exactamente como estaba antes de esta
+verificación.
 
 ## Cómo reproducirlo
 
 ```bash
-git checkout 9a5c17db1e3fc78e1a55e2739fdb39fc21a3de64
+# Ejecutar en una copia temporal para no afectar cambios locales.
+git worktree add ../inventrack-evidencia 9a5c17db1e3fc78e1a55e2739fdb39fc21a3de64
+cd ../inventrack-evidencia
 pip install --require-hashes --only-binary :all: -r requirements.txt
 PYTHONPATH=. pytest tests/contract/test_openapi_contract.py -v   # PASA
 
@@ -102,6 +106,9 @@ PYTHONPATH=. pytest tests/contract/test_openapi_contract.py -v   # PASA
 
 PYTHONPATH=. pytest tests/contract/test_openapi_contract.py -v   # FALLA
 
-git checkout -- app/inventario/infrastructure/router.py
+git restore app/inventario/infrastructure/router.py
 PYTHONPATH=. pytest tests/contract/test_openapi_contract.py -v   # PASA de nuevo
+
+cd ../AS_202620_InvenTrack
+git worktree remove ../inventrack-evidencia
 ```
