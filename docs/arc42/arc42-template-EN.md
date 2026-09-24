@@ -400,27 +400,34 @@ Su mecanismo concreto de ejecución se resolvió en el [ADR-0002](../adr/0002-co
 
 ## Infrastructure Level 1
 
-Para el incremento actual, InvenTrack se ejecuta como una única aplicación backend.
+Para el incremento actual, InvenTrack se ejecuta como una única aplicación backend
+en un servicio web de Render definido por infraestructura como código en
+[`render.yaml`](../../render.yaml). Render publica el servicio mediante HTTPS
+desde Internet y comprueba `GET /health` como health check.
 
 ```mermaid
 flowchart LR
 
     DEV["Equipo de desarrollo"]
 
-    subgraph LOCAL["Máquina local"]
+    subgraph CLOUD["Render Web Service"]
 
-        APP["InvenTrack<br/>FastAPI + Uvicorn"]
+      APP["InvenTrack<br/>Docker + FastAPI + Uvicorn"]
 
     end
 
-    DEV -->|"Ejecuta y prueba"| APP
+    DEV -->|"Git push / GitHub Actions"| CLOUD
+    USER["Evaluador externo"] -->|"HTTPS público"| CLOUD
 ```
 
-La aplicación se inicia mediante:
+La aplicación se inicia localmente mediante:
 
 python -m uvicorn app.main:app --reload
 
-El despliegue productivo, el hosting y la infraestructura definitiva permanecen pendientes de decisión, debido a la restricción C7 sobre la disponibilidad técnica de las PYMEs piloto.
+El despliegue se construye con `Dockerfile` y se activa mediante
+`.github/workflows/deploy.yml`. La URL concreta y la evidencia del run exitoso
+se mantienen en [`docs/despliegue-y-costos.md`](../despliegue-y-costos.md),
+porque dependen de la cuenta de despliegue del equipo.
 
 ## Infrastructure Level 2
 
@@ -433,11 +440,11 @@ flowchart TB
 
     subgraph SERVER["Nodo de ejecución"]
 
-        APP["InvenTrack<br/><br/>FastAPI + Uvicorn<br/>Monolito Modular"]
+        APP["InvenTrack<br/><br/>Docker + FastAPI + Uvicorn<br/>Monolito Modular"]
 
     end
 
-    USER -->|"HTTP / HTTPS"| APP
+    USER -->|"HTTPS desde Internet"| APP
 ```
 
 Todos los módulos se ejecutan inicialmente dentro del mismo proceso.
@@ -449,6 +456,11 @@ Costos de infraestructura.
 Comunicación distribuida.
 
 A cambio, la aplicación comparte el mismo ciclo de despliegue y recuperación.
+
+La aplicación emite logs JSON a stdout y expone la métrica Prometheus
+`GET /metrics`. El servicio actual usa repositorios en memoria, por lo que la
+métrica es operativa para una instancia y no sustituye una solución persistente
+cuando se habilite escalamiento horizontal.
 
 # Cross-cutting Concepts (Conceptos Transversales)
 

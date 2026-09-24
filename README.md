@@ -34,6 +34,7 @@
 - [Mapa de contextos y propiedad de datos](#mapa-de-contextos-y-propiedad-de-datos)
 - [Decisiones de arquitectura (ADR)](#decisiones-de-arquitectura-adr)
 - [Evidencia de prueba contractual](#evidencia-de-prueba-contractual)
+- [Despliegue y costos](#despliegue-y-costos)
 - [Stack tecnológico](#stack-tecnológico)
 - [Estructura del repositorio](#estructura-del-repositorio)
 - [Cómo ejecutar el esqueleto](#cómo-ejecutar-el-esqueleto)
@@ -66,6 +67,7 @@
 | [ADR-0003](docs/adr/0003-integracion-productos-inventario-via-puertos-de-aplicacion.md) | Integración entre productos e inventario mediante puertos de aplicación y adaptadores (Aceptado) |
 | [ADR-0004](docs/adr/0004-contrato-api-versionado-openapi.md) | Contrato de API versionado con OpenAPI y validación automática (Aceptado) |
 | [Evidencia de prueba contractual](docs/evidencia-prueba-contrato.md) | Reproducción del fallo ante un cambio incompatible y recuperación de la prueba |
+| [Despliegue y costos](docs/despliegue-y-costos.md) | URL pública, IaC, observabilidad, secretos y estimación mensual |
 | [Medición Reto Corte 1](docs/retos/corte-1-medicion.md) | Diagnóstico, pruebas de concurrencia, degradación controlada y comando de reproducción |
 | [Uso de IA](docs/ia.md) | Registro transparente de IA (sugerencias aceptadas vs. rechazadas)|
 
@@ -162,7 +164,7 @@ Las decisiones arquitectónicas se documentan como archivos individuales en [`do
 | Frontend | Flutter | Pendiente |
 | Backend | FastAPI + Uvicorn | Implementado |
 | Base de datos | Adaptador In-Memory (Transición a PostgreSQL/SQLite) | Implementado para MVP |
-| Hosting / despliegue | Por definir | Pendiente |
+| Hosting / despliegue | Render Web Service + Docker (`render.yaml`) | Configurado; URL y run externo registrados en [`docs/despliegue-y-costos.md`](docs/despliegue-y-costos.md) |
 | CI / calidad de código | GitHub Actions + Pytest + pytest-asyncio + pytest-cov | Suite síncrona y asíncrona con cobertura XML (`coverage.xml`), validación del contrato OpenAPI y análisis SonarCloud configurado |
 
 ## Estructura del repositorio
@@ -170,7 +172,10 @@ Las decisiones arquitectónicas se documentan como archivos individuales en [`do
 ```text
 .github/
 └── workflows/
-    └── test.yml                 # Pipeline de CI/CD para pruebas en GitHub Actions
+    ├── test.yml                 # Pruebas, contrato y build de la imagen
+    └── deploy.yml               # Despliegue y smoke test público
+Dockerfile                       # Imagen reproducible de producción
+render.yaml                      # Infraestructura como código de Render
 docs/
 ├── arc42/
 │   ├── arc42-template-EN.md     # Narrativa completa arc42
@@ -258,6 +263,7 @@ python -m pytest -v tests/contract/test_openapi_contract.py
 | Corte 1 | Reto de concurrencia e integración de inventario (ADR-0002 + Medición) | Completo |
 | S6 | Mapa de contextos, propiedad de datos, auditoría de modularidad y C4 Nivel 3 | Completo |
 | S7 | Contrato OpenAPI versionado (ADR-0004) y validación automática en CI | Completo |
+| S8 | Despliegue público, IaC, observabilidad y costos | Configurado; pendiente registrar URL y run externo |
 
 ## Uso de IA
 

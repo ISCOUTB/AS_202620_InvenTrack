@@ -7,7 +7,15 @@ Los routers ya no construyen sus propias dependencias (consecuencia del
 hallazgo "wiring hardcodeado en el router").
 """
 
-from fastapi import FastAPI
+import json
+import logging
+import time
+from collections import defaultdict
+from collections.abc import Awaitable, Callable
+from typing import Any
+
+from fastapi import FastAPI, Request, Response
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.inventario.application.consultar_movimientos import ConsultarHistorialMovimientos
 from app.inventario.application.registrar_movimiento import RegistrarMovimientoInventario
@@ -25,6 +33,64 @@ from app.productos.infrastructure.historial_movimientos_adapter import (
 )
 from app.productos.infrastructure.in_memory_repository import InMemoryProductoRepository
 from app.productos.infrastructure.router import crear_router as crear_router_productos
+
+
+class JsonFormatter(logging.Formatter):
+    """Format application logs as one JSON object per line."""
+
+    def format(self, record: logging.LogRecord) -> str:
+        return json.dumps(
+            {
+                "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                "level": record.levelname,
+                "logger": record.name,
+                "message": record.getMessage(),
+            },
+            ensure_ascii=True,
+        )
+
+
+_http_logger = logging.getLogger("inventrack.http")
+_http_logger.setLevel(logging.INFO)
+if not _http_logger.handlers:
+    _handler = logging.StreamHandler()
+    _handler.setFormatter(JsonFormatter())
+    _http_logger.addHandler(_handler)
+_http_logger.propagate = False
+
+_request_count: defaultdict[tuple[str, str], int] = defaultdict(int)
+_request_duration_seconds: defaultdict[tuple[str, str], float] = defaultdict(float)
+
+
+class ObservabilityMiddleware(BaseHTTPMiddleware):
+    async def dispatch(
+        self,
+        request: Request,
+        call_next: Callable[[Request], Awaitable[Response]],
+    ) -> Response:
+        started = time.perf_counter()
+        response = await call_next(request)
+        duration = time.perf_counter() - started
+        key = (request.method, request.url.path)
+        _request_count[key] += 1
+        _request_duration_seconds[key] += duration
+        _http_logger.info(
+            json.dumps(
+                {
+                    "event": "http_request",
+                    "method": request.method,
+                    "path": request.url.path,
+                    "status_code": response.status_code,
+                    "duration_ms": round(duration * 1000, 3),
+                },
+                ensure_ascii=True,
+            )
+        )
+        return response
+
+
+def _prometheus_escape(value: str) -> str:
+    return value.replace("\\", "\\\\").replace('"', '\\"')
 
 # --- productos: repositorio y casos de uso propios ---
 _productos_repo = InMemoryProductoRepository()
@@ -54,11 +120,32 @@ app = FastAPI(
     description="Sistema de gestión de inventarios para pequeñas empresas.",
     version="0.1.0",
 )
+app.add_middleware(ObservabilityMiddleware)
 
 
 @app.get("/health", tags=["infraestructura"])
 def health_check() -> dict[str, str]:
     return {"status": "ok", "service": "InvenTrack"}
+
+
+@app.get("/metrics", include_in_schema=False, tags=["infraestructura"])
+def metrics() -> Response:
+    lines = [
+        "# HELP inventrack_http_requests_total Total HTTP requests handled.",
+        "# TYPE inventrack_http_requests_total counter",
+        "# HELP inventrack_http_request_duration_seconds_total Total HTTP duration in seconds.",
+        "# TYPE inventrack_http_request_duration_seconds_total counter",
+    ]
+    for method, path in sorted(_request_count):
+        labels = f'method="{_prometheus_escape(method)}",path="{_prometheus_escape(path)}"'
+        lines.append(
+            f"inventrack_http_requests_total{{{labels}}} {_request_count[(method, path)]}"
+        )
+        lines.append(
+            "inventrack_http_request_duration_seconds_total"
+            f"{{{labels}}} {_request_duration_seconds[(method, path)]}"
+        )
+    return Response("\n".join(lines) + "\n", media_type="text/plain; version=0.0.4")
 
 
 app.include_router(

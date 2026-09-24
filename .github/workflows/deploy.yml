@@ -1,0 +1,34 @@
+name: Deploy API
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+      - Dockerfile
+      - render.yaml
+      - app/**
+      - requirements.txt
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Trigger Render deployment
+        env:
+          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+        run: |
+          test -n "$RENDER_DEPLOY_HOOK"
+          curl --fail --silent --show-error -X POST "$RENDER_DEPLOY_HOOK"
+
+      - name: Smoke test public deployment
+        env:
+          PUBLIC_API_URL: ${{ vars.PUBLIC_API_URL }}
+        run: |
+          test -n "$PUBLIC_API_URL"
+          curl --fail --silent --show-error --retry 10 --retry-delay 10 \
+            "$PUBLIC_API_URL/health"
