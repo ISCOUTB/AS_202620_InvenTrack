@@ -4,17 +4,17 @@
 
 | Evidencia | Implementación | Estado / dato a registrar |
 |---|---|---|
-| URL pública desde fuera de la universidad | Google Cloud Run, HTTPS | `POR_REGISTRAR: URL entregada por Terraform` |
+| URL pública desde fuera de la universidad | Azure Container Apps, HTTPS | `POR_REGISTRAR: URL entregada por Terraform` |
 | Infraestructura como código | [`infra/`](../infra) y [`Dockerfile`](../Dockerfile) | Versionada |
 | Pipeline | [`test.yml`](../.github/workflows/test.yml) y [`deploy.yml`](../.github/workflows/deploy.yml) | El primero prueba y construye; el segundo despliega y hace smoke test |
 | Health check | `GET /health` | El workflow lo valida después de `terraform apply` |
 | Logs estructurados | JSON por línea en stdout | Evento `http_request`, sin credenciales ni cuerpos |
 | Métrica consultable | `GET /metrics` | Formato Prometheus; contadores por método y ruta |
-| Protección de secretos | `.env` ignorado, `.env.example` sin valores y secretos de GitHub | `GCP_CREDENTIALS`, `GCP_PROJECT_ID` y `GCP_TF_STATE_BUCKET` son secretos del environment |
+| Protección de secretos | `.env` ignorado, `.env.example` sin valores y secretos de GitHub | Credenciales Azure y estado Terraform son secretos del environment |
 | Run exitoso | GitHub Actions, workflow `Deploy API` | `POR_REGISTRAR: <URL del run>` |
 
 La URL no se inventa en el repositorio: queda registrada como salida
-`service_url` después de crear el servicio Cloud Run con Terraform. Debe
+`service_url` después de crear el servicio Container Apps con Terraform. Debe
 abrirse desde una conexión fuera de la red universitaria.
 
 ## Prueba externa
@@ -42,11 +42,14 @@ La segunda respuesta contiene, como mínimo, las series
 No se almacenan secretos en el código ni en el manifiesto. La configuración
 requerida para el ambiente `production` es:
 
-- `GCP_CREDENTIALS`: credenciales de una cuenta de servicio con permisos para
-  Artifact Registry, Cloud Run y el bucket de estado.
-- `GCP_PROJECT_ID`: identificador del proyecto de Google Cloud.
-- `GCP_TF_STATE_BUCKET`: nombre globalmente único del bucket GCS usado para el
-  estado remoto de Terraform.
+- `AZURE_CREDENTIALS`: JSON de una aplicación/service principal con permisos
+  para crear recursos en la suscripción.
+- `AZURE_SUBSCRIPTION_ID`: identificador de la suscripción Azure.
+- `AZURE_TENANT_ID`, `AZURE_CLIENT_ID` y `AZURE_CLIENT_SECRET`: credenciales
+  del service principal.
+- `AZURE_TF_STORAGE_ACCOUNT`: cuenta de almacenamiento Azure donde vive el
+  estado remoto.
+- `AZURE_TF_STORAGE_RESOURCE_GROUP`: resource group de esa cuenta de estado.
 
 Las credenciales deben configurarse en GitHub como secrets y nunca entrar al
 repositorio. `.env` está incluido en `.gitignore`; `.env.example` contiene
@@ -67,9 +70,9 @@ cero; los supuestos son los que deben revisarse si cambia el tráfico.
 
 ### Costo estimado
 
-- **Google Cloud Run:** la cuota gratuita cubre un MVP de bajo tráfico y el
-  servicio escala a cero. Google Cloud requiere habilitar facturación, por lo
-  que se deben configurar alertas presupuestarias.
+- **Azure Container Apps:** consume recursos cuando hay réplicas activas y
+  puede escalar a cero. Azure requiere una suscripción con facturación; se
+  deben configurar alertas presupuestarias y revisar la cuota gratuita vigente.
 - **GitHub Actions:** USD 0/mes para este repositorio público, sujeto a la
   política vigente de GitHub.
 - **Total monetario estimado:** **USD 0/mes** bajo esos supuestos.
@@ -88,11 +91,13 @@ build y arranque del servicio.
 
 ## Operación reproducible
 
-1. Crear un proyecto de Google Cloud, habilitar facturación y activar las APIs
-  de Cloud Run, Artifact Registry and Cloud Storage.
-2. Crear una cuenta de servicio y configurar `GCP_CREDENTIALS`,
-  `GCP_PROJECT_ID` y `GCP_TF_STATE_BUCKET` como secrets del environment
-  `production` en GitHub.
+1. Crear una suscripción Azure, habilitar facturación y crear la cuenta de
+  almacenamiento que guardará el estado remoto de Terraform.
+2. Crear un service principal y configurar `AZURE_CREDENTIALS`,
+  `AZURE_SUBSCRIPTION_ID`, `AZURE_TENANT_ID`, `AZURE_CLIENT_ID`,
+  `AZURE_CLIENT_SECRET`, `AZURE_TF_STORAGE_ACCOUNT` y
+  `AZURE_TF_STORAGE_RESOURCE_GROUP` como secrets del environment `production`
+  en GitHub.
 3. Ejecutar `Deploy API` manualmente o hacer push a `main`.
 4. Conservar el enlace al run verde, la salida de `service_url` y la respuesta
   de `/health` desde una red

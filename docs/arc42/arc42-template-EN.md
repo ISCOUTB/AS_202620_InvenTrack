@@ -401,7 +401,8 @@ Su mecanismo concreto de ejecución se resolvió en el [ADR-0002](../adr/0002-co
 ## Infrastructure Level 1
 
 Para el incremento actual, InvenTrack se ejecuta como una única aplicación backend
-en Google Cloud Run, definido por Terraform en [`infra/`](../../infra). Cloud Run
+en Azure Container Apps, definido por Terraform en [`infra/`](../../infra). Azure
+Container Apps
 publica el servicio mediante HTTPS desde Internet y el workflow comprueba
 `GET /health` después del despliegue.
 
@@ -410,7 +411,7 @@ flowchart LR
 
     DEV["Equipo de desarrollo"]
 
-    subgraph CLOUD["Google Cloud Run"]
+    subgraph CLOUD["Azure Container Apps"]
 
       APP["InvenTrack<br/>Docker + FastAPI + Uvicorn"]
 

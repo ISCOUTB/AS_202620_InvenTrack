@@ -1,5 +1,6 @@
 terraform {
-  backend "gcs" {
-    prefix = "inventrack"
+  backend "azurerm" {
+    key              = "inventrack.tfstate"
+    use_azuread_auth = true
   }
 }

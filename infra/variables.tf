@@ -1,12 +1,12 @@
-variable "project_id" {
-  description = "Google Cloud project that hosts InvenTrack."
+variable "subscription_id" {
+  description = "Azure subscription that hosts InvenTrack."
   type        = string
 }
 
 variable "region" {
-  description = "Google Cloud region for the registry and Cloud Run service."
+  description = "Azure region for the registry and Container Apps environment."
   type        = string
-  default     = "europe-west1"
+  default     = "westeurope"
 }
 
 variable "image_tag" {

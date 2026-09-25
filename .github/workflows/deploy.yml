@@ -17,59 +17,69 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     environment: production
+    env:
+      ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+      ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
     steps:
       - uses: actions/checkout@v4
 
-      - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v2
+      - name: Authenticate to Azure
+        uses: azure/login@v2
         with:
-          credentials_json: ${{ secrets.GCP_CREDENTIALS }}
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Set up Google Cloud CLI
-        uses: google-github-actions/setup-gcloud@v2
+      - name: Set up Azure CLI
+        uses: azure/cli@v2
+        with:
+          inlineScript: az version
 
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
 
-      - name: Create Terraform state bucket
+      - name: Create Terraform state storage
         env:
-          STATE_BUCKET: ${{ secrets.GCP_TF_STATE_BUCKET }}
-          PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-          REGION: europe-west1
+          STORAGE_ACCOUNT: ${{ secrets.AZURE_TF_STORAGE_ACCOUNT }}
+          STORAGE_RESOURCE_GROUP: ${{ secrets.AZURE_TF_STORAGE_RESOURCE_GROUP }}
         run: |
-          gcloud storage buckets describe "gs://${STATE_BUCKET}" >/dev/null 2>&1 || \
-            gcloud storage buckets create "gs://${STATE_BUCKET}" \
-              --project="${PROJECT_ID}" \
-              --location="${REGION}" \
-              --uniform-bucket-level-access
+          az storage container create --name tfstate \
+            --account-name "${STORAGE_ACCOUNT}" \
+            --auth-mode login >/dev/null
 
       - name: Initialize Terraform
         working-directory: infra
         env:
-          TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
-          TF_STATE_BUCKET: ${{ secrets.GCP_TF_STATE_BUCKET }}
-        run: terraform init -backend-config="bucket=${TF_STATE_BUCKET}"
+          TF_VAR_subscription_id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          TF_STATE_STORAGE_ACCOUNT: ${{ secrets.AZURE_TF_STORAGE_ACCOUNT }}
+        run: terraform init \
+          -backend-config="resource_group_name=${{ secrets.AZURE_TF_STORAGE_RESOURCE_GROUP }}" \
+          -backend-config="storage_account_name=${TF_STATE_STORAGE_ACCOUNT}" \
+          -backend-config="container_name=tfstate"
 
-      - name: Create container registry
+      - name: Create Azure Container Registry
         working-directory: infra
         env:
-          TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
-        run: terraform apply -target=google_artifact_registry_repository.api -auto-approve
+          TF_VAR_subscription_id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        run: terraform apply -target=azurerm_container_registry.api -auto-approve
+
+      - name: Read container registry name
+        working-directory: infra
+        run: terraform output -raw registry_name > "$RUNNER_TEMP/registry_name"
 
       - name: Build and publish container
         env:
-          PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-          REGION: europe-west1
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          gcloud auth configure-docker "${REGION}-docker.pkg.dev" --quiet
-          docker build -t "${REGION}-docker.pkg.dev/${PROJECT_ID}/inventrack/inventrack-api:${IMAGE_TAG}" .
-          docker push "${REGION}-docker.pkg.dev/${PROJECT_ID}/inventrack/inventrack-api:${IMAGE_TAG}"
+          REGISTRY="$(cat "$RUNNER_TEMP/registry_name")"
+          az acr login --name "${REGISTRY}"
+          docker build -t "${REGISTRY}.azurecr.io/inventrack-api:${IMAGE_TAG}" .
+          docker push "${REGISTRY}.azurecr.io/inventrack-api:${IMAGE_TAG}"
 
       - name: Deploy with Terraform
         working-directory: infra
         env:
-          TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
+          TF_VAR_subscription_id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           TF_VAR_image_tag: ${{ github.sha }}
         run: |
           terraform apply -auto-approve

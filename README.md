@@ -164,7 +164,7 @@ Las decisiones arquitectónicas se documentan como archivos individuales en [`do
 | Frontend | Flutter | Pendiente |
 | Backend | FastAPI + Uvicorn | Implementado |
 | Base de datos | Adaptador In-Memory (Transición a PostgreSQL/SQLite) | Implementado para MVP |
-| Hosting / despliegue | Google Cloud Run + Terraform + Docker (`infra/`) | Configurado; URL y run externo se registran en [`docs/despliegue-y-costos.md`](docs/despliegue-y-costos.md) |
+| Hosting / despliegue | Azure Container Apps + Terraform + Docker (`infra/`) | Configurado; URL y run externo se registran en [`docs/despliegue-y-costos.md`](docs/despliegue-y-costos.md) |
 | CI / calidad de código | GitHub Actions + Pytest + pytest-asyncio + pytest-cov | Suite síncrona y asíncrona con cobertura XML (`coverage.xml`), validación del contrato OpenAPI y análisis SonarCloud configurado |
 
 ## Estructura del repositorio
@@ -175,7 +175,7 @@ Las decisiones arquitectónicas se documentan como archivos individuales en [`do
     ├── test.yml                 # Pruebas, contrato y build de la imagen
     └── deploy.yml               # Despliegue y smoke test público
 Dockerfile                       # Imagen reproducible de producción
-infra/                            # Terraform: Artifact Registry, Cloud Run y estado remoto
+infra/                            # Terraform: ACR, Container Apps y estado remoto
 docs/
 ├── arc42/
 │   ├── arc42-template-EN.md     # Narrativa completa arc42
