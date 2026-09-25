@@ -401,22 +401,22 @@ Su mecanismo concreto de ejecución se resolvió en el [ADR-0002](../adr/0002-co
 ## Infrastructure Level 1
 
 Para el incremento actual, InvenTrack se ejecuta como una única aplicación backend
-en un servicio web de Render definido por infraestructura como código en
-[`render.yaml`](../../render.yaml). Render publica el servicio mediante HTTPS
-desde Internet y comprueba `GET /health` como health check.
+en Google Cloud Run, definido por Terraform en [`infra/`](../../infra). Cloud Run
+publica el servicio mediante HTTPS desde Internet y el workflow comprueba
+`GET /health` después del despliegue.
 
 ```mermaid
 flowchart LR
 
     DEV["Equipo de desarrollo"]
 
-    subgraph CLOUD["Render Web Service"]
+    subgraph CLOUD["Google Cloud Run"]
 
       APP["InvenTrack<br/>Docker + FastAPI + Uvicorn"]
 
     end
 
-    DEV -->|"Git push / GitHub Actions"| CLOUD
+    DEV -->|"Git push / GitHub Actions + Terraform"| CLOUD
     USER["Evaluador externo"] -->|"HTTPS público"| CLOUD
 ```
 

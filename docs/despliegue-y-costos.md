@@ -4,20 +4,18 @@
 
 | Evidencia | Implementación | Estado / dato a registrar |
 |---|---|---|
-| URL pública desde fuera de la universidad | Render Web Service, HTTPS | `POR_REGISTRAR: https://inventrack-api.onrender.com` |
-| Infraestructura como código | [`render.yaml`](../render.yaml) y [`Dockerfile`](../Dockerfile) | Versionada |
+| URL pública desde fuera de la universidad | Google Cloud Run, HTTPS | `POR_REGISTRAR: URL entregada por Terraform` |
+| Infraestructura como código | [`infra/`](../infra) y [`Dockerfile`](../Dockerfile) | Versionada |
 | Pipeline | [`test.yml`](../.github/workflows/test.yml) y [`deploy.yml`](../.github/workflows/deploy.yml) | El primero prueba y construye; el segundo despliega y hace smoke test |
-| Health check | `GET /health` | Render lo consulta mediante `healthCheckPath` |
+| Health check | `GET /health` | El workflow lo valida después de `terraform apply` |
 | Logs estructurados | JSON por línea en stdout | Evento `http_request`, sin credenciales ni cuerpos |
 | Métrica consultable | `GET /metrics` | Formato Prometheus; contadores por método y ruta |
-| Protección de secretos | `.env` ignorado, `.env.example` sin valores y secretos de GitHub | `RENDER_DEPLOY_HOOK` es secreto; `PUBLIC_API_URL` es variable de entorno del ambiente |
+| Protección de secretos | `.env` ignorado, `.env.example` sin valores y secretos de GitHub | `GCP_CREDENTIALS`, `GCP_PROJECT_ID` y `GCP_TF_STATE_BUCKET` son secretos del environment |
 | Run exitoso | GitHub Actions, workflow `Deploy API` | `POR_REGISTRAR: <URL del run>` |
 
-La URL no se inventa en el repositorio: queda registrada después de crear el
-servicio Render desde `render.yaml`. Debe abrirse desde una conexión fuera de
-la red universitaria. El smoke test del workflow falla si no se configura
-`PUBLIC_API_URL`, por lo que no puede confundirse un despliegue no realizado
-con uno válido.
+La URL no se inventa en el repositorio: queda registrada como salida
+`service_url` después de crear el servicio Cloud Run con Terraform. Debe
+abrirse desde una conexión fuera de la red universitaria.
 
 ## Prueba externa
 
@@ -44,14 +42,15 @@ La segunda respuesta contiene, como mínimo, las series
 No se almacenan secretos en el código ni en el manifiesto. La configuración
 requerida para el ambiente `production` es:
 
-- `RENDER_DEPLOY_HOOK`: secreto de GitHub Actions, usado solo para solicitar el
-  despliegue.
-- `PUBLIC_API_URL`: variable `production` de GitHub Actions; no es un secreto,
-  porque una URL pública no necesita ocultarse.
+- `GCP_CREDENTIALS`: credenciales de una cuenta de servicio con permisos para
+  Artifact Registry, Cloud Run y el bucket de estado.
+- `GCP_PROJECT_ID`: identificador del proyecto de Google Cloud.
+- `GCP_TF_STATE_BUCKET`: nombre globalmente único del bucket GCS usado para el
+  estado remoto de Terraform.
 
-En Render, cualquier credencial futura debe configurarse en Environment como
-Secret y referenciarse mediante variables de entorno. `.env` está incluido en
-`.gitignore`; `.env.example` contiene únicamente nombres y valores seguros.
+Las credenciales deben configurarse en GitHub como secrets y nunca entrar al
+repositorio. `.env` está incluido en `.gitignore`; `.env.example` contiene
+únicamente nombres y valores seguros.
 
 ## Estimación mensual
 
@@ -68,10 +67,9 @@ cero; los supuestos son los que deben revisarse si cambia el tráfico.
 
 ### Costo estimado
 
-- **Render Web Service free:** USD 0/mes mientras el servicio y sus límites de
-  capa gratuita cubran el escenario anterior. La capa gratuita debe verificarse
-  en la cuenta antes de activar el servicio; no se registra una tarjeta como
-  supuesto del proyecto.
+- **Google Cloud Run:** la cuota gratuita cubre un MVP de bajo tráfico y el
+  servicio escala a cero. Google Cloud requiere habilitar facturación, por lo
+  que se deben configurar alertas presupuestarias.
 - **GitHub Actions:** USD 0/mes para este repositorio público, sujeto a la
   política vigente de GitHub.
 - **Total monetario estimado:** **USD 0/mes** bajo esos supuestos.
@@ -90,10 +88,12 @@ build y arranque del servicio.
 
 ## Operación reproducible
 
-1. Crear el Blueprint de Render desde `render.yaml` y confirmar que el servicio
-   tiene URL pública.
-2. Configurar `RENDER_DEPLOY_HOOK` como secret y `PUBLIC_API_URL` como variable
-   del environment `production` en GitHub.
+1. Crear un proyecto de Google Cloud, habilitar facturación y activar las APIs
+  de Cloud Run, Artifact Registry and Cloud Storage.
+2. Crear una cuenta de servicio y configurar `GCP_CREDENTIALS`,
+  `GCP_PROJECT_ID` y `GCP_TF_STATE_BUCKET` como secrets del environment
+  `production` en GitHub.
 3. Ejecutar `Deploy API` manualmente o hacer push a `main`.
-4. Conservar el enlace al run verde y la salida de `/health` desde una red
+4. Conservar el enlace al run verde, la salida de `service_url` y la respuesta
+  de `/health` desde una red
    externa en la entrega.

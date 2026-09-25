@@ -6,7 +6,7 @@ on:
     branches: [ main ]
     paths:
       - Dockerfile
-      - render.yaml
+      - infra/**
       - app/**
       - requirements.txt
 
@@ -18,17 +18,65 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     steps:
-      - name: Trigger Render deployment
+      - uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_CREDENTIALS }}
+
+      - name: Set up Google Cloud CLI
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Create Terraform state bucket
         env:
-          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+          STATE_BUCKET: ${{ secrets.GCP_TF_STATE_BUCKET }}
+          PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          REGION: europe-west1
         run: |
-          test -n "$RENDER_DEPLOY_HOOK"
-          curl --fail --silent --show-error -X POST "$RENDER_DEPLOY_HOOK"
+          gcloud storage buckets describe "gs://${STATE_BUCKET}" >/dev/null 2>&1 || \
+            gcloud storage buckets create "gs://${STATE_BUCKET}" \
+              --project="${PROJECT_ID}" \
+              --location="${REGION}" \
+              --uniform-bucket-level-access
+
+      - name: Initialize Terraform
+        working-directory: infra
+        env:
+          TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
+          TF_STATE_BUCKET: ${{ secrets.GCP_TF_STATE_BUCKET }}
+        run: terraform init -backend-config="bucket=${TF_STATE_BUCKET}"
+
+      - name: Create container registry
+        working-directory: infra
+        env:
+          TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
+        run: terraform apply -target=google_artifact_registry_repository.api -auto-approve
+
+      - name: Build and publish container
+        env:
+          PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          REGION: europe-west1
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          gcloud auth configure-docker "${REGION}-docker.pkg.dev" --quiet
+          docker build -t "${REGION}-docker.pkg.dev/${PROJECT_ID}/inventrack/inventrack-api:${IMAGE_TAG}" .
+          docker push "${REGION}-docker.pkg.dev/${PROJECT_ID}/inventrack/inventrack-api:${IMAGE_TAG}"
+
+      - name: Deploy with Terraform
+        working-directory: infra
+        env:
+          TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
+          TF_VAR_image_tag: ${{ github.sha }}
+        run: |
+          terraform apply -auto-approve
+          terraform output -raw service_url > "$RUNNER_TEMP/public_api_url"
 
       - name: Smoke test public deployment
-        env:
-          PUBLIC_API_URL: ${{ vars.PUBLIC_API_URL }}
         run: |
-          test -n "$PUBLIC_API_URL"
+          PUBLIC_API_URL="$(cat "$RUNNER_TEMP/public_api_url")"
           curl --fail --silent --show-error --retry 10 --retry-delay 10 \
             "$PUBLIC_API_URL/health"
