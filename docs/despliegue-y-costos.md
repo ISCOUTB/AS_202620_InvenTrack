@@ -4,18 +4,18 @@
 
 | Evidencia | Implementación | Estado / dato a registrar |
 |---|---|---|
-| URL pública desde fuera de la universidad | Azure Container Apps, HTTPS | `POR_REGISTRAR: URL entregada por Terraform` |
-| Infraestructura como código | [`infra/`](../infra) y [`Dockerfile`](../Dockerfile) | Versionada |
-| Pipeline | [`test.yml`](../.github/workflows/test.yml) y [`deploy.yml`](../.github/workflows/deploy.yml) | El primero prueba y construye; el segundo despliega y hace smoke test |
-| Health check | `GET /health` | El workflow lo valida después de `terraform apply` |
+| URL pública desde fuera de la universidad | Render, HTTPS | `POR_REGISTRAR: URL entregada por Render` |
+| Infraestructura como código | [`render.yaml`](../render.yaml) y [`Dockerfile`](../Dockerfile) | Versionada; Terraform queda como alternativa Azure no utilizada |
+| Pipeline | Render Auto Deploy desde `main` y [`test.yml`](../.github/workflows/test.yml) | Render construye y despliega; GitHub valida pruebas |
+| Health check | `GET /health` | Configurado como health check de Render |
+| Health check | `GET /health` | El workflow lo valida después del despliegue en App Service |
 | Logs estructurados | JSON por línea en stdout | Evento `http_request`, sin credenciales ni cuerpos |
 | Métrica consultable | `GET /metrics` | Formato Prometheus; contadores por método y ruta |
 | Protección de secretos | `.env` ignorado, `.env.example` sin valores y secretos de GitHub | Credenciales Azure y estado Terraform son secretos del environment |
-| Run exitoso | GitHub Actions, workflow `Deploy API` | `POR_REGISTRAR: <URL del run>` |
+| Run exitoso | Render Deploy + GitHub Actions `Run Tests` | `POR_REGISTRAR: enlaces del deploy y del run` |
 
-La URL no se inventa en el repositorio: queda registrada como salida
-`service_url` después de crear el servicio Container Apps con Terraform. Debe
-abrirse desde una conexión fuera de la red universitaria.
+La URL se obtiene al crear el Web Service en Render. Debe abrirse desde una
+conexión fuera de la red universitaria.
 
 ## Prueba externa
 
@@ -70,9 +70,8 @@ cero; los supuestos son los que deben revisarse si cambia el tráfico.
 
 ### Costo estimado
 
-- **Azure Container Apps:** consume recursos cuando hay réplicas activas y
-  puede escalar a cero. Azure requiere una suscripción con facturación; se
-  deben configurar alertas presupuestarias y revisar la cuota gratuita vigente.
+- **Render:** el plan Free puede suspender el servicio por inactividad; el
+  costo estimado es USD 0 bajo los límites y políticas vigentes del plan.
 - **GitHub Actions:** USD 0/mes para este repositorio público, sujeto a la
   política vigente de GitHub.
 - **Total monetario estimado:** **USD 0/mes** bajo esos supuestos.
@@ -91,14 +90,9 @@ build y arranque del servicio.
 
 ## Operación reproducible
 
-1. Crear una suscripción Azure, habilitar facturación y crear la cuenta de
-  almacenamiento que guardará el estado remoto de Terraform.
-2. Crear un service principal y configurar `AZURE_CREDENTIALS`,
-  `AZURE_SUBSCRIPTION_ID`, `AZURE_TENANT_ID`, `AZURE_CLIENT_ID`,
-  `AZURE_CLIENT_SECRET`, `AZURE_TF_STORAGE_ACCOUNT` y
-  `AZURE_TF_STORAGE_RESOURCE_GROUP` como secrets del environment `production`
-  en GitHub.
-3. Ejecutar `Deploy API` manualmente o hacer push a `main`.
-4. Conservar el enlace al run verde, la salida de `service_url` y la respuesta
-  de `/health` desde una red
-   externa en la entrega.
+1. Crear un Web Service en Render conectado al repositorio y seleccionar
+  `Docker` como runtime.
+2. Mantener Auto Deploy habilitado para la rama `main`.
+3. Conservar la URL pública, el enlace al deploy verde y el run verde de
+  GitHub Actions.
+4. Conservar las respuestas de `/health` y `/metrics` desde una red externa.

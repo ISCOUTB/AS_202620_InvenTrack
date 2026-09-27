@@ -1,20 +1,15 @@
-name: Deploy API
+name: Azure deployment (manual fallback)
 
 on:
   workflow_dispatch:
-  push:
-    branches: [ main ]
-    paths:
-      - Dockerfile
-      - infra/**
-      - app/**
-      - requirements.txt
 
 permissions:
   contents: read
+  packages: write
 
 jobs:
   deploy:
+    if: ${{ false }}
     runs-on: ubuntu-latest
     environment: production
     env:
@@ -25,68 +20,29 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Authenticate to Azure
-        uses: azure/login@v2
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-
-      - name: Set up Azure CLI
-        uses: azure/cli@v2
-        with:
-          inlineScript: az version
-
-      - name: Set up Terraform
-        uses: hashicorp/setup-terraform@v3
-
-      - name: Create Terraform state storage
-        env:
-          STORAGE_ACCOUNT: ${{ secrets.AZURE_TF_STORAGE_ACCOUNT }}
-          STORAGE_RESOURCE_GROUP: ${{ secrets.AZURE_TF_STORAGE_RESOURCE_GROUP }}
-        run: |
-          az storage container create --name tfstate \
-            --account-name "${STORAGE_ACCOUNT}" \
-            --auth-mode login >/dev/null
-
-      - name: Initialize Terraform
-        working-directory: infra
-        env:
-          TF_VAR_subscription_id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          TF_STATE_STORAGE_ACCOUNT: ${{ secrets.AZURE_TF_STORAGE_ACCOUNT }}
-        run: terraform init \
-          -backend-config="resource_group_name=${{ secrets.AZURE_TF_STORAGE_RESOURCE_GROUP }}" \
-          -backend-config="storage_account_name=${TF_STATE_STORAGE_ACCOUNT}" \
-          -backend-config="container_name=tfstate"
-
-      - name: Create Azure Container Registry
-        working-directory: infra
-        env:
-          TF_VAR_subscription_id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-        run: terraform apply -target=azurerm_container_registry.api -auto-approve
-
-      - name: Read container registry name
-        working-directory: infra
-        run: terraform output -raw registry_name > "$RUNNER_TEMP/registry_name"
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and publish container
-        env:
-          IMAGE_TAG: ${{ github.sha }}
-        run: |
-          REGISTRY="$(cat "$RUNNER_TEMP/registry_name")"
-          az acr login --name "${REGISTRY}"
-          docker build -t "${REGISTRY}.azurecr.io/inventrack-api:${IMAGE_TAG}" .
-          docker push "${REGISTRY}.azurecr.io/inventrack-api:${IMAGE_TAG}"
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ghcr.io/iscoutb/as_202620_inventrack:${{ github.sha }}
 
-      - name: Deploy with Terraform
-        working-directory: infra
-        env:
-          TF_VAR_subscription_id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          TF_VAR_image_tag: ${{ github.sha }}
-        run: |
-          terraform apply -auto-approve
-          terraform output -raw service_url > "$RUNNER_TEMP/public_api_url"
+      - name: Deploy container to Azure App Service
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_PUBLISH_PROFILE }}
+          images: ghcr.io/iscoutb/as_202620_inventrack:${{ github.sha }}
 
       - name: Smoke test public deployment
         run: |
-          PUBLIC_API_URL="$(cat "$RUNNER_TEMP/public_api_url")"
+          PUBLIC_API_URL="https://${{ secrets.AZURE_WEBAPP_NAME }}.azurewebsites.net"
           curl --fail --silent --show-error --retry 10 --retry-delay 10 \
             "$PUBLIC_API_URL/health"
