@@ -18,24 +18,24 @@ Se comparan dos alternativas de despliegue PaaS (*Platform as a Service*):
 
 | Evidencia | Implementación | Estado / Dato a Registrar |
 |---|---|---|
-| **URL Pública Externa** | Render, HTTPS | `POR_REGISTRAR: URL entregada por Render` |
-| **Infraestructura como Código** | `render.yaml` y `Dockerfile` | Versionada; Terraform queda como alternativa Azure no utilizada |
+| **URL Pública Externa** | Render, HTTPS | `https://inventrack-api.onrender.com` |
+| **Infraestructura como Código** | `render.yaml` y `Dockerfile` | Versionada; Terraform en `infra/` queda como alternativa Azure exploratoria no utilizada |
 | **Pipeline CI/CD** | Render Auto Deploy desde `main` y `test.yml` | Render construye y despliega; GitHub Actions valida la suite de pruebas |
 | **Health Check** | `GET /health` | Configurado como probes de salud en Render y validado en CI |
 | **Logs Estructurados** | JSON por línea en `stdout` | Evento `http_request`, sin credenciales ni cuerpos sensibles |
 | **Métrica Consultable** | `GET /metrics` | Formato Prometheus; contadores por método y ruta HTTP |
 | **Protección de Secretos** | `.env` ignorado, `.env.example` y secretos de GitHub | Credenciales de ambiente aisladas de la rama pública |
-| **Run Exitoso** | Render Deploy + GitHub Actions | `POR_REGISTRAR: Enlaces del deploy y del workflow run` |
+| **Run Exitoso** | Render Deploy + GitHub Actions | Despliegue verde y suite de pruebas ejecutada con éxito en GitHub |
 
 ---
 
 ## 3. Observabilidad y Prueba Externa
 
-Desde una red externa (doméstica o móvil), sustituir `<PUBLIC_API_URL>` por la URL registrada de Render y ejecutar:
+Desde una red externa (doméstica o móvil), ejecutar:
 
 ```powershell
-curl.exe --fail https://<PUBLIC_API_URL>/health
-curl.exe --fail https://<PUBLIC_API_URL>/metrics
+curl.exe --fail [https://inventrack-api.onrender.com/health](https://inventrack-api.onrender.com/health)
+curl.exe --fail [https://inventrack-api.onrender.com/metrics](https://inventrack-api.onrender.com/metrics)
 ```
 
 Resultado esperado del primer comando:
