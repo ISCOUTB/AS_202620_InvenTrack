@@ -128,6 +128,11 @@ def health_check() -> dict[str, str]:
     return {"status": "ok", "service": "InvenTrack"}
 
 
+@app.get("/", include_in_schema=False, tags=["infraestructura"])
+def root() -> dict[str, str]:
+    return {"service": "InvenTrack", "status": "ok", "health": "/health", "docs": "/docs"}
+
+
 @app.get("/metrics", include_in_schema=False, tags=["infraestructura"])
 def metrics() -> Response:
     lines = [
