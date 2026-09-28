@@ -1,5 +1,8 @@
 # ADR-0005: Pivote y Elección Definitiva de Plataforma de Despliegue (Render PaaS)
 
+**Fecha:** 2026-09-27
+**Estado:** Aceptado
+
 ## Contexto y Problema
 El sistema InvenTrack requiere un entorno de despliegue público, estable y accesible a través de Internet para validar los contratos de la API y permitir la evaluación del proyecto. 
 
@@ -17,7 +20,7 @@ Ante este impedimento, se evaluaron dos caminos adicionales:
    * *Ventajas:* Control total, sin costos directos en dólares.
    * *Desventajas:* Requiere una alta carga operativa (DevOps). Implica gestionar permisos de red, abrir puertos a través del firewall institucional de la universidad, configurar proxies inversos y lidiar con burocracia administrativa que excede el tiempo disponible para el ciclo de desarrollo.
 2. **Render Cloud (PaaS):** 
-   * *Ventajas:* Ofrece un plan "Free Web Service" nativo. No solicita método de pago para utilizar los recursos gratuitos. Se integra de forma nativa con GitHub para el despliegue automático.
+   * *Ventajas:* Ofrece un plan "Free Web Service" nativo. No solicita método de pago para utilizar los recursos gratuitos. Se integra de forma nativa con GitHub para el despliegue automático mediante configuración declarativa (`render.yaml`).
    * *Desventajas:* El servicio entra en hibernación (spin-down) tras 15 minutos sin recibir tráfico.
 
 ## Decisión
@@ -25,11 +28,17 @@ Se decide **abandonar definitivamente la infraestructura en Microsoft Azure** y 
 
 ## Justificación de la Decisión
 1. **Cumplimiento Absoluto de C5:** Render permite desplegar la API y exponerla públicamente sin requerir el ingreso de una tarjeta de crédito en ningún momento del registro o despliegue.
-2. **Fricción Operativa Cercana a Cero (NoOps):** A diferencia de Azure (que requería gestionar *Service Principals*, *Tenants* y secretos complejos en GitHub), o de la opción On-Premise en la universidad, Render abstrae toda la complejidad de la infraestructura. Detecta automáticamente los commits y ejecuta el comando de inicio (`uvicorn app.main:app --host 0.0.0.0 --port $PORT`) sin pipelines adicionales.
+2. **Fricción Operativa Cercana a Cero (NoOps):** A diferencia de Azure (que requería gestionar *Service Principals*, *Tenants* y secretos complejos en GitHub), o de la opción On-Premise en la universidad, Render abstrae toda la complejidad de la infraestructura. Detecta automáticamente los commits y ejecuta el comando de inicio del contenedor (`Dockerfile`) sin pipelines de despliegue adicionales.
 3. **Observabilidad Integrada:** La plataforma ofrece un dashboard básico gratuito donde el equipo puede monitorear los logs de los contenedores y el tráfico HTTP en tiempo real, lo que apoya la medición del escenario de calidad ESC-04.
 
+## Estimación de Costo y Punto de Ruptura de la Capa Gratuita
+* **Costo mensual por pieza:**
+  * *API Backend (Render Web Service - Free Tier):* **$0.00 USD** (otorga hasta 750 horas de ejecución al mes, cubriendo holgadamente las ~730 horas de un mes estándar).
+  * *Capa de Persistencia (In-Memory dentro del contenedor):* **$0.00 USD** (sin bases de datos administradas de pago).
+* **Punto de Ruptura (Volumen y Límites):** 
+  El límite crítico de la capa gratuita es la asignación de **512 MB de RAM** y CPU compartida. Dado que la persistencia de InvenTrack opera temporalmente *in-memory* en esta fase, el punto de ruptura operativo se alcanzará cuando el volumen acumulado de datos (productos, catálogos e historiales de movimientos) sature los 512 MB de memoria RAM del contenedor. Superar este volumen provocará que la plataforma termine el proceso de la aplicación por un error **OOM (Out Of Memory)**. En ese escenario futuro, la arquitectura se verá obligada a extraer la persistencia hacia un motor externo (como PostgreSQL), rompiendo la restricción C5 de costo cero.
+
 ## Consecuencias
-* **Positivas:** El equipo recupera la capacidad de despliegue sin romper las restricciones de presupuesto. La configuración declarativa con `render.yaml` simplifica el mantenimiento. La API ya se encuentra operativa y respondiendo correctamente en su URL pública asignada.
+* **Positivas:** El equipo recupera la capacidad de despliegue sin romper las restricciones de presupuesto ni arriesgar información financiera. La configuración con `render.yaml` garantiza reproducibilidad. La API se encuentra operativa respondiendo en su URL pública.
 * **Negativas / Mitigaciones:** 
-  * *Cold Starts (Arranques en frío):* Debido a la naturaleza del tier gratuito, las peticiones que "despierten" a la API tras 15 minutos de inactividad experimentarán una latencia elevada (hasta 50 segundos). **Mitigación:** Para las pruebas de estrés o la medición de la métrica $p95 \le 400\text{ ms}$ (ESC-04), el equipo deberá realizar primero una petición de "calentamiento" (`/health`) y ejecutar las mediciones únicamente cuando la instancia esté activa y en estado "Live".
-  * *Límites de Memoria:* La capa gratuita está restringida a 512 MB de RAM y CPU compartida. Dado que la base de datos de InvenTrack reside temporalmente en memoria (repositorios *In-Memory*), el volumen de datos de prueba deberá mantenerse acotado para evitar que el contenedor sea terminado por OOM (Out Of Memory).
+  * *Cold Starts (Arranques en frío):* Debido a la naturaleza del tier gratuito, las peticiones que "despierten" a la API tras 15 minutos de inactividad experimentarán una latencia elevada (hasta 50 segundos). **Mitigación:** Para las pruebas de estrés o la medición de la métrica $p95 \le 400\text{ ms}$ (ESC-04), el equipo realiza previamente una petición de calentamiento (`/health`) y ejecuta las mediciones únicamente con la instancia activa ("Live").
