@@ -3,14 +3,13 @@
 Este archivo es el composition root de la aplicación: construye los
 repositorios, casos de uso y adaptadores de cada módulo, resuelve las
 dependencias cruzadas entre módulos (ADR-0003) y ensambla los routers.
-Los routers ya no construyen sus propias dependencias (consecuencia del
-hallazgo "wiring hardcodeado en el router").
 """
 
 import json
 import logging
 import time
-from collections import defaultdict
+import statistics
+from collections import defaultdict, deque
 from collections.abc import Awaitable, Callable
 from typing import Any
 
@@ -58,8 +57,10 @@ if not _http_logger.handlers:
     _http_logger.addHandler(_handler)
 _http_logger.propagate = False
 
+# Estructuras combinadas para el pipeline (bot) y para el ESC-04 (P95)
 _request_count: defaultdict[tuple[str, str], int] = defaultdict(int)
 _request_duration_seconds: defaultdict[tuple[str, str], float] = defaultdict(float)
+_request_durations: defaultdict[tuple[str, str], deque] = defaultdict(lambda: deque(maxlen=100))
 
 
 class ObservabilityMiddleware(BaseHTTPMiddleware):
@@ -71,9 +72,12 @@ class ObservabilityMiddleware(BaseHTTPMiddleware):
         started = time.perf_counter()
         response = await call_next(request)
         duration = time.perf_counter() - started
+        
         key = (request.method, request.url.path)
         _request_count[key] += 1
         _request_duration_seconds[key] += duration
+        _request_durations[key].append(duration)
+        
         _http_logger.info(
             json.dumps(
                 {
@@ -102,15 +106,12 @@ _stock_repo = InMemoryStockRepository()
 _movimientos_repo = InMemoryMovimientoRepository()
 _consultar_historial = ConsultarHistorialMovimientos(_movimientos_repo)
 
-# --- adaptadores cruzados (ADR-0003): cada uno solo importa la
-#     `application` del módulo contrario, nunca su domain/infrastructure ---
+# --- adaptadores cruzados (ADR-0003) ---
 _validador_producto = ValidadorDeProductoAdapter(_consultar_producto)
 _historial_movimientos = HistorialMovimientosAdapter(_consultar_historial)
 
-# --- casos de uso que dependen de un adaptador cruzado ---
+# --- casos de uso con dependencias cruzadas ---
 _eliminar_producto = EliminarProducto(_productos_repo, _historial_movimientos)
-# RegistrarMovimientoInventario serializa por producto_id con un
-# asyncio.Lock interno (ADR-0002, equipo — control de concurrencia).
 _registrar_movimiento = RegistrarMovimientoInventario(
     _stock_repo, _movimientos_repo, _validador_producto
 )
@@ -124,7 +125,9 @@ app.add_middleware(ObservabilityMiddleware)
 
 
 @app.get("/health", tags=["infraestructura"])
-def health_check() -> dict[str, str]:
+def health_check() -> dict[str, str] | Response:
+    if _productos_repo is None or _stock_repo is None:
+        return Response(content='{"status": "unhealthy"}', status_code=503, media_type="application/json")
     return {"status": "ok", "service": "InvenTrack"}
 
 
@@ -140,16 +143,26 @@ def metrics() -> Response:
         "# TYPE inventrack_http_requests_total counter",
         "# HELP inventrack_http_request_duration_seconds_total Total HTTP duration in seconds.",
         "# TYPE inventrack_http_request_duration_seconds_total counter",
+        "# HELP inventrack_http_request_duration_p95_ms P95 latency in milliseconds (ESC-04).",
+        "# TYPE inventrack_http_request_duration_p95_ms gauge",
     ]
+    
     for method, path in sorted(_request_count):
         labels = f'method="{_prometheus_escape(method)}",path="{_prometheus_escape(path)}"'
-        lines.append(
-            f"inventrack_http_requests_total{{{labels}}} {_request_count[(method, path)]}"
-        )
-        lines.append(
-            "inventrack_http_request_duration_seconds_total"
-            f"{{{labels}}} {_request_duration_seconds[(method, path)]}"
-        )
+        
+        # Métrica 1: Conteo total
+        lines.append(f"inventrack_http_requests_total{{{labels}}} {_request_count[(method, path)]}")
+        
+        # Métrica 2: Duración total (Exigida explícitamente por el Pipeline)
+        lines.append(f"inventrack_http_request_duration_seconds_total{{{labels}}} {_request_duration_seconds[(method, path)]}")
+        
+        # Métrica 3: Cálculo P95 en tiempo real (Para el ESC-04)
+        durations = _request_durations[(method, path)]
+        if durations:
+            p95_sec = statistics.quantiles(durations, n=100)[94] if len(durations) > 1 else durations[0]
+            p95_ms = round(p95_sec * 1000, 2)
+            lines.append(f"inventrack_http_request_duration_p95_ms{{{labels}}} {p95_ms}")
+            
     return Response("\n".join(lines) + "\n", media_type="text/plain; version=0.0.4")
 
 
