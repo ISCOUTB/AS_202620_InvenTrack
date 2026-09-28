@@ -8,7 +8,7 @@ dependencias cruzadas entre módulos (ADR-0003) y ensambla los routers.
 import json
 import logging
 import time
-from collections import defaultdict
+from collections import defaultdict, deque
 from collections.abc import Awaitable, Callable
 
 from fastapi import FastAPI, Request, Response
@@ -57,6 +57,8 @@ _http_logger.propagate = False
 
 _request_count: defaultdict[tuple[str, str], int] = defaultdict(int)
 _request_duration_seconds: defaultdict[tuple[str, str], float] = defaultdict(float)
+# Historial acotado para cálculo de p95 sin afectar la memoria ni crear ramas muertas
+_request_durations_history: defaultdict[tuple[str, str], deque] = defaultdict(lambda: deque(maxlen=1000))
 
 
 class ObservabilityMiddleware(BaseHTTPMiddleware):
@@ -69,8 +71,11 @@ class ObservabilityMiddleware(BaseHTTPMiddleware):
         response = await call_next(request)
         duration = time.perf_counter() - started
         key = (request.method, request.url.path)
+        
         _request_count[key] += 1
         _request_duration_seconds[key] += duration
+        _request_durations_history[key].append(duration)
+        
         _http_logger.info(
             json.dumps(
                 {
@@ -135,16 +140,19 @@ def metrics():
         "# TYPE inventrack_http_requests_total counter",
         "# HELP inventrack_http_request_duration_seconds_total Total HTTP duration in seconds.",
         "# TYPE inventrack_http_request_duration_seconds_total counter",
+        "# HELP inventrack_http_p95_latency_seconds Latencia p95 en segundos asociada al escenario ESC-04.",
+        "# TYPE inventrack_http_p95_latency_seconds gauge",
     ]
     for method, path in sorted(_request_count):
         labels = f'method="{_prometheus_escape(method)}",path="{_prometheus_escape(path)}"'
-        lines.append(
-            f"inventrack_http_requests_total{{{labels}}} {_request_count[(method, path)]}"
-        )
-        lines.append(
-            "inventrack_http_request_duration_seconds_total"
-            f"{{{labels}}} {_request_duration_seconds[(method, path)]}"
-        )
+        lines.append(f"inventrack_http_requests_total{{{labels}}} {_request_count[(method, path)]}")
+        lines.append(f"inventrack_http_request_duration_seconds_total{{{labels}}} {_request_duration_seconds[(method, path)]}")
+        
+        # El historial nunca está vacío porque se itera sobre _request_count, evitando ramas condicionales
+        history = sorted(_request_durations_history[(method, path)])
+        p95_index = int(len(history) * 0.95)
+        lines.append(f"inventrack_http_p95_latency_seconds{{{labels}}} {round(history[p95_index], 4)}")
+        
     return Response("\n".join(lines) + "\n", media_type="text/plain; version=0.0.4")
 
 
