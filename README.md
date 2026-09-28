@@ -16,8 +16,18 @@
 * **Resultados de Medición:** **$p95 = 28\text{ ms}$** bajo ráfagas de 20 peticiones simultáneas sobre el mismo SKU (Umbral exigido: $\le 400\text{ ms}$) ([Reporte de Medición](docs/retos/corte-1-medicion.md)).
 * **Matriz de Trazabilidad:** Cadena navegable `Aspecto → Requisito → C4 → ADR → Código → Pruebas → Evidencia` ([Aspectos de Calidad](docs/aspectos.md)).
 * **Contrato de API:** OpenAPI v1 versionado y validado automáticamente contra la implementación FastAPI ([ADR-0004](docs/adr/0004-contrato-api-versionado-openapi.md)).
+* **Despliegue Productivo:** Alojado en Render (PaaS) mediante Infraestructura como Código con `render.yaml` y observabilidad integrada ([ADR-0005](docs/adr/0005-eleccion-plataforma-despliegue.md)).
 * **CI y cobertura:** GitHub Actions ejecuta la suite completa con `pytest-cov`, genera `coverage.xml` y valida el contrato OpenAPI antes del análisis SonarCloud.
 * **Transparencia en Uso de IA:** Prompts, decisiones aceptadas, correcciones y rechazos por criterio técnico ([Registro de IA](docs/ia.md)).
+
+---
+
+## 🌐 Entorno de Producción (Render)
+
+* **URL Pública:** `https://inventrack-api.onrender.com`
+* **Health Check:** `https://inventrack-api.onrender.com/health`
+* **Métricas (ESC-04 / p95):** `https://inventrack-api.onrender.com/metrics`
+* **Documentación Interactiva (Swagger):** `https://inventrack-api.onrender.com/docs`
 
 ---
 
@@ -33,7 +43,7 @@
 - [Diagramas C4](#diagramas-c4)
 - [Mapa de contextos y propiedad de datos](#mapa-de-contextos-y-propiedad-de-datos)
 - [Decisiones de arquitectura (ADR)](#decisiones-de-arquitectura-adr)
-- [Evidencia de prueba contractual](#evidencia-de-prueba-contractual)
+- [Evidencia de prueba contractual](#evidencia-de-prueba-contrato)
 - [Despliegue y costos](#despliegue-y-costos)
 - [Stack tecnológico](#stack-tecnológico)
 - [Estructura del repositorio](#estructura-del-repositorio)
@@ -66,8 +76,9 @@
 | [ADR-0002](docs/adr/0002-control-concurrencia-memoria-inventario.md) | Control de concurrencia en memoria, criterios de revisión y costo de reversión (Aceptado) |
 | [ADR-0003](docs/adr/0003-integracion-productos-inventario-via-puertos-de-aplicacion.md) | Integración entre productos e inventario mediante puertos de aplicación y adaptadores (Aceptado) |
 | [ADR-0004](docs/adr/0004-contrato-api-versionado-openapi.md) | Contrato de API versionado con OpenAPI y validación automática (Aceptado) |
+| [ADR-0005](docs/adr/0005-eleccion-plataforma-despliegue.md) | Elección de Render PaaS, estimación de costos y punto de ruptura (Aceptado) |
 | [Evidencia de prueba contractual](docs/evidencia-prueba-contrato.md) | Reproducción del fallo ante un cambio incompatible y recuperación de la prueba |
-| [Despliegue y costos](docs/despliegue-y-costos.md) | URL pública, IaC, observabilidad, secretos y estimación mensual |
+| [Despliegue y costos](docs/despliegue-y-costos.md) | URL pública, IaC (`render.yaml`), observabilidad, secretos y estimación mensual |
 | [Medición Reto Corte 1](docs/retos/corte-1-medicion.md) | Diagnóstico, pruebas de concurrencia, degradación controlada y comando de reproducción |
 | [Uso de IA](docs/ia.md) | Registro transparente de IA (sugerencias aceptadas vs. rechazadas)|
 
@@ -100,7 +111,7 @@ Antes de entrar a cada carpeta, vale la pena explicar la lógica detrás de la e
 
 - **`docs/arc42/`** cuenta la historia completa en texto: objetivos, restricciones, contexto, estrategia de solución, vista de bloques, vista de ejecución, atributos de calidad, conceptos transversales y los escenarios que los hacen medibles.
 - **`docs/c4/`** y **`docs/utility-tree.md`** son los diagramas — representaciones visuales que se enlazan desde el arc42.
-- **`docs/adr/`** registra las decisiones arquitectónicas concretas, una por archivo: ADR-0001 para el estilo general, ADR-0002 para concurrencia, ADR-0003 para la integración entre productos e inventario y ADR-0004 para el contrato versionado.
+- **`docs/adr/`** registra las decisiones arquitectónicas concretas, una por archivo: ADR-0001 para el estilo general, ADR-0002 para concurrencia, ADR-0003 para la integración entre productos e inventario, ADR-0004 para el contrato versionado y ADR-0005 para la plataforma de despliegue.
 - **`docs/api/`** reúne el contrato técnico y la vista funcional de la API de InvenTrack, incluyendo el contrato ejecutable de la versión actual.
 - **`docs/retos/`** documenta el diagnóstico, carga simulada, comandos de reproducción y resultados del reto del Corte 1.
 - **`docs/evidencia-prueba-contrato.md`** documenta la reproducción controlada de un cambio incompatible en OpenAPI y la recuperación de la prueba contractual.
@@ -120,7 +131,7 @@ La documentación sigue la plantilla **arc42**, disponible completa en [`docs/ar
 | 4 · Solution Strategy | Decisiones clave (Monolito Modular, Hexagonal por módulo, desacoplamiento) |
 | 5 · Building Block View | Descomposición en subsistemas y módulos internos (Productos, Inventario, Proveedores, etc.) |
 | 6 · Runtime View | Diagramas de secuencia para flujos críticos (ej. Registro concurrente de movimientos) |
-| 7 · Deployment View | Despliegue inicial como una única aplicación InvenTrack (FastAPI + Uvicorn) ejecutada localmente |
+| 7 · Deployment View | Despliegue en Render (PaaS) mediante `render.yaml` y contenedor Docker optimizado |
 | 8 · Cross-cutting Concepts | Lenguaje ubicuo, mapa de contextos, mecanismo de exclusión mutua asíncrona por SKU y manejo unificado de excepciones |
 | 9 · Architecture Decisions | Enlace y matriz de trazabilidad con los ADRs |
 | 10 · Quality Requirements | Árbol de utilidad y 5 escenarios de calidad medibles |
@@ -156,6 +167,7 @@ Las decisiones arquitectónicas se documentan como archivos individuales en [`do
 - **[ADR-0002](docs/adr/0002-control-concurrencia-memoria-inventario.md):** Adopción de exclusión mutua asíncrona (`asyncio.Lock()`) por SKU para resolver el reto de consistencia ante peticiones simultáneas de inventario.
 - **[ADR-0003](docs/adr/0003-integracion-productos-inventario-via-puertos-de-aplicacion.md):** Integración entre productos e inventario mediante puertos de aplicación y adaptadores.
 - **[ADR-0004](docs/adr/0004-contrato-api-versionado-openapi.md):** Versionado del contrato de API con OpenAPI y validación automática de compatibilidad en CI.
+- **[ADR-0005](docs/adr/0005-eleccion-plataforma-despliegue.md):** Elección de Render (PaaS) como plataforma de despliegue productivo y estimación de costos.
 
 ## Stack tecnológico
 
@@ -164,7 +176,7 @@ Las decisiones arquitectónicas se documentan como archivos individuales en [`do
 | Frontend | Flutter | Pendiente |
 | Backend | FastAPI + Uvicorn | Implementado |
 | Base de datos | Adaptador In-Memory (Transición a PostgreSQL/SQLite) | Implementado para MVP |
-| Hosting / despliegue | Azure Container Apps + Terraform + Docker (`infra/`) | Configurado; URL y run externo se registran en [`docs/despliegue-y-costos.md`](docs/despliegue-y-costos.md) |
+| Hosting / despliegue | Render (PaaS) + Docker (`render.yaml`) | Implementado y operativo (`https://inventrack-api.onrender.com`) |
 | CI / calidad de código | GitHub Actions + Pytest + pytest-asyncio + pytest-cov | Suite síncrona y asíncrona con cobertura XML (`coverage.xml`), validación del contrato OpenAPI y análisis SonarCloud configurado |
 
 ## Estructura del repositorio
@@ -173,9 +185,9 @@ Las decisiones arquitectónicas se documentan como archivos individuales en [`do
 .github/
 └── workflows/
     ├── test.yml                 # Pruebas, contrato y build de la imagen
-    └── deploy.yml               # Despliegue y smoke test público
-Dockerfile                       # Imagen reproducible de producción
-infra/                            # Terraform: ACR, Container Apps y estado remoto
+    └── sonar.yml                # Análisis estático de calidad y cobertura SonarCloud
+Dockerfile                       # Imagen reproducible de producción (no-root user)
+render.yaml                      # Configuración IaC de despliegue para Render
 docs/
 ├── arc42/
 │   ├── arc42-template-EN.md     # Narrativa completa arc42
@@ -194,7 +206,8 @@ docs/
 │   ├── 0001-usar-monolito-modular-con-hexagonal-por-modulo.md
 │   ├── 0002-control-concurrencia-memoria-inventario.md
 │   ├── 0003-integracion-productos-inventario-via-puertos-de-aplicacion.md
-│   └── 0004-contrato-api-versionado-openapi.md
+│   ├── 0004-contrato-api-versionado-openapi.md
+│   └── 0005-eleccion-plataforma-despliegue.md
 ├── evidencia-prueba-contrato.md  # Reproducción del fallo de compatibilidad OpenAPI
 ├── retos/
 │   └── corte-1-medicion.md      # Diagnóstico y medición del Reto de Concurrencia
@@ -207,7 +220,7 @@ docs/
 contracts/
 └── openapi/v1.json              # Contrato versionado de la API HTTP
 app/                             # Aplicación FastAPI Monolito Modular
-├── main.py                      # Composición y rutas principales
+├── main.py                      # Composición, métricas p95 y rutas principales
 ├── shared/                      # Dominio compartido y utilidades
 ├── productos/                   # Módulo de productos
 ├── inventario/                  # Módulo de inventario (Concurrencia por SKU)
@@ -263,7 +276,7 @@ python -m pytest -v tests/contract/test_openapi_contract.py
 | Corte 1 | Reto de concurrencia e integración de inventario (ADR-0002 + Medición) | Completo |
 | S6 | Mapa de contextos, propiedad de datos, auditoría de modularidad y C4 Nivel 3 | Completo |
 | S7 | Contrato OpenAPI versionado (ADR-0004) y validación automática en CI | Completo |
-| S8 | Despliegue público, IaC, observabilidad y costos | Configurado; pendiente registrar URL y run externo |
+| S8 | Despliegue público, IaC (`render.yaml`), observabilidad y costos (ADR-0005) | Completo (Desplegado en Render) |
 
 ## Uso de IA
 
