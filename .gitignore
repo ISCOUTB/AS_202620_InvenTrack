@@ -4,3 +4,8 @@ __pycache__/
 .venv/
 venv/
 .env
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example

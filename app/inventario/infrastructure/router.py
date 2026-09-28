@@ -24,7 +24,6 @@ def crear_router(registro: RegistrarMovimientoInventario, repositorio_stock: Sto
 
     @router.post(
         "/inventario/{producto_id}/entradas",
-        response_model=MovimientoResponse,
         responses={404: {"description": "Not Found"}, 503: {"description": "Service Unavailable"}},
     )
     async def registrar_entrada(producto_id: str, payload: MovimientoRequest) -> MovimientoResponse:
@@ -38,7 +37,6 @@ def crear_router(registro: RegistrarMovimientoInventario, repositorio_stock: Sto
 
     @router.post(
         "/inventario/{producto_id}/salidas",
-        response_model=MovimientoResponse,
         responses={
             404: {"description": "Not Found"},
             409: {"description": "Conflict"},

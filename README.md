@@ -15,6 +15,8 @@
 * **Mecanismo de Concurrencia:** Exclusión mutua asíncrona por SKU (`asyncio.Lock()`) ([ADR-0002](docs/adr/0002-control-concurrencia-memoria-inventario.md)).
 * **Resultados de Medición:** **$p95 = 28\text{ ms}$** bajo ráfagas de 20 peticiones simultáneas sobre el mismo SKU (Umbral exigido: $\le 400\text{ ms}$) ([Reporte de Medición](docs/retos/corte-1-medicion.md)).
 * **Matriz de Trazabilidad:** Cadena navegable `Aspecto → Requisito → C4 → ADR → Código → Pruebas → Evidencia` ([Aspectos de Calidad](docs/aspectos.md)).
+* **Contrato de API:** OpenAPI v1 versionado y validado automáticamente contra la implementación FastAPI ([ADR-0004](docs/adr/0004-contrato-api-versionado-openapi.md)).
+* **CI y cobertura:** GitHub Actions ejecuta la suite completa con `pytest-cov`, genera `coverage.xml` y valida el contrato OpenAPI antes del análisis SonarCloud.
 * **Transparencia en Uso de IA:** Prompts, decisiones aceptadas, correcciones y rechazos por criterio técnico ([Registro de IA](docs/ia.md)).
 
 ---
@@ -31,6 +33,8 @@
 - [Diagramas C4](#diagramas-c4)
 - [Mapa de contextos y propiedad de datos](#mapa-de-contextos-y-propiedad-de-datos)
 - [Decisiones de arquitectura (ADR)](#decisiones-de-arquitectura-adr)
+- [Evidencia de prueba contractual](#evidencia-de-prueba-contractual)
+- [Despliegue y costos](#despliegue-y-costos)
 - [Stack tecnológico](#stack-tecnológico)
 - [Estructura del repositorio](#estructura-del-repositorio)
 - [Cómo ejecutar el esqueleto](#cómo-ejecutar-el-esqueleto)
@@ -62,6 +66,8 @@
 | [ADR-0002](docs/adr/0002-control-concurrencia-memoria-inventario.md) | Control de concurrencia en memoria, criterios de revisión y costo de reversión (Aceptado) |
 | [ADR-0003](docs/adr/0003-integracion-productos-inventario-via-puertos-de-aplicacion.md) | Integración entre productos e inventario mediante puertos de aplicación y adaptadores (Aceptado) |
 | [ADR-0004](docs/adr/0004-contrato-api-versionado-openapi.md) | Contrato de API versionado con OpenAPI y validación automática (Aceptado) |
+| [Evidencia de prueba contractual](docs/evidencia-prueba-contrato.md) | Reproducción del fallo ante un cambio incompatible y recuperación de la prueba |
+| [Despliegue y costos](docs/despliegue-y-costos.md) | URL pública, IaC, observabilidad, secretos y estimación mensual |
 | [Medición Reto Corte 1](docs/retos/corte-1-medicion.md) | Diagnóstico, pruebas de concurrencia, degradación controlada y comando de reproducción |
 | [Uso de IA](docs/ia.md) | Registro transparente de IA (sugerencias aceptadas vs. rechazadas)|
 
@@ -97,6 +103,7 @@ Antes de entrar a cada carpeta, vale la pena explicar la lógica detrás de la e
 - **`docs/adr/`** registra las decisiones arquitectónicas concretas, una por archivo: ADR-0001 para el estilo general, ADR-0002 para concurrencia, ADR-0003 para la integración entre productos e inventario y ADR-0004 para el contrato versionado.
 - **`docs/api/`** reúne el contrato técnico y la vista funcional de la API de InvenTrack, incluyendo el contrato ejecutable de la versión actual.
 - **`docs/retos/`** documenta el diagnóstico, carga simulada, comandos de reproducción y resultados del reto del Corte 1.
+- **`docs/evidencia-prueba-contrato.md`** documenta la reproducción controlada de un cambio incompatible en OpenAPI y la recuperación de la prueba contractual.
 - **`docs/aspectos.md`** es el índice que conecta todo siguiendo la cadena navegable: `Aspecto → Requisito → C4 → ADR → Código → Pruebas → Evidencia`.
 - **`docs/auditoria-modularidad.md`** documenta la revisión de acoplamiento y las correcciones aplicadas para mantener los límites del monolito modular.
 - **`contracts/openapi/v1.json`** contiene el contrato HTTP versionado y `tests/contract/` valida que la implementación lo cumpla.
@@ -157,15 +164,18 @@ Las decisiones arquitectónicas se documentan como archivos individuales en [`do
 | Frontend | Flutter | Pendiente |
 | Backend | FastAPI + Uvicorn | Implementado |
 | Base de datos | Adaptador In-Memory (Transición a PostgreSQL/SQLite) | Implementado para MVP |
-| Hosting / despliegue | Por definir | Pendiente |
-| CI / calidad de código | GitHub Actions + Pytest + pytest-asyncio | Pruebas síncronas y asíncronas configuradas; la integración con SonarCloud queda preparada pero temporalmente desactivada hasta habilitar el secreto `SONAR_TOKEN` y los permisos del proyecto |
+| Hosting / despliegue | Azure Container Apps + Terraform + Docker (`infra/`) | Configurado; URL y run externo se registran en [`docs/despliegue-y-costos.md`](docs/despliegue-y-costos.md) |
+| CI / calidad de código | GitHub Actions + Pytest + pytest-asyncio + pytest-cov | Suite síncrona y asíncrona con cobertura XML (`coverage.xml`), validación del contrato OpenAPI y análisis SonarCloud configurado |
 
 ## Estructura del repositorio
 
 ```text
 .github/
 └── workflows/
-    └── test.yml                 # Pipeline de CI/CD para pruebas en GitHub Actions
+    ├── test.yml                 # Pruebas, contrato y build de la imagen
+    └── deploy.yml               # Despliegue y smoke test público
+Dockerfile                       # Imagen reproducible de producción
+infra/                            # Terraform: ACR, Container Apps y estado remoto
 docs/
 ├── arc42/
 │   ├── arc42-template-EN.md     # Narrativa completa arc42
@@ -185,6 +195,7 @@ docs/
 │   ├── 0002-control-concurrencia-memoria-inventario.md
 │   ├── 0003-integracion-productos-inventario-via-puertos-de-aplicacion.md
 │   └── 0004-contrato-api-versionado-openapi.md
+├── evidencia-prueba-contrato.md  # Reproducción del fallo de compatibilidad OpenAPI
 ├── retos/
 │   └── corte-1-medicion.md      # Diagnóstico y medición del Reto de Concurrencia
 ├── ficha_problema.md            # Planteamiento del problema
@@ -228,6 +239,13 @@ La prueba automatizada se ejecuta con:
 python -m pytest -v
 ```
 
+La prueba contractual aislada se ejecuta con:
+
+```powershell
+$env:PYTHONPATH='.'
+python -m pytest -v tests/contract/test_openapi_contract.py
+```
+
 ## Flujo de trabajo del equipo
 
 - Los cambios se integran en `main` manteniendo trazabilidad en cada commit.
@@ -243,6 +261,9 @@ python -m pytest -v
 | S3 | Estrategia, matriz, ADR y esqueleto ejecutable | Completo |
 | S4 | Vista de Contenedores (C4 N2), Secciones arc42 y Corte Vertical | Completo |
 | Corte 1 | Reto de concurrencia e integración de inventario (ADR-0002 + Medición) | Completo |
+| S6 | Mapa de contextos, propiedad de datos, auditoría de modularidad y C4 Nivel 3 | Completo |
+| S7 | Contrato OpenAPI versionado (ADR-0004) y validación automática en CI | Completo |
+| S8 | Despliegue público, IaC, observabilidad y costos | Configurado; pendiente registrar URL y run externo |
 
 ## Uso de IA
 
@@ -256,7 +277,7 @@ Este proyecto documenta el uso de herramientas de IA de forma transparente en [`
 - Project Key: `ISCOUTB_AS_202620_InvenTrack`
 - Organization Key: `isco-utb`
 
-La configuración del análisis estático incluye Python 3.11 y la separación entre `app` (fuente) y `tests` (pruebas) para una evaluación más precisa. El proyecto está configurado en SonarCloud con `sonar-project.properties`, y el workflow incluye la integración preparada para ese análisis; sin embargo, en esta copia local el paso de SonarCloud quedó temporalmente desactivado para asegurar que el CI siga ejecutándose mientras se resuelve la autorización del secreto `SONAR_TOKEN` y los permisos del proyecto en SonarCloud.
+La configuración del análisis estático incluye Python 3.11, la separación entre `app` (fuente) y `tests` (pruebas), y el reporte `coverage.xml` generado por `pytest-cov`. El proyecto está configurado en SonarCloud con `sonar-project.properties`; el workflow ejecuta el análisis mediante un commit fijado de la acción y requiere el secreto `SONAR_TOKEN` configurado en GitHub.
 
 ## Licencia y uso académico
 
