@@ -397,29 +397,39 @@ El escenario ESC-01 es el principal escenario arquitectónico para el aspecto de
 
 Su mecanismo concreto de ejecución se resolvió en el [ADR-0002](../adr/0002-control-concurrencia-memoria-inventario.md) mediante un esquema de exclusión mutua asíncrona (`asyncio.Lock`) por SKU en el módulo `app/inventario/`. Cuando ocurren peticiones simultáneas sobre el mismo producto, el sistema serializa el procesamiento en memoria de forma atómica. Esto garantiza 0 inconsistencias de stock y mantiene la latencia $p95$ en $28\text{ ms}$ (ampliamente por debajo del umbral de $400\text{ ms}$ exigido), como se demuestra en el reporte de medición [`docs/retos/corte-1-medicion.md`](../retos/corte-1-medicion.md).
 
-# Deployment View
+# 7. Deployment View
 
-## Infrastructure Level 1
+InvenTrack se despliega como un servicio web en la plataforma como servicio (**PaaS**) de **Render**, eliminando la necesidad de gestionar infraestructura base y cumpliendo estrictamente la restricción de costo cero ($0.00 USD) **C5**.
 
-Para el incremento actual, InvenTrack se ejecuta como una única aplicación backend
-en Azure Container Apps, definido por Terraform en [`infra/`](../../infra). Azure
-Container Apps
-publica el servicio mediante HTTPS desde Internet y el workflow comprueba
-`GET /health` después del despliegue.
+## 7.1 Infrastructure Level 1 (Modelo de 6 Nodos de Infraestructura)
+
+El modelo de despliegue integra 6 nodos funcionales distribuidos entre el cliente, el flujo de integración continua, el análisis de calidad y el entorno de ejecución en la nube.
 
 ```mermaid
-flowchart LR
-
-    DEV["Equipo de desarrollo"]
-
-    subgraph CLOUD["Azure Container Apps"]
-
-      APP["InvenTrack<br/>Docker + FastAPI + Uvicorn"]
-
+flowchart TD
+    subgraph CLIENTE["1. Nodo Cliente"]
+        USER["Navegador Web / Cliente HTTP<br/>(HTTPS)"]
     end
 
-    DEV -->|"Git push / GitHub Actions + Terraform"| CLOUD
-    USER["Evaluador externo"] -->|"HTTPS público"| CLOUD
+    subgraph CI_CD["Entorno de Integración Continua"]
+        GH["2. GitHub Repository & Actions<br/>(Pipeline CI/CD)"]
+        SONAR["3. SonarCloud<br/>(Quality Gate & Static Analysis)"]
+    end
+
+    subgraph PAAS["Entorno de Producción PaaS (Render)"]
+        RENDER["4. Render Web Service<br/>(FastAPI + Uvicorn + Python 3.12)"]
+        MEM["5. In-Memory Store<br/>(Repositorio en memoria RAM - 512MB)"]
+    end
+
+    subgraph EXTERNAL["Servicios Externos"]
+        NOTIF["6. Servicio Notificaciones<br/>(SMTP / Provider Email API)"]
+    end
+
+    USER -->|"HTTPS / REST"| RENDER
+    GH -->|"Trigger de Tests & Pipeline"| SONAR
+    GH -->|"Auto-Deploy via Webhook"| RENDER
+    RENDER --- MEM
+    RENDER -->|"SMTP / HTTP"| NOTIF
 ```
 
 La aplicación se inicia localmente mediante:
@@ -431,22 +441,34 @@ El despliegue se construye con `Dockerfile` y se activa mediante
 se mantienen en [`docs/despliegue-y-costos.md`](../despliegue-y-costos.md),
 porque dependen de la cuenta de despliegue del equipo.
 
-## Infrastructure Level 2
+### Descripción de los 6 Nodos
 
-Dentro del proceso de InvenTrack se encuentran los módulos definidos por la arquitectura:
+| # | Nodo | Rol / Tecnología | Responsabilidad Arquitectónica |
+|---|---|---|---|
+| 1 | **Cliente Web** | Navegador / HTTP Client | Interfaz utilizada por el dueño o empleado para realizar solicitudes REST vía HTTPS. |
+| 2 | **GitHub CI/CD** | GitHub Actions Workflow | Ejecuta las pruebas automatizadas (`pytest`) y orquesta el flujo de integración. |
+| 3 | **SonarCloud** | Scanner SAST SaaS | Evalúa la calidad del código, cobertura y vulnerabilidades antes del despliegue. |
+| 4 | **Render Web Service** | PaaS Container (Render Free Tier) | Aloja la API backend construida con FastAPI y Uvicorn. |
+| 5 | **In-Memory Store** | Volatile RAM Store (512 MB) | Contiene las colecciones y el diccionario de cerrojos (`asyncio.Lock`) en la memoria del contenedor. |
+| 6 | **Servicio Notificaciones** | Provider SMTP / API Externa | Encargado del envío de alertas por stock bajo fuera del proceso de la API. |
+
+---
+
+## 7.2 Infrastructure Level 2 (Nodo de Ejecución Backend)
+
+Dentro del contenedor hospedado en Render, el proceso principal corre sobre Uvicorn administrando FastAPI:
 
 ```mermaid
-flowchart TB
+flowchart LR
+    subgraph RENDER_NODE["Render Container Node (Free Tier - 512MB RAM)"]
+        UVI["Uvicorn ASGI Server"]
+        FAST["FastAPI Main App"]
+        MIDDLEWARE["Metrics & Latency Middleware<br/>(Cálculo p95 / Ventana 100 req)"]
+        MODS["Módulos Hexagonales<br/>(productos, inventario, etc.)"]
+        MUTEX["Mutex Manager<br/>(asyncio.Lock per SKU)"]
 
-    USER["Usuario<br/>Cliente web"]
-
-    subgraph SERVER["Nodo de ejecución"]
-
-        APP["InvenTrack<br/><br/>Docker + FastAPI + Uvicorn<br/>Monolito Modular"]
-
+        UVI --> FAST --> MIDDLEWARE --> MODS --> MUTEX
     end
-
-    USER -->|"HTTPS desde Internet"| APP
 ```
 
 Todos los módulos se ejecutan inicialmente dentro del mismo proceso.
@@ -463,6 +485,27 @@ La aplicación emite logs JSON a stdout y expone la métrica Prometheus
 `GET /metrics`. El servicio actual usa repositorios en memoria, por lo que la
 métrica es operativa para una instancia y no sustituye una solución persistente
 cuando se habilite escalamiento horizontal.
+
+## 7.3 Estimación Financiera y Punto de Quiebre
+
+### Tabla de Costos Mensuales (MVP - 50,000 transacciones/mes)
+
+| Componente / Servicio | Nivel de Servicio / Plan | Consumo Estimado | Costo Mensual ($) |
+|---|---|---|---|
+| **Render Web Service** | Free Tier (512 MB RAM / 0.1 CPU) | ~10,000 seg. cómputo activo / 50k req. | $0.00 USD |
+| **GitHub Actions** | Public Repository Free Tier | ~120 min de build / mes | $0.00 USD |
+| **SonarCloud** | Open Source Plan | Análisis ilimitados sobre repo público | $0.00 USD |
+| **Email SMTP Notifier** | Free Tier (SendGrid/Mailgun) | < 1,000 correos de alerta / mes | $0.00 USD |
+| **Total Estimado** | — | — | **$0.00 USD** |
+
+### Análisis de Arranque en Frío (*Cold Start*) vs. Escenario ESC-04
+* **Arranque en frío:** Dado que el plan gratuito de Render hiberna el contenedor tras 15 minutos de inactividad, la primera petición tras la pausa puede tardar hasta **50 segundos** (descarga de imagen e inicio de Uvicorn).
+* **Comportamiento en caliente:** Una vez activo el contenedor, el procesamiento en memoria junto con el `asyncio.Lock` resuelve las transacciones en **< 50 ms**, cumpliendo holgadamente con la latencia **p95 ≤ 400 ms** requerida por **ESC-04**.
+
+### Punto de Quiebre (*Breaking Point*)
+El modelo de infraestructura gratuita entrará en quiebre bajo dos condiciones:
+1. **Límite de RAM (OOM):** Superar los **512 MB de RAM** por crecimiento del catálogo o historial en memoria.
+2. **Escala de Tráfico:** Exceder los 2,000,000 de peticiones mensuales o requerir alta disponibilidad (SLA 99.9%), lo cual requerirá escalar a un plan pagado ($7.00 USD/mes) y migrar la persistencia a PostgreSQL.
 
 # Cross-cutting Concepts (Conceptos Transversales)
 
