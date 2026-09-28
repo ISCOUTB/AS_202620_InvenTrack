@@ -75,4 +75,4 @@ El contenedor emite logs estructurados en formato JSON directamente a la salida 
 
 - Guía detallada de costos y punto de ruptura: `docs/despliegue-y-costos.md`
 - Registro de Decisión Arquitectónica (ADR-0005): `docs/adr/0005-eleccion-plataforma-despliegue.md`
-````
+
