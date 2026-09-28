@@ -326,6 +326,7 @@ flowchart TB
 
     HTTP["Cliente HTTP"] --> INF
 ```
+
 ## Level 3 — Corte vertical inicial
 
 El primer corte vertical implementado recorre las tres partes del módulo `productos`.
