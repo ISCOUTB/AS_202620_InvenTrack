@@ -434,7 +434,9 @@ flowchart TD
 
 La aplicación se inicia localmente mediante:
 
+```text
 python -m uvicorn app.main:app --reload
+```
 
 El despliegue se construye con `Dockerfile` y se activa mediante
 `.github/workflows/deploy.yml`. La URL concreta y la evidencia del run exitoso
