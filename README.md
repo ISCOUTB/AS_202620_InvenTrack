@@ -16,7 +16,7 @@
 * **Resultados de Medición:** **$p95 = 28\text{ ms}$** bajo ráfagas de 20 peticiones simultáneas sobre el mismo SKU (Umbral exigido: $\le 400\text{ ms}$) ([Reporte de Medición](docs/retos/corte-1-medicion.md)).
 * **Matriz de Trazabilidad:** Cadena navegable `Aspecto → Requisito → C4 → ADR → Código → Pruebas → Evidencia` ([Aspectos de Calidad](docs/aspectos.md)).
 * **Contrato de API:** OpenAPI v1 versionado y validado automáticamente contra la implementación FastAPI ([ADR-0004](docs/adr/0004-contrato-api-versionado-openapi.md)).
-* **Despliegue Productivo:** Alojado en Render (PaaS) mediante Infraestructura como Código con `render.yaml` y observabilidad integrada ([ADR-0005](docs/adr/0005-eleccion-plataforma-despliegue.md)).
+* **Despliegue Productivo:** Disponible en Render (PaaS) y en el servidor institucional Dokploy mediante infraestructura como código (`render.yaml` y `deploy/compose.lab.yaml`).
 * **CI y cobertura:** GitHub Actions ejecuta la suite completa con `pytest-cov`, genera `coverage.xml` y valida el contrato OpenAPI antes del análisis SonarCloud.
 * **Transparencia en Uso de IA:** Prompts, decisiones aceptadas, correcciones y rechazos por criterio técnico ([Registro de IA](docs/ia.md)).
 
@@ -28,6 +28,16 @@
 * **Health Check:** `https://inventrack-api.onrender.com/health`
 * **Métricas (ESC-04 / p95):** `https://inventrack-api.onrender.com/metrics`
 * **Documentación Interactiva (Swagger):** `https://inventrack-api.onrender.com/docs`
+
+---
+
+## 🌐 Entorno Institucional (iscoutb.dev)
+
+* **URL Pública:** `https://inventrack.iscoutb.dev`
+* **Health Check:** `https://inventrack.iscoutb.dev/health`
+* **Métricas (ESC-04 / p95):** `https://inventrack.iscoutb.dev/metrics`
+* **Documentación Interactiva (Swagger):** `https://inventrack.iscoutb.dev/docs`
+* **Estado:** Desplegado y verificado mediante Dokploy con `deploy/compose.lab.yaml`.
 
 ---
 
@@ -172,7 +182,7 @@ Las decisiones arquitectónicas se documentan como archivos individuales en [`do
 
 ## Despliegue en iscoutb.dev
 
-El proyecto también está preparado para el servidor institucional Dokploy descrito en
+El proyecto está desplegado en el servidor institucional Dokploy descrito en
 [iscoutb.dev](https://github.com/ISCOUTB/iscoutb.dev#3-paso-a-paso-para-publicar-tu-proyecto).
 La definición reproducible está en [`deploy/compose.lab.yaml`](deploy/compose.lab.yaml).
 Este MVP publica únicamente la API y no necesita base de datos ni variables secretas.
