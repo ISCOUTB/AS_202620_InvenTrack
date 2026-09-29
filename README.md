@@ -45,6 +45,7 @@
 - [Decisiones de arquitectura (ADR)](#decisiones-de-arquitectura-adr)
 - [Evidencia de prueba contractual](#evidencia-de-prueba-contrato)
 - [Despliegue y costos](#despliegue-y-costos)
+- [Despliegue en iscoutb.dev](#despliegue-en-iscoutbdev)
 - [Stack tecnológico](#stack-tecnológico)
 - [Estructura del repositorio](#estructura-del-repositorio)
 - [Cómo ejecutar el esqueleto](#cómo-ejecutar-el-esqueleto)
@@ -169,6 +170,29 @@ Las decisiones arquitectónicas se documentan como archivos individuales en [`do
 - **[ADR-0004](docs/adr/0004-contrato-api-versionado-openapi.md):** Versionado del contrato de API con OpenAPI y validación automática de compatibilidad en CI.
 - **[ADR-0005](docs/adr/0005-eleccion-plataforma-despliegue.md):** Elección de Render (PaaS) como plataforma de despliegue productivo y estimación de costos.
 
+## Despliegue en iscoutb.dev
+
+El proyecto también está preparado para el servidor institucional Dokploy descrito en
+[iscoutb.dev](https://github.com/ISCOUTB/iscoutb.dev#3-paso-a-paso-para-publicar-tu-proyecto).
+La definición reproducible está en [`deploy/compose.lab.yaml`](deploy/compose.lab.yaml).
+Este MVP publica únicamente la API y no necesita base de datos ni variables secretas.
+
+### Publicación
+
+1. Haz push de `deploy/compose.lab.yaml` y `Dockerfile` a la rama `main`.
+2. Entra a [panel.iscoutb.dev](https://panel.iscoutb.dev), abre el proyecto `inventrack`,
+    entorno `production`, servicio `sistema` y confirma el proveedor GitHub, el repositorio,
+    la rama `main` y `./deploy/compose.lab.yaml` como Compose Path.
+3. En **Domains**, agrega `inventrack.iscoutb.dev` para el servicio `api`, ruta `/`,
+    HTTPS activado y puerto del contenedor `10000`.
+4. Pulsa **Deploy**. Con el autodespliegue activo, los siguientes pushes a `main`
+    reconstruyen el servicio automáticamente.
+
+La API queda disponible en `https://inventrack.iscoutb.dev`, con `/health`, `/docs` y
+`/metrics`. El Compose no publica puertos directamente: Dokploy enruta el dominio al
+puerto expuesto por el contenedor. No se deben añadir `ports:`, `container_name`,
+montajes bind ni secretos al repositorio.
+
 ## Stack tecnológico
 
 | Capa | Tecnología | Estado |
@@ -188,6 +212,8 @@ Las decisiones arquitectónicas se documentan como archivos individuales en [`do
     └── sonar.yml                # Análisis estático de calidad y cobertura SonarCloud
 Dockerfile                       # Imagen reproducible de producción (no-root user)
 render.yaml                      # Configuración IaC de despliegue para Render
+deploy/
+└── compose.lab.yaml             # Compose para el servidor Dokploy institucional
 docs/
 ├── arc42/
 │   ├── arc42-template-EN.md     # Narrativa completa arc42
