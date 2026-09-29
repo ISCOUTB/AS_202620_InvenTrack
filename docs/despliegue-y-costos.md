@@ -8,9 +8,14 @@
 
 **Pieza seleccionada:** Contenedor de la API REST (Backend en FastAPI).
 
-Se comparan dos alternativas de despliegue PaaS (*Platform as a Service*):
-1. **Alternativa A (Seleccionada): Render Web Service (Free Tier).** Permite el despliegue directo desde GitHub mediante `Dockerfile` / `render.yaml` sin requerir registro de método de pago ni tarjeta de crédito.
-2. **Alternativa B (Descartada): Microsoft Azure App Service (F1 Free Tier).** Aunque el plan es de costo $0, exige la creación de una suscripción respaldada obligatoriamente por una tarjeta de crédito para verificación de identidad, violando la restricción C5 del proyecto.
+Se mantienen dos destinos operativos para la misma imagen de la API:
+1. **Render Web Service (Free Tier):** destino PaaS operativo configurado mediante `Dockerfile` y `render.yaml`.
+2. **Dokploy institucional:** segundo destino operativo, incorporado después del cierre de la semana 8, configurado mediante `deploy/compose.lab.yaml` y el dominio `inventrack.iscoutb.dev`.
+3. **Microsoft Azure App Service (F1 Free Tier).** Aunque el plan es de costo $0, exige la creación de una suscripción respaldada obligatoriamente por una tarjeta de crédito para verificación de identidad, violando la restricción C5 del proyecto.
+
+
+La infraestructura Azure de `infra/` y `.github/workflows/deploy.yml` queda descartada
+como artefacto histórico; el workflow está desactivado y no participa en la publicación.
 
 ---
 
@@ -18,14 +23,14 @@ Se comparan dos alternativas de despliegue PaaS (*Platform as a Service*):
 
 | Evidencia | Implementación | Estado / Dato a Registrar |
 |---|---|---|
-| **URL Pública Externa** | Render, HTTPS | `https://inventrack-api.onrender.com` |
-| **Infraestructura como Código** | `render.yaml` y `Dockerfile` | Versionada; Terraform en `infra/` queda como alternativa Azure exploratoria no utilizada |
-| **Pipeline CI/CD** | Render Auto Deploy desde `main` y `test.yml` | Render construye y despliega; GitHub Actions valida la suite de pruebas |
-| **Health Check** | `GET /health` | Configurado como probes de salud en Render y validado en CI |
+| **URL Pública Externa** | Render y Dokploy, HTTPS | `https://inventrack.iscoutb.dev` y `https://inventrack-api.onrender.com` |
+| **Infraestructura como Código** | `render.yaml`, `deploy/compose.lab.yaml` y `Dockerfile` | Versionada; Terraform en `infra/` queda como alternativa Azure exploratoria no utilizada |
+| **Pipeline CI/CD** | GitHub Actions + autodespliegue Dokploy/Render | GitHub Actions valida la suite; cada plataforma publica desde `main` según su configuración |
+| **Health Check** | `GET /health` | Configurado en Render y Dokploy; verificado externamente en ambos destinos |
 | **Logs Estructurados** | JSON por línea en `stdout` | Evento `http_request`, sin credenciales ni cuerpos sensibles |
 | **Métrica Consultable** | `GET /metrics` | Formato Prometheus; contadores por método y ruta HTTP |
-| **Protección de Secretos** | `.env` ignorado, `.env.example` y secretos de GitHub | Credenciales de ambiente aisladas de la rama pública |
-| **Run Exitoso** | Render Deploy + GitHub Actions | Despliegue verde y suite de pruebas ejecutada con éxito en GitHub |
+| **Protección de Secretos** | `.env` ignorado y secretos de GitHub | No hay credenciales de ambiente en la rama pública |
+| **Run Exitoso** | Dokploy/Render + GitHub Actions | `GET /health` responde 200 en ambos destinos; la suite se ejecuta en GitHub |
 
 ---
 
@@ -34,17 +39,22 @@ Se comparan dos alternativas de despliegue PaaS (*Platform as a Service*):
 Desde una red externa (doméstica o móvil), ejecutar:
 
 ```powershell
-curl.exe --fail [https://inventrack-api.onrender.com/health](https://inventrack-api.onrender.com/health)
-curl.exe --fail [https://inventrack-api.onrender.com/metrics](https://inventrack-api.onrender.com/metrics)
+# Dokploy institucional
+curl.exe --fail https://inventrack.iscoutb.dev/health
+curl.exe --fail https://inventrack.iscoutb.dev/metrics
+
+# Render
+curl.exe --fail https://inventrack-api.onrender.com/health
+curl.exe --fail https://inventrack-api.onrender.com/metrics
 ```
 
-Resultado esperado del primer comando:
+En ambos destinos, `/health` debe responder:
 
 ```json
 {"status":"ok","service":"InvenTrack"}
 ```
 
-La segunda respuesta contiene, como mínimo, las series
+En ambos destinos, `/metrics` contiene, como mínimo, las series
 `inventrack_http_requests_total` y
 `inventrack_http_request_duration_seconds_total`.
 
@@ -53,9 +63,11 @@ La segunda respuesta contiene, como mínimo, las series
 ## 4. Contraste: Arranque en Frío (Cold Start) vs. Escenario de Calidad (p95)
 
 * **El Requisito (ESC-04):** El 95% de las peticiones concurrentes ($p95$) deben resolverse en $400\text{ ms}$ o menos.
-* **El Comportamiento de Render:** El plan gratuito entra en suspensión (*spin-down*) tras 15 minutos sin recibir tráfico HTTP.
-* **El Contraste (Cold Start):** Cuando la API está hibernando, la primera petición sufre un "arranque en frío" que puede demorar **hasta 50,000 ms (50 segundos)**, violando temporalmente la métrica ESC-04.
-* **Mitigación / Compensación:** Una vez el contenedor se activa ("caliente"), las transacciones procesadas en memoria se ejecutan en $< 50\text{ ms}$, cumpliendo holgadamente la meta. Se asume esta penalización en la primera petición como un *trade-off* arquitectónico para mantener el costo operativo en $0.00 USD.
+* **Render:** El plan gratuito puede entrar en suspensión (*spin-down*) tras inactividad.
+* **Dokploy:** El servidor institucional mantiene el servicio gestionado por el panel,
+	sujeto a la cuota compartida del equipo.
+* **Comportamiento en caliente:** En ambos destinos, las transacciones procesadas en
+	memoria se ejecutan en $< 50\text{ ms}$ según la medición del proyecto.
 
 ---
 
@@ -72,28 +84,37 @@ La segunda respuesta contiene, como mínimo, las series
 
 ### Costo Monetario
 * **Render (Free Tier):** $0.00 USD/mes.
+* **Dokploy institucional:** $0.00 USD/mes para el equipo; cuota de 512 MB y 0.5 CPU por contenedor.
 * **GitHub Actions:** $0.00 USD/mes (Repositorio público).
 * **Total Monetario:** **$0.00 USD/mes**.
 
 ### Punto de Quiebre (*Breaking Point*)
 El modelo gratuito se romperá bajo cualquiera de las siguientes condiciones:
-1. **Agotamiento de Memoria (OOM):** El plan gratuito limita la RAM a 512 MB. Si el catálogo e historial *in-memory* superan los 512 MB, el proceso sufrirá un error *Out of Memory* y se reiniciará.
-2. **Límite de Tráfico:** Si el volumen escala a 2,000,000 de peticiones/mes (~40 GB de salida y >111 horas de cómputo ininterrumpido), el servicio exigirá la transición al plan **Starter ($7.00 USD/mes)** o la migración a una base de datos relacional externa (ej. PostgreSQL).
+1. **Agotamiento de Memoria (OOM):** El catálogo e historial *in-memory* no deben superar la memoria disponible en el destino usado: 512 MB en Dokploy o el límite del plan gratuito de Render.
+2. **Cuota de CPU o compilación:** En Dokploy el equipo no debe superar 0.5 CPU por contenedor ni la memoria compartida durante el build.
+3. **Persistencia:** Si la pérdida de datos en memoria deja de ser aceptable, se requiere PostgreSQL u otra persistencia y un nuevo ADR.
 
 ---
 
 ## 6. Procedimiento de Reversión (Rollback)
 
-En caso de desplegar un fallo en producción, la recuperación no requiere un *git revert* inmediato, sino el uso de la plataforma PaaS:
+### Dokploy institucional
 
-1. Ingresar al *Dashboard* de Render.
-2. Seleccionar el servicio `inventrack-api` y navegar a la pestaña **Events** / **Deploys**.
-3. Ubicar el último despliegue previo reportado como exitoso (marcado en verde).
-4. Hacer clic en **Rollback to this deploy**.
-5. Render enrutará el tráfico HTTP instantáneamente a la imagen previa del contenedor, reduciendo el Tiempo Medio de Recuperación (MTTR) a segundos.
+1. Ejecutar `git revert <commit-con-fallo>` en `main`.
+2. Esperar la validación de GitHub Actions.
+3. Dokploy reconstruirá el servicio `sistema` desde `./deploy/compose.lab.yaml`.
+4. Confirmar `https://inventrack.iscoutb.dev/health` y revisar los logs del despliegue.
+
+### Render
+
+1. Abrir el dashboard de Render y seleccionar `inventrack-api`.
+2. En **Events/Deploys**, seleccionar el despliegue anterior exitoso y usar **Rollback**.
+3. Como alternativa versionada, ejecutar `git revert <commit-con-fallo>` en `main`;
+	Render reconstruirá desde `render.yaml` mediante el autodespliegue.
+4. Confirmar `https://inventrack-api.onrender.com/health` y revisar sus logs.
 
 ---
 
 ## 7. Trazabilidad Arquitectónica
 
-Esta decisión y sus compromisos operativos quedan formalmente ratificados en el archivo [`docs/adr/0005-eleccion-plataforma-despliegue.md`](./adr/0005-eleccion-plataforma-despliegue.md).
+La decisión institucional queda formalmente ratificada en [`docs/adr/0006-desplegar-en-dokploy-institucional.md`](./adr/0006-desplegar-en-dokploy-institucional.md), que complementa el ADR-0005 sin reescribirlo.

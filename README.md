@@ -142,7 +142,7 @@ La documentación sigue la plantilla **arc42**, disponible completa en [`docs/ar
 | 4 · Solution Strategy | Decisiones clave (Monolito Modular, Hexagonal por módulo, desacoplamiento) |
 | 5 · Building Block View | Descomposición en subsistemas y módulos internos (Productos, Inventario, Proveedores, etc.) |
 | 6 · Runtime View | Diagramas de secuencia para flujos críticos (ej. Registro concurrente de movimientos) |
-| 7 · Deployment View | Despliegue en Render (PaaS) mediante `render.yaml` y contenedor Docker optimizado |
+| 7 · Deployment View | Despliegues operativos en Dokploy y Render mediante Docker |
 | 8 · Cross-cutting Concepts | Lenguaje ubicuo, mapa de contextos, mecanismo de exclusión mutua asíncrona por SKU y manejo unificado de excepciones |
 | 9 · Architecture Decisions | Enlace y matriz de trazabilidad con los ADRs |
 | 10 · Quality Requirements | Árbol de utilidad y 5 escenarios de calidad medibles |
@@ -179,6 +179,7 @@ Las decisiones arquitectónicas se documentan como archivos individuales en [`do
 - **[ADR-0003](docs/adr/0003-integracion-productos-inventario-via-puertos-de-aplicacion.md):** Integración entre productos e inventario mediante puertos de aplicación y adaptadores.
 - **[ADR-0004](docs/adr/0004-contrato-api-versionado-openapi.md):** Versionado del contrato de API con OpenAPI y validación automática de compatibilidad en CI.
 - **[ADR-0005](docs/adr/0005-eleccion-plataforma-despliegue.md):** Elección de Render (PaaS) como plataforma de despliegue productivo y estimación de costos.
+- **[ADR-0006](docs/adr/0006-desplegar-en-dokploy-institucional.md):** Incorporación posterior de Dokploy como segundo destino operativo, en paralelo con Render.
 
 ## Despliegue en iscoutb.dev
 
@@ -186,6 +187,8 @@ El proyecto está desplegado en el servidor institucional Dokploy descrito en
 [iscoutb.dev](https://github.com/ISCOUTB/iscoutb.dev#3-paso-a-paso-para-publicar-tu-proyecto).
 La definición reproducible está en [`deploy/compose.lab.yaml`](deploy/compose.lab.yaml).
 Este MVP publica únicamente la API y no necesita base de datos ni variables secretas.
+Dokploy se incorporó después del cierre de la semana 8 y se mantiene en paralelo
+con el despliegue existente en Render.
 
 ### Publicación
 
@@ -210,7 +213,7 @@ montajes bind ni secretos al repositorio.
 | Frontend | Flutter | Pendiente |
 | Backend | FastAPI + Uvicorn | Implementado |
 | Base de datos | Adaptador In-Memory (Transición a PostgreSQL/SQLite) | Implementado para MVP |
-| Hosting / despliegue | Render (PaaS) + Docker (`render.yaml`) | Implementado y operativo (`https://inventrack-api.onrender.com`) |
+| Hosting / despliegue | Render + Dokploy + Docker | Operativo en `https://inventrack-api.onrender.com` y `https://inventrack.iscoutb.dev` |
 | CI / calidad de código | GitHub Actions + Pytest + pytest-asyncio + pytest-cov | Suite síncrona y asíncrona con cobertura XML (`coverage.xml`), validación del contrato OpenAPI y análisis SonarCloud configurado |
 
 ## Estructura del repositorio

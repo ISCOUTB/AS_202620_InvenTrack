@@ -399,7 +399,11 @@ Su mecanismo concreto de ejecución se resolvió en el [ADR-0002](../adr/0002-co
 
 # 7. Deployment View
 
-InvenTrack se despliega como un servicio web en la plataforma como servicio (**PaaS**) de **Render**, eliminando la necesidad de gestionar infraestructura base y cumpliendo estrictamente la restricción de costo cero ($0.00 USD) **C5**.
+InvenTrack tiene dos destinos operativos para la misma API: **Dokploy institucional**
+como entorno público en `iscoutb.dev` y **Render** como entorno PaaS independiente.
+Dokploy se incorporó después del cierre de la semana 8; no reemplaza a Render.
+Ambos construyen el mismo `Dockerfile`, cumplen la restricción de costo cero
+($0.00 USD) **C5** y exponen el mismo contrato HTTP.
 
 ## 7.1 Infrastructure Level 1 (Modelo de 6 Nodos de Infraestructura)
 
@@ -416,19 +420,24 @@ flowchart TD
         SONAR["3. SonarCloud<br/>(Quality Gate & Static Analysis)"]
     end
 
-    subgraph PAAS["Entorno de Producción PaaS (Render)"]
-        RENDER["4. Render Web Service<br/>(FastAPI + Uvicorn + Python 3.12)"]
-        MEM["5. In-Memory Store<br/>(Repositorio en memoria RAM - 512MB)"]
+    subgraph DEPLOY["4. Destinos operativos"]
+      DOKPLOY["Dokploy Compose Service<br/>(iscoutb.dev)"]
+      RENDER["Render Web Service<br/>(onrender.com)"]
+      MEM["5. In-Memory Store<br/>(Repositorio en memoria RAM - 512MB)"]
     end
 
     subgraph EXTERNAL["Servicios Externos"]
         NOTIF["6. Servicio Notificaciones<br/>(SMTP / Provider Email API)"]
     end
 
+    USER -->|"HTTPS / REST"| DOKPLOY
     USER -->|"HTTPS / REST"| RENDER
     GH -->|"Trigger de Tests & Pipeline"| SONAR
-    GH -->|"Auto-Deploy via Webhook"| RENDER
+    GH -->|"Auto-Deploy via Dokploy"| DOKPLOY
+    GH -->|"Auto-Deploy via Render"| RENDER
+    DOKPLOY --- MEM
     RENDER --- MEM
+    DOKPLOY -->|"SMTP / HTTP"| NOTIF
     RENDER -->|"SMTP / HTTP"| NOTIF
 ```
 
@@ -438,10 +447,12 @@ La aplicación se inicia localmente mediante:
 python -m uvicorn app.main:app --reload
 ```
 
-El despliegue se construye con `Dockerfile` y se activa mediante
-`.github/workflows/deploy.yml`. La URL concreta y la evidencia del run exitoso
-se mantienen en [`docs/despliegue-y-costos.md`](../despliegue-y-costos.md),
-porque dependen de la cuenta de despliegue del equipo.
+El despliegue institucional se construye con `Dockerfile` y
+`deploy/compose.lab.yaml`; Dokploy publica automáticamente los cambios de `main`
+en `https://inventrack.iscoutb.dev`. Render conserva su configuración independiente
+en `render.yaml`. La evidencia de operación de ambos destinos se mantiene en
+[`docs/despliegue-y-costos.md`](../despliegue-y-costos.md) y en el
+[ADR-0006](../adr/0006-desplegar-en-dokploy-institucional.md).
 
 ### Descripción de los 6 Nodos
 
@@ -450,7 +461,7 @@ porque dependen de la cuenta de despliegue del equipo.
 | 1 | **Cliente Web** | Navegador / HTTP Client | Interfaz utilizada por el dueño o empleado para realizar solicitudes REST vía HTTPS. |
 | 2 | **GitHub CI/CD** | GitHub Actions Workflow | Ejecuta las pruebas automatizadas (`pytest`) y orquesta el flujo de integración. |
 | 3 | **SonarCloud** | Scanner SAST SaaS | Evalúa la calidad del código, cobertura y vulnerabilidades antes del despliegue. |
-| 4 | **Render Web Service** | PaaS Container (Render Free Tier) | Aloja la API backend construida con FastAPI y Uvicorn. |
+| 4 | **Destinos operativos** | Dokploy `iscoutb.dev` y Render `onrender.com` | Ejecutan la misma API FastAPI/Uvicorn mediante `deploy/compose.lab.yaml` y `render.yaml`, respectivamente. |
 | 5 | **In-Memory Store** | Volatile RAM Store (512 MB) | Contiene las colecciones y el diccionario de cerrojos (`asyncio.Lock`) en la memoria del contenedor. |
 | 6 | **Servicio Notificaciones** | Provider SMTP / API Externa | Encargado del envío de alertas por stock bajo fuera del proceso de la API. |
 
@@ -458,11 +469,12 @@ porque dependen de la cuenta de despliegue del equipo.
 
 ## 7.2 Infrastructure Level 2 (Nodo de Ejecución Backend)
 
-Dentro del contenedor hospedado en Render, el proceso principal corre sobre Uvicorn administrando FastAPI:
+Dentro de los contenedores hospedados en Dokploy y Render, el proceso principal
+corre sobre Uvicorn administrando FastAPI:
 
 ```mermaid
 flowchart LR
-    subgraph RENDER_NODE["Render Container Node (Free Tier - 512MB RAM)"]
+    subgraph DEPLOYMENT_NODES["Dokploy y Render Container Nodes"]
         UVI["Uvicorn ASGI Server"]
         FAST["FastAPI Main App"]
         MIDDLEWARE["Metrics & Latency Middleware<br/>(Cálculo p95 / Ventana 100 req)"]
@@ -494,20 +506,26 @@ cuando se habilite escalamiento horizontal.
 
 | Componente / Servicio | Nivel de Servicio / Plan | Consumo Estimado | Costo Mensual ($) |
 |---|---|---|---|
-| **Render Web Service** | Free Tier (512 MB RAM / 0.1 CPU) | ~10,000 seg. cómputo activo / 50k req. | $0.00 USD |
+| **Dokploy institucional** | Cuota compartida (512 MB por equipo / 0.5 CPU por contenedor) | API limitada a 256 MB / 50k req. | $0.00 USD |
+| **Render Web Service** | Free Tier | API Docker / 50k req. | $0.00 USD |
 | **GitHub Actions** | Public Repository Free Tier | ~120 min de build / mes | $0.00 USD |
 | **SonarCloud** | Open Source Plan | Análisis ilimitados sobre repo público | $0.00 USD |
 | **Email SMTP Notifier** | Free Tier (SendGrid/Mailgun) | < 1,000 correos de alerta / mes | $0.00 USD |
 | **Total Estimado** | — | — | **$0.00 USD** |
 
 ### Análisis de Arranque en Frío (*Cold Start*) vs. Escenario ESC-04
-* **Arranque en frío:** Dado que el plan gratuito de Render hiberna el contenedor tras 15 minutos de inactividad, la primera petición tras la pausa puede tardar hasta **50 segundos** (descarga de imagen e inicio de Uvicorn).
-* **Comportamiento en caliente:** Una vez activo el contenedor, el procesamiento en memoria junto con el `asyncio.Lock` resuelve las transacciones en **< 50 ms**, cumpliendo holgadamente con la latencia **p95 ≤ 400 ms** requerida por **ESC-04**.
+* **Dokploy:** gestiona el contenedor y el proxy HTTPS; la disponibilidad está
+  sujeta a la cuota y operación del servidor compartido.
+* **Render:** gestiona su propio contenedor y puede aplicar suspensión por inactividad.
+* **Comportamiento en caliente:** El procesamiento en memoria junto con el
+  `asyncio.Lock` resuelve las transacciones en **< 50 ms**, cumpliendo holgadamente
+  con la latencia **p95 ≤ 400 ms** requerida por **ESC-04**.
 
 ### Punto de Quiebre (*Breaking Point*)
 El modelo de infraestructura gratuita entrará en quiebre bajo dos condiciones:
-1. **Límite de RAM (OOM):** Superar los **512 MB de RAM** por crecimiento del catálogo o historial en memoria.
-2. **Escala de Tráfico:** Exceder los 2,000,000 de peticiones mensuales o requerir alta disponibilidad (SLA 99.9%), lo cual requerirá escalar a un plan pagado ($7.00 USD/mes) y migrar la persistencia a PostgreSQL.
+1. **Límite de RAM (OOM):** Superar los **512 MB** asignados al equipo en Dokploy o el límite operativo del plan gratuito de Render.
+2. **Cuota de CPU o build:** Exceder 0.5 CPU por contenedor o la memoria compartida durante la compilación en Dokploy.
+3. **Persistencia y disponibilidad:** Requerir datos durables o un SLA superior obliga a migrar a PostgreSQL y registrar una nueva decisión de infraestructura.
 
 # Cross-cutting Concepts (Conceptos Transversales)
 
