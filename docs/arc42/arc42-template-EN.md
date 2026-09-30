@@ -166,11 +166,11 @@ sistema, y un canal externo de notificación:
 
 ## Technical Context
 
-Pendiente de decisión formal (se documentará como ADR cuando se defina el
-stack, ver recurso "Stack de Desarrollo" en Inicio y orientación). Para esta
-entrega se asumen los siguientes canales técnicos, consistentes con la
-restricción C5 (sin presupuesto para servicios de pago) y C7 (conectividad
-por confirmar):
+La implementación actual usa FastAPI y Uvicorn dentro de un contenedor Docker.
+La API se publica mediante Render y Dokploy institucional, decisiones
+documentadas en los ADR-0005 y ADR-0006. Los canales técnicos vigentes son
+los siguientes; la disponibilidad de conectividad en las PYMEs piloto sigue
+siendo una hipótesis pendiente de validar bajo C7:
 
 | Canal | Protocolo/formato | Entre |
 |---|---|---|
@@ -213,8 +213,8 @@ lógica de negocio.
 
 La estrategia responde a los objetivos de calidad así:
 
-- **Consistencia:** el módulo `inventario` tendrá un límite único para coordinar
-  los casos de uso de movimientos y la futura estrategia de concurrencia.
+- **Consistencia:** el módulo `inventario` coordina los casos de uso de
+  movimientos mediante exclusión mutua asíncrona por SKU, según ADR-0002.
 - **Mantenibilidad:** los módulos separan responsabilidades por dominio y
   permiten trabajar con menor interferencia entre integrantes.
 - **Seguridad:** la autorización se ubicará en los casos de uso y no dependerá
