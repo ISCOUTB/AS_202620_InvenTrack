@@ -1,7 +1,8 @@
 # Evidencia: la prueba de contrato detecta cambios incompatibles
 
-Este documento respalda la afirmación hecha en la sección "Evidencia" del
-[ADR-0004](adr/0004-contrato-api-versionado-openapi.md): que
+Este documento aporta evidencia complementaria al
+[ADR-0004](adr/0004-contrato-api-versionado-openapi.md) y al contrato publicado:
+que
 `tests/contract/test_openapi_contract.py` no es una prueba decorativa —
 falla de verdad cuando la implementación deja de cumplir el contrato
 publicado en `contracts/openapi/v1.json`.
