@@ -7,6 +7,7 @@ dependencias cruzadas entre módulos (ADR-0003) y ensambla los routers.
 
 import json
 import logging
+import math
 import time
 from collections import defaultdict, deque
 from collections.abc import Awaitable, Callable
@@ -95,6 +96,12 @@ def _prometheus_escape(value: str) -> str:
     return value.replace("\\", "\\\\").replace('"', '\\"')
 
 
+def _p95_latency(history: list[float]) -> float:
+    ordered = sorted(history)
+    rank = max(1, math.ceil(len(ordered) * 0.95))
+    return ordered[rank - 1]
+
+
 # --- productos: repositorio y casos de uso propios ---
 _productos_repo = InMemoryProductoRepository()
 _consultar_producto = ConsultarProducto(_productos_repo)
@@ -149,9 +156,8 @@ def metrics():
         lines.append(f"inventrack_http_request_duration_seconds_total{{{labels}}} {_request_duration_seconds[(method, path)]}")
         
         # El historial nunca está vacío porque se itera sobre _request_count, evitando ramas condicionales
-        history = sorted(_request_durations_history[(method, path)])
-        p95_index = int(len(history) * 0.95)
-        lines.append(f"inventrack_http_p95_latency_seconds{{{labels}}} {round(history[p95_index], 4)}")
+        history = list(_request_durations_history[(method, path)])
+        lines.append(f"inventrack_http_p95_latency_seconds{{{labels}}} {round(_p95_latency(history), 4)}")
         
     return Response("\n".join(lines) + "\n", media_type="text/plain; version=0.0.4")
 

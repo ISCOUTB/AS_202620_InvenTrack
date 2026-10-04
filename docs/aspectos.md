@@ -16,6 +16,7 @@ Un **aspecto** no es una capa del sistema ni un módulo — es un corte vertical
 |---|---|---|---|---|---|---|---|
 | ASP-01 | [Consistencia de datos](#asp-01--consistencia-de-datos) | [ESC-01, ESC-02](arc42/arc42-template-EN.md#quality-scenarios) | [C4 Nivel 2](c4/containers.md), [C4 Nivel 3](c4/components.md), [Mapa de contextos](context-map.md), [Contrato de API](api/inventrack-contrato.md) — módulos `productos` e `inventario` | [ADR-0001](adr/0001-usar-monolito-modular-con-hexagonal-por-modulo.md), [ADR-0003](adr/0003-integracion-productos-inventario-via-puertos-de-aplicacion.md), [ADR-0004](adr/0004-contrato-api-versionado-openapi.md) | [`app/productos/`](../app/productos/), [`app/inventario/`](../app/inventario/) — Corte vertical funcional con integración real entre módulos | [`tests/productos/test_api_corte_vertical.py`](../tests/productos/test_api_corte_vertical.py), [`tests/productos/test_historial_real.py`](../tests/productos/test_historial_real.py), [`tests/inventario/test_validacion_producto.py`](../tests/inventario/test_validacion_producto.py), [`tests/contract/test_openapi_contract.py`](../tests/contract/test_openapi_contract.py) | [Evidencia S6 de integración real y defecto controlado](evidencia-ia-corte-s6.md), prueba de corte vertical (API + Hexagonal) en verde contra el historial real de inventario ([`docs/propiedad-datos.md`](propiedad-datos.md), [`docs/auditoria-modularidad.md`](auditoria-modularidad.md)); contrato de API validado en CI (ADR-0004) |
 | ASP-02 | [Control de Concurrencia e Inventario (Reto Corte 1)](#asp-02--control-de-concurrencia-e-inventario-reto-corte-1) | [ESC-01](arc42/arc42-template-EN.md#quality-scenarios) — Latencia $p95 \le 400\text{ ms}$ con 20 usuarios | [C4 Nivel 2](c4/containers.md), [C4 Nivel 3](c4/components.md), [Mapa de contextos](context-map.md), [Contrato de API](api/inventrack-contrato.md) — módulos `inventario` y `productos` | [ADR-0002](adr/0002-control-concurrencia-memoria-inventario.md) — Control de concurrencia en memoria para inventario | [`app/inventario/`](../app/inventario/) — Gestión de movimientos y stock atómico | [`tests/inventario/test_concurrencia.py`](../tests/inventario/test_concurrencia.py), [`tests/contract/test_openapi_contract.py`](../tests/contract/test_openapi_contract.py) | [`docs/retos/corte-1-medicion.md`](retos/corte-1-medicion.md) — Reporte de medición con $p95 = 28\text{ ms}$; el `503` y la evidencia del contrato están documentados en [`docs/api/inventrack-contrato.md`](api/inventrack-contrato.md) y [`docs/evidencia-prueba-contrato.md`](evidencia-prueba-contrato.md) |
+| ASP-03 | [Observabilidad de latencia](#asp-03--observabilidad-de-latencia) | [ESC-04](arc42/arc42-template-EN.md#quality-scenarios) — p95 $\le 400\text{ ms}$ en estado caliente | [C4 Nivel 2](c4/containers.md), [Vista de despliegue](arc42/arc42-template-EN.md#7-deployment-view) — API y `/metrics` | [ADR-0007](adr/0007-exponer-p95-de-latencia-en-metricas.md) — Exponer p95 de latencia en métricas HTTP | [`app/main.py`](../app/main.py) — cálculo `_p95_latency` y métrica Prometheus | [`tests/test_metrics.py`](../tests/test_metrics.py) | [Evidencia S9 de porción, defecto y medición](evidencia-ia-corte-s9.md) |
 
 ---
 
@@ -164,3 +165,31 @@ En caso de que la carga supere la capacidad de atención o el tiempo de espera p
 - [x] Estrategia de degradación controlada documentada
 - [x] Prueba automatizada de 20 peticiones concurrentes en verde
 - [x] Reporte de medición reproducible publicado en la documentación
+
+---
+
+## ASP-03 — Observabilidad de latencia
+
+### Requisito y decisión
+
+El escenario **ESC-04** exige observar el percentil 95 de latencia y mantenerlo
+en $400\text{ ms}$ o menos en estado caliente. El [ADR-0007](adr/0007-exponer-p95-de-latencia-en-metricas.md)
+decide extraer el cálculo a `_p95_latency`, conservar el historial acotado y
+publicar el resultado mediante `/metrics`, sin agregar dependencias externas.
+
+### Código, prueba y evidencia
+
+- **Código:** [`app/main.py`](../app/main.py), función `_p95_latency` y métrica
+	`inventrack_http_p95_latency_seconds`.
+- **Prueba:** [`tests/test_metrics.py`](../tests/test_metrics.py), que detecta el
+	índice incorrecto del percentil.
+- **Evidencia:** [`docs/evidencia-ia-corte-s9.md`](evidencia-ia-corte-s9.md),
+	con el defecto controlado y la medición contrastada con ESC-04.
+
+### Estado
+
+- [x] Aspecto y escenario ESC-04 declarados
+- [x] ADR-0007 aceptado y enlazado
+- [x] Código y prueba de la porción S9 enlazados
+- [x] Defecto controlado reproducible y restaurado
+- [x] Medición documentada frente al umbral de 400 ms
