@@ -1,6 +1,6 @@
 # ADR-0008: No incorporar un componente generativo al MVP
 
-- **Estado:** Pendiente
+- **Estado:** Aceptado
 - **Fecha:** 2026-10-04
 - **Decisores:** Equipo InvenTrack
 
