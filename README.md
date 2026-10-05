@@ -316,6 +316,7 @@ python -m pytest -v tests/contract/test_openapi_contract.py
 | S6 | Mapa de contextos, propiedad de datos, auditoría de modularidad y C4 Nivel 3 | Completo |
 | S7 | Contrato OpenAPI versionado (ADR-0004) y validación automática en CI | Completo |
 | S8 | Despliegue público, IaC (`render.yaml`), observabilidad y costos (ADR-0005) | Completo (Desplegado en Render) |
+| S9 | Observabilidad de latencia, p95 HTTP y evidencia de defecto/medición con apoyo de IA (ADR-0007) | Completo |
 
 ## Uso de IA
 

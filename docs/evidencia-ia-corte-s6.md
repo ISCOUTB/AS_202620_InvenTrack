@@ -148,3 +148,33 @@ La auditoria correspondiente esta en
 la causa, el riesgo y la correccion mediante puertos de aplicacion y
 adaptadores. La propiedad de `Movimiento` y su canal de consulta estan en
 [propiedad-datos.md](propiedad-datos.md).
+
+## 8. Auditoria de erosion y verificaciones de seguridad
+
+La generacion asistida cruzo el limite de propiedad de datos al proponer que
+`productos` verificara los movimientos mediante un doble local, sin consultar
+el registro cuyo dueño de escritura es `inventario`. El hallazgo se detecto al
+comparar la propuesta con la matriz de [propiedad de datos](propiedad-datos.md)
+y ejecutar la prueba de integracion contra el repositorio real: el doble podia
+decir que no habia movimientos aunque existiera un movimiento registrado.
+
+La correccion fue rechazar el acoplamiento y el doble como implementacion de
+produccion, conservar `inventario` como unico escritor de `Movimiento` y usar
+el puerto `ConsultarHistorialMovimientos` mediante
+`HistorialMovimientosAdapter`. El resultado y el riesgo residual estan
+registrados como `VIO-01` en [auditoria-modularidad.md](auditoria-modularidad.md).
+
+Para las dependencias propuestas durante S6 se verifico lo siguiente:
+
+| Verificacion | Evidencia | Resultado |
+|---|---|---|
+| Dependencias directas declaradas | [requirements.in](../requirements.in) | `fastapi`, `uvicorn`, `pytest`, `pytest-cov`, `pytest-asyncio` y `httpx` existen en el registro del proyecto |
+| Resolucion reproducible | [requirements.txt](../requirements.txt) | Versiones fijadas por `pip-compile` con hashes SHA-256 |
+| Instalacion segura en CI | `.github/workflows/test.yml` | Usa `--require-hashes` y `--only-binary :all:` |
+| Coherencia del entorno | `python -m pip check` | Sin dependencias rotas en la verificacion local |
+
+No se agregaron clientes de proveedores generativos ni dependencias de
+observabilidad en S9. El barrido del árbol versionado no encontró credenciales
+reales: `.env.example` solo contiene placeholders y los secretos de CI se
+referencian mediante variables protegidas de GitHub Actions. También se revisó
+el historial con `git log -S"BEGIN PRIVATE KEY"` sin coincidencias.
