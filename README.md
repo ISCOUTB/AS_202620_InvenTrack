@@ -91,6 +91,7 @@
 | [Evidencia de prueba contractual](docs/evidencia-prueba-contrato.md) | Reproducción del fallo ante un cambio incompatible y recuperación de la prueba |
 | [Despliegue y costos](docs/despliegue-y-costos.md) | URL pública, IaC (`render.yaml`), observabilidad, secretos y estimación mensual |
 | [Medición Reto Corte 1](docs/retos/corte-1-medicion.md) | Diagnóstico, pruebas de concurrencia, degradación controlada y comando de reproducción |
+| [Reporte Experimento Corte 2](docs/retos/corte-2-experimento.md) | Hipótesis, montaje, variables y resultados del experimento de concurrencia de inventario (S10) |
 | [Uso de IA](docs/ia.md) | Registro transparente de IA (sugerencias aceptadas vs. rechazadas)|
 
 ---
@@ -317,6 +318,7 @@ python -m pytest -v tests/contract/test_openapi_contract.py
 | S7 | Contrato OpenAPI versionado (ADR-0004) y validación automática en CI | Completo |
 | S8 | Despliegue público, IaC (`render.yaml`), observabilidad y costos (ADR-0005) | Completo (Desplegado en Render) |
 | S9 | Observabilidad de latencia, p95 HTTP y evidencia de defecto/medición con apoyo de IA (ADR-0007) | Completo |
+| S10 | Experimento operativo, hipótesis y validación de alta concurrencia de inventario (S10) | Completo |
 
 ## Uso de IA
 

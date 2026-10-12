@@ -774,11 +774,14 @@ secciones para saber por qué un escenario importa más que otro.
 2. **Monolito Modular vs. Despliegue Independiente (Prioridad Media):** Se adopta un monolito modular (`ADR-0001`) sacrificando el despliegue independiente de microservicios a cambio de simplificar la operación, reducir los costos de infraestructura (C5) y evitar latencias por red entre componentes.
 3. **Persistencia In-Memory vs. Persistencia en Disco (Transición):** Para el Corte 1 se priorizó la velocidad de desarrollo y pruebas de concurrencia en memoria, asumiendo la volatilidad a cambio de validar el modelo de dominio antes de acoplar un ORM o motor SQL.
 
-# 11. Risks and Technical Debt
+# 11. Risks and Technical Debt (Riesgos y Deuda Técnica)
 
-* **Deuda Técnica de Persistencia:** La implementación actual utiliza repositorios *In-Memory* con `asyncio.Lock`. Esto resuelve la concurrencia en un solo proceso, pero requiere migrar a transacciones ACID en PostgreSQL/SQLite cuando el sistema se despliegue en múltiples réplicas.
-* **Autenticación Ficticia / Mock:** La seguridad por roles (`ESC-05`) requiere la integración definitiva con JWT en el módulo `usuarios`.
-* **Ausencia de Frontend:** El cliente Flutter está planificado, por lo que la validación actual se limita al contrato de API OpenAPI y las pruebas de integración en pytest.
+Esta sección documenta explícitamente las divergencias conocidas, riesgos asumidos y la deuda técnica del MVP actual desplegado:
+
+- **Almacenamiento en Memoria (In-Memory Adapter):** Para cumplir estrictamente con la restricción de presupuesto cero (C5) del MVP, la persistencia se apoya en diccionarios en memoria RAM con cerrojos asíncronos (`asyncio.Lock`).
+  - *Riesgo:* Ante reinicios del contenedor o despliegue en múltiples réplicas horizontales, el estado del inventario no es persistente ni compartido.
+  - *Mitigación:* Verificado empíricamente que soporta ráfagas de 20 peticiones concurrentes con $p95 = 28\text{ ms}$ en instancia única. La migración a una base de datos relacional (PostgreSQL/SQLite) constituye la evolución natural prioritaria post-MVP.
+- **Inmutabilidad de ADRs Previos:** Los ADRs 0002, 0004 y 0005 sufrieron ediciones posteriores en iteraciones anteriores. Esto se zanja formalmente mediante el **ADR-0009**, decretando la inmutabilidad estricta de cualquier ADR aceptado a partir de la fecha.
 
 ---
 
