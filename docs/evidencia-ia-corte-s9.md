@@ -85,13 +85,19 @@ se registra así:
 |---|---|---|---|
 | Observaciones usadas para p95 | Historial acotado por ruta | Hasta 1000 en memoria | Cumple |
 | p95 calculado por la prueba | Aísla anomalías (p100) | 50 ms en el caso de prueba | Cumple |
-| Latencia operacional ESC-04 | <= 400 ms | 9.066 ms (p95, 20 peticiones reales) | Cumple |
+| Latencia operacional ESC-04 | <= 400 ms | La prueba de 20 salidas reales exige p95 <= 400 ms | Cumple |
 | Detección de defecto (Mutación) | La prueba debe fallar | 0.5 != 0.05 | Cumple |
 
-Se midieron 20 peticiones reales a `GET /health` con
-`TestClient` localmente: las 20 respondieron `200`, el p95 fue `9.066 ms` y el máximo
-`9.655 ms`. Esta medición en estado caliente contrasta satisfactoriamente con el umbral de
-ESC-04 (<= 400 ms). 
+La medición operacional reproducible se trasladó a
+`tests/inventario/test_concurrencia.py`: crea un producto, carga 100 unidades y
+envía 20 peticiones reales a `POST /inventario/{sku}/salidas`. La prueba mide
+cada duración con `time.perf_counter()`, calcula el p95 de esas 20 observaciones
+y falla si supera 400 ms. Así, la evidencia ejercita el flujo de negocio
+declarado y no solo `GET /health`.
+
+La cifra histórica de 9.066 ms correspondía a `/health` y no se presenta como
+medición de ESC-04. Tampoco se inventa una línea base anterior al lock, porque
+ese estado no está disponible como ejecución reproducible en el repositorio.
 
 ## 7. Relación con el uso de IA y Control de Erosión
 

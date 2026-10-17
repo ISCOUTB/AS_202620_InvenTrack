@@ -46,8 +46,8 @@ El contrato técnico ejecutable se encuentra definido y versionado en:
 |---|---|---|---|---|
 | `POST` | `/productos` | `201 Created` | `422` | Registrar un producto en el sistema. |
 | `DELETE` | `/productos/{producto_id}` | `200 OK` | `404` | Eliminar físicamente o desactivar lógicamente un producto. |
-| `POST` | `/inventario/{producto_id}/entradas` | `200 OK` | `404`, `503` | Registrar incremento de stock sobre un SKU. |
-| `POST` | `/inventario/{producto_id}/salidas` | `200 OK` | `404`, `409`, `503` | Registrar decremento de stock validando disponibilidad. |
+| `POST` | `/inventario/{producto_id}/entradas` | `200 OK` | `404`, `422`, `503` | Registrar incremento de stock sobre un SKU. La cantidad debe ser positiva. |
+| `POST` | `/inventario/{producto_id}/salidas` | `200 OK` | `404`, `409`, `422`, `503` | Registrar decremento de stock validando disponibilidad. La cantidad debe ser positiva. |
 | `GET` | `/inventario/{producto_id}` | `200 OK` | `404` | Consultar la cantidad actual en stock. |
 
 ---
@@ -59,6 +59,7 @@ El contrato técnico ejecutable se encuentra definido y versionado en:
 | `ProductoNoEncontrado` / `ProductoInvalidoError` | `404 Not Found` | El producto no existe en la base de datos o está desactivado. |
 | `ProductoSinStockError` | `404 Not Found` | El producto no posee un registro de existencias inicializado. |
 | `StockInsuficienteError` | `409 Conflict` | La cantidad solicitada supera el stock disponible (evita stock negativo). |
+| Validación de `MovimientoRequest` | `422 Unprocessable Entity` | La cantidad debe ser un entero estrictamente positivo; se rechazan `0` y valores negativos antes de invocar el dominio. |
 | `TiempoDeEsperaLockAgotado` | `503 Service Unavailable` | El tiempo de espera del Mutex ($2\text{ s}$) expiró ante una alta contención concurrente. |
 
 ---

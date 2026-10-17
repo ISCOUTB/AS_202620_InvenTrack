@@ -564,7 +564,7 @@ Para dar cumplimiento a los escenarios **ESC-01** y **ESC-04**, la consistencia 
 
 ## Manejo de Excepciones y Respuestas de Error
 
-Los errores de dominio (como `StockInsuficienteError` o `ProductoNoEncontradoError`) son capturados de forma transparente en la capa de infraestructura mediante *exception handlers* de FastAPI, retornando respuestas HTTP estandarizadas JSON con códigos de estado apropiados (`400 Bad Request`, `404 Not Found`).
+Los errores de dominio y de validación del borde HTTP (como `StockInsuficienteError`, `ProductoInvalidoError` o una cantidad no positiva) se traducen en la capa de infraestructura mediante los handlers de los routers y la validación de Pydantic, retornando respuestas JSON estandarizadas con códigos `404 Not Found`, `409 Conflict`, `422 Unprocessable Entity` o `503 Service Unavailable`, según el caso.
 
 # Architecture Decisions
 

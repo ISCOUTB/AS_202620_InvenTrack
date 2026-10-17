@@ -9,15 +9,15 @@
 
 ---
 
-## 🚀 Estado del Proyecto — Reto Corte 1 (AS_202620)
+## 🚀 Estado del Proyecto — Segundo Corte (AS_202620)
 
 * **Estilo Arquitectónico:** Monolito Modular con Arquitectura Hexagonal por Módulo ([ADR-0001](docs/adr/0001-usar-monolito-modular-con-hexagonal-por-modulo.md)).
 * **Mecanismo de Concurrencia:** Exclusión mutua asíncrona por SKU (`asyncio.Lock()`) ([ADR-0002](docs/adr/0002-control-concurrencia-memoria-inventario.md)).
-* **Resultados de Medición:** **$p95 = 28\text{ ms}$** bajo ráfagas de 20 peticiones simultáneas sobre el mismo SKU (Umbral exigido: $\le 400\text{ ms}$) ([Reporte de Medición](docs/retos/corte-1-medicion.md)).
+* **Medición de Concurrencia:** La prueba ejecuta 20 salidas reales sobre el mismo SKU, calcula el p95 y exige el umbral de $\le 400\text{ ms}$ ([Experimento reproducible](docs/retos/corte-2-experimento.md)).
 * **Matriz de Trazabilidad:** Cadena navegable `Aspecto → Requisito → C4 → ADR → Código → Pruebas → Evidencia` ([Aspectos de Calidad](docs/aspectos.md)).
 * **Contrato de API:** OpenAPI v1 versionado y validado automáticamente contra la implementación FastAPI ([ADR-0004](docs/adr/0004-contrato-api-versionado-openapi.md)).
 * **Despliegue Productivo:** Disponible en Render (PaaS) y en el servidor institucional Dokploy mediante infraestructura como código (`render.yaml` y `deploy/compose.lab.yaml`).
-* **CI y cobertura:** GitHub Actions ejecuta la suite completa con `pytest-cov`, genera `coverage.xml` y valida el contrato OpenAPI antes del análisis SonarCloud.
+* **CI y cobertura:** GitHub Actions ejecuta la suite completa con `pytest-cov`, genera `coverage.xml`, ejecuta el análisis SonarCloud y valida explícitamente el contrato OpenAPI.
 * **Transparencia en Uso de IA:** Prompts, decisiones aceptadas, correcciones y rechazos por criterio técnico ([Registro de IA](docs/ia.md)).
 
 ---
@@ -88,6 +88,9 @@
 | [ADR-0003](docs/adr/0003-integracion-productos-inventario-via-puertos-de-aplicacion.md) | Integración entre productos e inventario mediante puertos de aplicación y adaptadores (Aceptado) |
 | [ADR-0004](docs/adr/0004-contrato-api-versionado-openapi.md) | Contrato de API versionado con OpenAPI y validación automática (Aceptado) |
 | [ADR-0005](docs/adr/0005-eleccion-plataforma-despliegue.md) | Elección de Render PaaS, estimación de costos y punto de ruptura (Aceptado) |
+| [ADR-0006](docs/adr/0006-desplegar-en-dokploy-institucional.md) | Dokploy institucional como segundo destino operativo (Aceptado) |
+| [ADR-0007](docs/adr/0007-exponer-p95-de-latencia-en-metricas.md) | Exposición del p95 de latencia en métricas HTTP (Aceptado) |
+| [ADR-0008](docs/adr/0008-no-incorporar-componente-generativo.md) | No incorporar un componente generativo al MVP (Aceptado) |
 | [Evidencia de prueba contractual](docs/evidencia-prueba-contrato.md) | Reproducción del fallo ante un cambio incompatible y recuperación de la prueba |
 | [Despliegue y costos](docs/despliegue-y-costos.md) | URL pública, IaC (`render.yaml`), observabilidad, secretos y estimación mensual |
 | [Medición Reto Corte 1](docs/retos/corte-1-medicion.md) | Diagnóstico, pruebas de concurrencia, degradación controlada y comando de reproducción |
@@ -123,7 +126,7 @@ Antes de entrar a cada carpeta, vale la pena explicar la lógica detrás de la e
 
 - **`docs/arc42/`** cuenta la historia completa en texto: objetivos, restricciones, contexto, estrategia de solución, vista de bloques, vista de ejecución, atributos de calidad, conceptos transversales y los escenarios que los hacen medibles.
 - **`docs/c4/`** y **`docs/utility-tree.md`** son los diagramas — representaciones visuales que se enlazan desde el arc42.
-- **`docs/adr/`** registra las decisiones arquitectónicas concretas, una por archivo: ADR-0001 para el estilo general, ADR-0002 para concurrencia, ADR-0003 para la integración entre productos e inventario, ADR-0004 para el contrato versionado y ADR-0005 para la plataforma de despliegue.
+- **`docs/adr/`** registra las decisiones arquitectónicas concretas, una por archivo: estilo general, concurrencia, integración entre módulos, contrato versionado, despliegue, observabilidad y exclusión de componentes generativos.
 - **`docs/api/`** reúne el contrato técnico y la vista funcional de la API de InvenTrack, incluyendo el contrato ejecutable de la versión actual.
 - **`docs/retos/`** documenta el diagnóstico, carga simulada, comandos de reproducción y resultados del reto del Corte 1.
 - **`docs/evidencia-prueba-contrato.md`** documenta la reproducción controlada de un cambio incompatible en OpenAPI y la recuperación de la prueba contractual.
@@ -181,6 +184,8 @@ Las decisiones arquitectónicas se documentan como archivos individuales en [`do
 - **[ADR-0004](docs/adr/0004-contrato-api-versionado-openapi.md):** Versionado del contrato de API con OpenAPI y validación automática de compatibilidad en CI.
 - **[ADR-0005](docs/adr/0005-eleccion-plataforma-despliegue.md):** Elección de Render (PaaS) como plataforma de despliegue productivo y estimación de costos.
 - **[ADR-0006](docs/adr/0006-desplegar-en-dokploy-institucional.md):** Incorporación posterior de Dokploy como segundo destino operativo, en paralelo con Render.
+- **[ADR-0007](docs/adr/0007-exponer-p95-de-latencia-en-metricas.md):** Exposición del p95 de latencia en métricas HTTP.
+- **[ADR-0008](docs/adr/0008-no-incorporar-componente-generativo.md):** Decisión de no incorporar un componente generativo al MVP.
 
 ## Despliegue en iscoutb.dev
 
