@@ -36,4 +36,4 @@ Se actualiza la **Sección 11 del documento arc42 (`docs/arc42/arc42-template-EN
 - **Mitigación de Latencia y Bloqueo:** El sistema previene bloqueos en cascada mediante llamadas asíncronas y timeouts acotados en los adaptadores cruzados entre módulos (`ADR-0003`).
 - **Garantía de Idempotencia:** La serialización de transacciones sobre el mismo SKU (`ADR-0002`) garantiza la atomicidad de las operaciones de inventario, mitigando inconsistencias por peticiones duplicadas.
 - **Deuda de Redundancia:** Al mantenerse como Monolito Modular en memoria RAM (C5), los patrones distribuidos pesados (como Sagas orquestadas o Patrón Outbox) se evalúan como sobreingeniería injustificada en la etapa actual (ver `ADR-0010`).
-```
+ ```
