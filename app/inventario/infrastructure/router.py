@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.inventario.application.registrar_movimiento import RegistrarMovimientoInventario
 from app.inventario.domain.exceptions import ProductoSinStockError, StockInsuficienteError
@@ -8,7 +8,7 @@ from app.inventario.domain.ports import StockRepository
 
 
 class MovimientoRequest(BaseModel):
-    cantidad: int
+    cantidad: int = Field(gt=0)
 
 
 class MovimientoResponse(BaseModel):

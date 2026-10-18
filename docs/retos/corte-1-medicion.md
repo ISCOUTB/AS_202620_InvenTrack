@@ -5,6 +5,12 @@
 - **Escenario probado:** ESC-01 — 20 peticiones simultáneas reduciendo stock sobre el mismo SKU.
 - **Objetivo / Criterio de aceptación:** Latencia $p95 \le 400\text{ ms}$ y conservación de la consistencia estricta de stock sin condiciones de carrera.
 
+> **Alcance histórico:** este reporte conserva el resultado declarado en el
+> cierre del Corte 1. La serie cruda y una ejecución del estado anterior al
+> lock no quedaron versionadas, por lo que la cifra no se presenta como una
+> línea base reproducible actual. La medición vigente se ejecuta en
+> `tests/inventario/test_concurrencia.py` sobre salidas reales.
+
 ---
 
 ## 1. Diagnóstico del Reto
@@ -14,7 +20,7 @@ Para cumplir con la distinción técnica exigida por la asignatura, el problema 
 * **Síntoma:** Ante solicitudes simultáneas sobre el mismo producto, las lecturas y escrituras entrelazadas generaban inconsistencias en el stock final o el registro de valores negativos.
 * **Causa Raíz:** Ausencia de un mecanismo de exclusión mutua / serialización asíncrona sobre el repositorio en memoria durante operaciones de actualización de stock.
 * **Riesgo Prioritario:** Pérdida de integridad en el dato central del negocio (inventario) y corrupción de saldos por lecturas sucias (*dirty reads*).
-* **Línea Base Verificable:** La ejecución previa sin control de concurrencia permitía condiciones de carrera (*race conditions*). Se estableció el umbral objetivo en ráfagas de 20 peticiones simultáneas con latencia $p95 \le 400\text{ ms}$ y 0 descuadres en el inventario.
+* **Línea Base Histórica Declarada:** La ejecución previa sin control de concurrencia se describió como susceptible a condiciones de carrera (*race conditions*). Se estableció el umbral objetivo en ráfagas de 20 peticiones simultáneas con latencia $p95 \le 400\text{ ms}$ y 0 descuadres en el inventario.
 
 ---
 
@@ -23,7 +29,7 @@ Para cumplir con la distinción técnica exigida por la asignatura, el problema 
 | Métrica / Indicador | Requisito Esperado | Resultado Medido | Estado |
 |---|---|---|---|
 | **Concurrencia** | 20 usuarios / peticiones simultáneas | 20 peticiones ejecutadas vía `asyncio.gather` | Cumplido |
-| **Latencia Percentil 95 ($p95$)** | $\le 400\text{ ms}$ | **$28\text{ ms}$** | Cumplido |
+| **Latencia Percentil 95 ($p95$)** | $\le 400\text{ ms}$ | **$28\text{ ms}$ reportados en el cierre del corte** | Cumplido en la ejecución histórica |
 | **Latencia Promedio ($p50$)** | N/A | **$12\text{ ms}$** | Cumplido |
 | **Tasa de Éxito HTTP** | 100% (20/20 peticiones OK) | 100% (HTTP 200 OK) | Cumplido |
 | **Stock Inicial / Final** | Stock Inicial: 100 | Stock Final: **80** (descuento exacto de 20 unidades) | Cumplido |

@@ -1,5 +1,7 @@
 import pytest
 import asyncio
+import math
+import time
 from httpx import AsyncClient, ASGITransport
 from app.main import app
 
@@ -26,15 +28,21 @@ async def test_concurrencia_20_usuarios_simultaneos():
 
         # 2. Definir corrutina para realizar una salida de 1 unidad
         async def descontar_stock():
-            return await ac.post(f"/inventario/{prod_id}/salidas", json={"cantidad": 1})
+            started = time.perf_counter()
+            response = await ac.post(f"/inventario/{prod_id}/salidas", json={"cantidad": 1})
+            return response, time.perf_counter() - started
 
         # 3. Disparar 20 peticiones concurrentes en el event loop
         tasks = [descontar_stock() for _ in range(20)]
         results = await asyncio.gather(*tasks)
 
         # 4. Validar que todas las peticiones devolvieron HTTP 200 OK
-        for response in results:
+        for response, _ in results:
             assert response.status_code == 200, f"Fallo en salida ({response.status_code}): {response.json()}"
+
+        latencies = sorted(duration for _, duration in results)
+        p95_index = max(1, math.ceil(len(latencies) * 0.95)) - 1
+        assert latencies[p95_index] <= 0.4
 
         # 5. Validar que la consulta final refleje exactamente 80 unidades de stock
         consulta_resp = await ac.get(f"/inventario/{prod_id}")

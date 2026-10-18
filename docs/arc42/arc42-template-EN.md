@@ -395,7 +395,7 @@ Este escenario demuestra el flujo de dependencias definido en el ADR-0001 sin in
 
 El escenario ESC-01 es el principal escenario arquitectónico para el aspecto de Consistencia de Datos y Rendimiento.
 
-Su mecanismo concreto de ejecución se resolvió en el [ADR-0002](../adr/0002-control-concurrencia-memoria-inventario.md) mediante un esquema de exclusión mutua asíncrona (`asyncio.Lock`) por SKU en el módulo `app/inventario/`. Cuando ocurren peticiones simultáneas sobre el mismo producto, el sistema serializa el procesamiento en memoria de forma atómica. Esto garantiza 0 inconsistencias de stock y mantiene la latencia $p95$ en $28\text{ ms}$ (ampliamente por debajo del umbral de $400\text{ ms}$ exigido), como se demuestra en el reporte de medición [`docs/retos/corte-1-medicion.md`](../retos/corte-1-medicion.md).
+Su mecanismo concreto de ejecución se resolvió en el [ADR-0002](../adr/0002-control-concurrencia-memoria-inventario.md) mediante un esquema de exclusión mutua asíncrona (`asyncio.Lock`) por SKU en el módulo `app/inventario/`. Cuando ocurren peticiones simultáneas sobre el mismo producto, el sistema serializa el procesamiento en memoria de forma atómica. La prueba vigente ejecuta 20 salidas reales, verifica 0 inconsistencias de stock y exige una latencia $p95 \le 400\text{ ms}$; el resultado histórico de $28\text{ ms}$ se conserva como referencia del cierre anterior, no como una serie reproducible actual. Ver [`docs/retos/corte-2-experimento.md`](../retos/corte-2-experimento.md).
 
 # 7. Deployment View
 
@@ -564,7 +564,7 @@ Para dar cumplimiento a los escenarios **ESC-01** y **ESC-04**, la consistencia 
 
 ## Manejo de Excepciones y Respuestas de Error
 
-Los errores de dominio (como `StockInsuficienteError` o `ProductoNoEncontradoError`) son capturados de forma transparente en la capa de infraestructura mediante *exception handlers* de FastAPI, retornando respuestas HTTP estandarizadas JSON con códigos de estado apropiados (`400 Bad Request`, `404 Not Found`).
+Los errores de dominio y de validación del borde HTTP (como `StockInsuficienteError`, `ProductoInvalidoError` o una cantidad no positiva) se traducen en la capa de infraestructura mediante los handlers de los routers y la validación de Pydantic, retornando respuestas JSON estandarizadas con códigos `404 Not Found`, `409 Conflict`, `422 Unprocessable Entity` o `503 Service Unavailable`, según el caso.
 
 # Architecture Decisions
 
@@ -780,8 +780,23 @@ Esta sección documenta explícitamente las divergencias conocidas, riesgos asum
 
 - **Almacenamiento en Memoria (In-Memory Adapter):** Para cumplir estrictamente con la restricción de presupuesto cero (C5) del MVP, la persistencia se apoya en diccionarios en memoria RAM con cerrojos asíncronos (`asyncio.Lock`).
   - *Riesgo:* Ante reinicios del contenedor o despliegue en múltiples réplicas horizontales, el estado del inventario no es persistente ni compartido.
-  - *Mitigación:* Verificado empíricamente que soporta ráfagas de 20 peticiones concurrentes con $p95 = 28\text{ ms}$ en instancia única. La migración a una base de datos relacional (PostgreSQL/SQLite) constituye la evolución natural prioritaria post-MVP.
+  - *Mitigación:* La prueba vigente ejecuta 20 peticiones concurrentes sobre salidas reales, comprueba el stock final y exige $p95 \le 400\text{ ms}$ en una instancia. La migración a una base de datos relacional (PostgreSQL/SQLite) constituye la evolución natural prioritaria post-MVP.
 - **Inmutabilidad de ADRs Previos:** Los ADRs 0002, 0004 y 0005 sufrieron ediciones posteriores en iteraciones anteriores. Esto se zanja formalmente mediante el **ADR-0009**, decretando la inmutabilidad estricta de cualquier ADR aceptado a partir de la fecha.
+
+## Tabla de modos de fallo y mitigaciones
+
+La siguiente tabla conecta fallos previsibles con la respuesta implementada, la
+mitigación operativa o la deuda explícitamente aceptada. No presenta como
+implementadas las capacidades que permanecen fuera del MVP.
+
+| Modo de fallo | Efecto | Mitigación | Evidencia / estado |
+|---|---|---|---|
+| Cantidad de entrada o salida igual a cero o negativa | La entrada inválida podría alcanzar el dominio y producir un error interno no contractual. | Validación `Field(gt=0)` en el borde HTTP; FastAPI responde `422` antes de invocar el caso de uso. | [Router](../../app/inventario/infrastructure/router.py), [pruebas HTTP](../../tests/inventario/test_inventario.py), contrato OpenAPI. Implementado. |
+| Stock insuficiente para una salida | El inventario podría quedar negativo o la operación podría aplicarse parcialmente. | `StockInsuficienteError` se traduce a `409`; el lock protege la lectura y actualización del stock. | [Caso de uso](../../app/inventario/application/registrar_movimiento.py), [prueba de inventario](../../tests/inventario/test_inventario.py). Implementado. |
+| Espera del lock superior a 2 segundos | Una petición queda retenida durante una contención excesiva. | Timeout por SKU y respuesta `503 Service Unavailable`; el contexto libera el lock en `finally`. | [ADR-0002](../adr/0002-control-concurrencia-memoria-inventario.md), [prueba de degradación](../../tests/inventario/test_degradacion_lock.py). Implementado. |
+| Reinicio del proceso o múltiples réplicas | Se pierde o diverge el estado almacenado en memoria. | Mantener una instancia para el MVP; migrar a persistencia transaccional y lock distribuido antes de escalar horizontalmente. | [ADR-0006](../adr/0006-desplegar-en-dokploy-institucional.md), deuda aceptada. Pendiente post-MVP. |
+| Arranque en frío del destino gratuito | La primera solicitud puede superar el umbral de latencia por suspensión del servicio. | Calentar la instancia antes de medir y separar la sonda `/health` de la medición de negocio. | [ADR-0005](../adr/0005-eleccion-plataforma-despliegue.md), [experimento S10](../retos/corte-2-experimento.md). Mitigación operativa. |
+| Acceso sin autenticación o rol insuficiente | Un usuario podría acceder a operaciones administrativas sin autorización. | Mantener autenticación y roles fuera del MVP declarado; no presentar ESC-05 como implementado y exigir un cambio arquitectónico antes de habilitar usuarios reales. | [Contrato API](../api/inventrack-contrato.md), ESC-05. Pendiente de alcance. |
 
 ---
 

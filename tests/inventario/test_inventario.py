@@ -48,3 +48,19 @@ def test_movimiento_sobre_producto_inexistente_rechaza():
     # existen (o no están activos) en el módulo productos.
     response = client.post("/inventario/no-existe/entradas", json={"cantidad": 1})
     assert response.status_code == 404
+
+
+def test_entrada_con_cantidad_no_positiva_rechaza_en_http():
+    client.post("/productos", json={"id": "p-400", "nombre": "Producto 400"})
+
+    for cantidad in (0, -1):
+        response = client.post("/inventario/p-400/entradas", json={"cantidad": cantidad})
+        assert response.status_code == 422
+
+
+def test_salida_con_cantidad_no_positiva_rechaza_en_http():
+    client.post("/productos", json={"id": "p-500", "nombre": "Producto 500"})
+
+    for cantidad in (0, -1):
+        response = client.post("/inventario/p-500/salidas", json={"cantidad": cantidad})
+        assert response.status_code == 422

@@ -1,6 +1,6 @@
 # Índice Trazable de Correcciones — InvenTrack
 
-Este documento consolida los hallazgos reportados en las evaluaciones automáticas/docentes (S1 a S6), la contrastación de evidencia con la fecha de cierre de cada commit y la trazabilidad de sus correcciones.
+Este documento consolida los hallazgos reportados en las evaluaciones automáticas/docentes (S1 a S10), la contrastación de evidencia con la fecha de cierre de cada commit y la trazabilidad de sus correcciones.
 
 ---
 
@@ -22,3 +22,5 @@ Este documento consolida los hallazgos reportados en las evaluaciones automátic
 | **HAL-06** | S6 | Ausencia de mapa de contextos y definición de propiedad de datos. | Creados `context-map.md` y `propiedad-datos.md` delimitando Single Ownership y canales entre módulos. | [`docs/context-map.md`](./docs/context-map.md), [`docs/propiedad-datos.md`](./docs/propiedad-datos.md) | **Corregido** |
 | **HAL-07** | S6 | Violación de fronteras de dominio en verificación de movimientos (`in_memory_verificador_movimientos.py`). | Resuelto mediante la implementación de puertos de aplicación e inversión de dependencias cruzada (`ADR-0003`). Documentado en auditoría. | [`docs/adr/0003-integracion-productos-inventario-via-puertos-de-aplicacion`](./docs/adr/0003-integracion-productos-inventario-via-puertos-de-aplicacion.md), [`docs/auditoria-modularidad.md`](./docs/auditoria-modularidad.md) | **Corregido** |
 | **HAL-08** | S6 | C4 Nivel 3 (Componentes) marcado como pendiente. | Diseñado e integrado el diagrama de componentes internos de la API Backend en Mermaid. | [`docs/c4/components.md`](./docs/c4/components.md) | **Corregido** |
+| **HAL-09** | S9 / S10 | La medición de p95 ejercitaba `/health` y no el flujo de negocio declarado; la línea base anterior no era reproducible. | La prueba de concurrencia mide 20 `POST /inventario/{sku}/salidas` reales, calcula p95 y exige `<= 400 ms`. La cifra histórica de 28 ms se conserva solo como referencia no reproducible; no se inventa una línea base ausente. | [`tests/inventario/test_concurrencia.py`](./tests/inventario/test_concurrencia.py), [`docs/retos/corte-2-experimento.md`](./docs/retos/corte-2-experimento.md), [`docs/evidencia-ia-corte-s9.md`](./docs/evidencia-ia-corte-s9.md) | **Corregido / pendiente de línea base histórica** |
+| **HAL-10** | S10 | Cantidades `0` o negativas podían alcanzar el dominio y producir un error no contractual. | Validación `cantidad > 0` en el esquema HTTP, contrato OpenAPI actualizado y pruebas negativas para entradas y salidas. | [`app/inventario/infrastructure/router.py`](./app/inventario/infrastructure/router.py), [`contracts/openapi/v1.json`](./contracts/openapi/v1.json), [`tests/inventario/test_inventario.py`](./tests/inventario/test_inventario.py) | **Corregido** |

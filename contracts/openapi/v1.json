@@ -287,7 +287,7 @@
       },
       "MovimientoRequest": {
         "properties": {
-          "cantidad": { "type": "integer", "title": "Cantidad" }
+          "cantidad": { "type": "integer", "exclusiveMinimum": 0.0, "title": "Cantidad" }
         },
         "type": "object",
         "required": ["cantidad"],
