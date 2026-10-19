@@ -199,7 +199,7 @@
             "description": "Not Found"
           },
           "409": {
-            "description": "Conflict"
+            "description": "Conflict - Stock insuficiente"
           },
           "422": {
             "description": "Validation Error",
