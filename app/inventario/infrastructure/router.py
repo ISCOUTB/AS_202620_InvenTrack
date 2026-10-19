@@ -24,7 +24,11 @@ def crear_router(registro: RegistrarMovimientoInventario, repositorio_stock: Sto
 
     @router.post(
         "/inventario/{producto_id}/entradas",
-        responses={404: {"description": "Not Found"}, 503: {"description": "Service Unavailable"}},
+        responses={
+            400: {"description": "Bad Request - Cantidad inválida"},
+            404: {"description": "Not Found"},
+            503: {"description": "Service Unavailable"},
+        },
     )
     async def registrar_entrada(producto_id: str, payload: MovimientoRequest) -> MovimientoResponse:
         try:
@@ -40,6 +44,7 @@ def crear_router(registro: RegistrarMovimientoInventario, repositorio_stock: Sto
     @router.post(
         "/inventario/{producto_id}/salidas",
         responses={
+            400: {"description": "Bad Request - Cantidad inválida"},
             404: {"description": "Not Found"},
             409: {"description": "Conflict - Stock insuficiente"},
             503: {"description": "Service Unavailable"},
