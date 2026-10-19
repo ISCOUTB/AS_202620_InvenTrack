@@ -611,6 +611,17 @@ Esta decisión permite:
 La decisión completa se encuentra en:
 [ADR-0002 — Control de Concurrencia en Memoria para Inventario](../adr/0002-control-concurrencia-memoria-inventario.md)
 
+### Idempotencia, Saga y extracción de módulos
+
+El MVP mantiene `productos` e `inventario` dentro del mismo monolito y no
+coordina pasos distribuidos; por ello una Saga no aplica actualmente. Los
+comandos HTTP de entradas y salidas tampoco ofrecen deduplicación por
+`Idempotency-Key`, por lo que no son idempotentes ante reintentos de red. Este
+límite y el diseño requerido antes de extraer `inventario` están formalizados
+en [ADR-0011](../adr/0011-idempotencia-y-sagas-en-movimientos.md). La decisión
+de no extraer el módulo en el MVP está en
+[ADR-0010](../adr/0010-decision-extraccion-microservicios.md).
+
 ```mermaid
 flowchart TB
     REQ["Requisitos y<br/>Escenarios de calidad"]
@@ -796,6 +807,7 @@ implementadas las capacidades que permanecen fuera del MVP.
 | Espera del lock superior a 2 segundos | Una petición queda retenida durante una contención excesiva. | Timeout por SKU y respuesta `503 Service Unavailable`; el contexto libera el lock en `finally`. | [ADR-0002](../adr/0002-control-concurrencia-memoria-inventario.md), [prueba de degradación](../../tests/inventario/test_degradacion_lock.py). Implementado. |
 | Reinicio del proceso o múltiples réplicas | Se pierde o diverge el estado almacenado en memoria. | Mantener una instancia para el MVP; migrar a persistencia transaccional y lock distribuido antes de escalar horizontalmente. | [ADR-0006](../adr/0006-desplegar-en-dokploy-institucional.md), deuda aceptada. Pendiente post-MVP. |
 | Arranque en frío del destino gratuito | La primera solicitud puede superar el umbral de latencia por suspensión del servicio. | Calentar la instancia antes de medir y separar la sonda `/health` de la medición de negocio. | [ADR-0005](../adr/0005-eleccion-plataforma-despliegue.md), [experimento S10](../retos/corte-2-experimento.md). Mitigación operativa. |
+| Reintento de una entrada o salida después de un timeout de red | El mismo movimiento puede registrarse dos veces porque el MVP no deduplica comandos. | No reintentar automáticamente en clientes actuales; antes de extraer módulos o habilitar reintentos, persistir `Idempotency-Key` y el resultado del movimiento. | [ADR-0011](../adr/0011-idempotencia-y-sagas-en-movimientos.md). Riesgo conocido, pendiente post-MVP. |
 | Acceso sin autenticación o rol insuficiente | Un usuario podría acceder a operaciones administrativas sin autorización. | Mantener autenticación y roles fuera del MVP declarado; no presentar ESC-05 como implementado y exigir un cambio arquitectónico antes de habilitar usuarios reales. | [Contrato API](../api/inventrack-contrato.md), ESC-05. Pendiente de alcance. |
 
 ---

@@ -91,6 +91,8 @@
 | [ADR-0006](docs/adr/0006-desplegar-en-dokploy-institucional.md) | Dokploy institucional como segundo destino operativo (Aceptado) |
 | [ADR-0007](docs/adr/0007-exponer-p95-de-latencia-en-metricas.md) | Exposición del p95 de latencia en métricas HTTP (Aceptado) |
 | [ADR-0008](docs/adr/0008-no-incorporar-componente-generativo.md) | No incorporar un componente generativo al MVP (Aceptado) |
+| [ADR-0010](docs/adr/0010-decision-extraccion-microservicios.md) | No extraer inventario a un microservicio en el MVP (Aceptado) |
+| [ADR-0011](docs/adr/0011-idempotencia-y-sagas-en-movimientos.md) | Idempotencia de movimientos y no uso de Saga en el MVP (Aceptado) |
 | [Evidencia de prueba contractual](docs/evidencia-prueba-contrato.md) | Reproducción del fallo ante un cambio incompatible y recuperación de la prueba |
 | [Despliegue y costos](docs/despliegue-y-costos.md) | URL pública, IaC (`render.yaml`), observabilidad, secretos y estimación mensual |
 | [Medición Reto Corte 1](docs/retos/corte-1-medicion.md) | Diagnóstico, pruebas de concurrencia, degradación controlada y comando de reproducción |
@@ -186,6 +188,8 @@ Las decisiones arquitectónicas se documentan como archivos individuales en [`do
 - **[ADR-0006](docs/adr/0006-desplegar-en-dokploy-institucional.md):** Incorporación posterior de Dokploy como segundo destino operativo, en paralelo con Render.
 - **[ADR-0007](docs/adr/0007-exponer-p95-de-latencia-en-metricas.md):** Exposición del p95 de latencia en métricas HTTP.
 - **[ADR-0008](docs/adr/0008-no-incorporar-componente-generativo.md):** Decisión de no incorporar un componente generativo al MVP.
+- **[ADR-0010](docs/adr/0010-decision-extraccion-microservicios.md):** Decisión de no extraer inventario a un microservicio independiente en el MVP.
+- **[ADR-0011](docs/adr/0011-idempotencia-y-sagas-en-movimientos.md):** Tratamiento de idempotencia y Saga para los movimientos de inventario.
 
 ## Despliegue en iscoutb.dev
 
