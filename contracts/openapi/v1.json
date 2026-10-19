@@ -136,6 +136,9 @@
               }
             }
           },
+          "400": {
+            "description": "Bad Request - Cantidad inválida"
+          },
           "404": {
             "description": "Not Found"
           },
@@ -188,6 +191,9 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Bad Request - Cantidad inválida"
           },
           "404": {
             "description": "Not Found"
