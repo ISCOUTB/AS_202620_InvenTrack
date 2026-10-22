@@ -8,6 +8,9 @@ from app.inventario.domain.exceptions import ProductoSinStockError, StockInsufic
 from app.inventario.domain.exceptions_producto import ProductoInvalidoError, TiempoDeEsperaLockAgotado
 from app.inventario.domain.ports import StockRepository
 
+NOT_FOUND_RESPONSE = {"description": "Not Found"}
+BAD_REQUEST_RESPONSE = {"description": "Bad Request - Cantidad inválida"}
+SERVICE_UNAVAILABLE_RESPONSE = {"description": "Service Unavailable"}
 
 class MovimientoRequest(BaseModel):
     cantidad: int = Field(gt=0)
@@ -93,9 +96,9 @@ def crear_router(registro: RegistrarMovimientoInventario, repositorio_stock: Sto
         _crear_handler_entrada(registro),
         methods=["POST"],
         responses={
-            400: {"description": "Bad Request - Cantidad inválida"},
-            404: {"description": "Not Found"},
-            503: {"description": "Service Unavailable"},
+            400: BAD_REQUEST_RESPONSE,
+            404: NOT_FOUND_RESPONSE,
+            503: SERVICE_UNAVAILABLE_RESPONSE,
         },
     )
 
@@ -104,10 +107,10 @@ def crear_router(registro: RegistrarMovimientoInventario, repositorio_stock: Sto
         _crear_handler_salida(registro),
         methods=["POST"],
         responses={
-            400: {"description": "Bad Request - Cantidad inválida"},
-            404: {"description": "Not Found"},
+            400: BAD_REQUEST_RESPONSE,
+            404: NOT_FOUND_RESPONSE,
             409: {"description": "Conflict - Stock insuficiente"},
-            503: {"description": "Service Unavailable"},
+            503: SERVICE_UNAVAILABLE_RESPONSE,
         },
     )
 
@@ -115,7 +118,7 @@ def crear_router(registro: RegistrarMovimientoInventario, repositorio_stock: Sto
         "/inventario/{producto_id}",
         _crear_handler_stock(repositorio_stock),
         methods=["GET"],
-        responses={404: {"description": "Not Found"}},
+        responses={404: NOT_FOUND_RESPONSE},
     )
 
     return router
