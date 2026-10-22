@@ -1,3 +1,5 @@
+from collections.abc import Awaitable, Callable
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
@@ -18,31 +20,89 @@ class MovimientoResponse(BaseModel):
     stock_final: int
 
 
+def _error_entrada(exc: Exception) -> HTTPException:
+    if isinstance(exc, ProductoInvalidoError):
+        return HTTPException(status_code=404, detail=str(exc))
+    if isinstance(exc, ValueError):
+        return HTTPException(status_code=400, detail=str(exc))
+    return HTTPException(status_code=503, detail=str(exc))
+
+
+def _error_salida(exc: Exception) -> HTTPException:
+    if isinstance(exc, ProductoInvalidoError | ProductoSinStockError):
+        return HTTPException(status_code=404, detail=str(exc))
+    if isinstance(exc, StockInsuficienteError):
+        return HTTPException(status_code=409, detail=str(exc))
+    if isinstance(exc, ValueError):
+        status_code = 409 if "excede el stock" in str(exc) else 400
+        return HTTPException(status_code=status_code, detail=str(exc))
+    return HTTPException(status_code=503, detail=str(exc))
+
+
+def _crear_handler_entrada(
+    registro: RegistrarMovimientoInventario,
+) -> Callable[[str, MovimientoRequest], Awaitable[MovimientoResponse]]:
+    async def registrar_entrada(producto_id: str, payload: MovimientoRequest) -> MovimientoResponse:
+        try:
+            resultado = await registro.registrar_entrada(producto_id, payload.cantidad)
+        except (ProductoInvalidoError, ValueError, TiempoDeEsperaLockAgotado) as exc:
+            raise _error_entrada(exc) from exc
+        return MovimientoResponse(**resultado.__dict__)
+
+    return registrar_entrada
+
+
+def _crear_handler_salida(
+    registro: RegistrarMovimientoInventario,
+) -> Callable[[str, MovimientoRequest], Awaitable[MovimientoResponse]]:
+    async def registrar_salida(producto_id: str, payload: MovimientoRequest) -> MovimientoResponse:
+        try:
+            resultado = await registro.registrar_salida(producto_id, payload.cantidad)
+        except (
+            ProductoInvalidoError,
+            ProductoSinStockError,
+            StockInsuficienteError,
+            ValueError,
+            TiempoDeEsperaLockAgotado,
+        ) as exc:
+            raise _error_salida(exc) from exc
+
+        return MovimientoResponse(**resultado.__dict__)
+
+    return registrar_salida
+
+
+def _crear_handler_stock(
+    repositorio_stock: StockRepository,
+) -> Callable[[str], dict]:
+    def consultar_stock(producto_id: str) -> dict:
+        stock = repositorio_stock.obtener(producto_id)
+        if stock is None:
+            raise HTTPException(status_code=404, detail="Producto sin stock registrado")
+        return {"producto_id": stock.producto_id, "cantidad": stock.cantidad}
+
+    return consultar_stock
+
+
 def crear_router(registro: RegistrarMovimientoInventario, repositorio_stock: StockRepository) -> APIRouter:
 
     router = APIRouter()
 
-    @router.post(
+    router.add_api_route(
         "/inventario/{producto_id}/entradas",
+        _crear_handler_entrada(registro),
+        methods=["POST"],
         responses={
             400: {"description": "Bad Request - Cantidad inválida"},
             404: {"description": "Not Found"},
             503: {"description": "Service Unavailable"},
         },
     )
-    async def registrar_entrada(producto_id: str, payload: MovimientoRequest) -> MovimientoResponse:
-        try:
-            resultado = await registro.registrar_entrada(producto_id, payload.cantidad)
-        except ProductoInvalidoError as exc:
-            raise HTTPException(status_code=404, detail=str(exc)) from exc
-        except ValueError as exc:
-            raise HTTPException(status_code=400, detail=str(exc)) from exc
-        except TiempoDeEsperaLockAgotado as exc:
-            raise HTTPException(status_code=503, detail=str(exc)) from exc
-        return MovimientoResponse(**resultado.__dict__)
 
-    @router.post(
+    router.add_api_route(
         "/inventario/{producto_id}/salidas",
+        _crear_handler_salida(registro),
+        methods=["POST"],
         responses={
             400: {"description": "Bad Request - Cantidad inválida"},
             404: {"description": "Not Found"},
@@ -50,32 +110,12 @@ def crear_router(registro: RegistrarMovimientoInventario, repositorio_stock: Sto
             503: {"description": "Service Unavailable"},
         },
     )
-    async def registrar_salida(producto_id: str, payload: MovimientoRequest) -> MovimientoResponse:
-        try:
-            resultado = await registro.registrar_salida(producto_id, payload.cantidad)
-        except ProductoInvalidoError as exc:
-            raise HTTPException(status_code=404, detail=str(exc)) from exc
-        except ProductoSinStockError as exc:
-            raise HTTPException(status_code=404, detail=str(exc)) from exc
-        except StockInsuficienteError as exc:
-            raise HTTPException(status_code=409, detail=str(exc)) from exc
-        except ValueError as exc:
-            if "excede el stock" in str(exc):
-                raise HTTPException(status_code=409, detail=str(exc)) from exc
-            raise HTTPException(status_code=400, detail=str(exc)) from exc
-        except TiempoDeEsperaLockAgotado as exc:
-            raise HTTPException(status_code=503, detail=str(exc)) from exc
 
-        return MovimientoResponse(**resultado.__dict__)
-
-    @router.get(
+    router.add_api_route(
         "/inventario/{producto_id}",
+        _crear_handler_stock(repositorio_stock),
+        methods=["GET"],
         responses={404: {"description": "Not Found"}},
     )
-    def consultar_stock(producto_id: str) -> dict:
-        stock = repositorio_stock.obtener(producto_id)
-        if stock is None:
-            raise HTTPException(status_code=404, detail="Producto sin stock registrado")
-        return {"producto_id": stock.producto_id, "cantidad": stock.cantidad}
 
     return router
