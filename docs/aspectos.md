@@ -47,6 +47,23 @@ Este aspecto se refinó en dos escenarios de calidad medibles, documentados en [
 
 ---
 
+### Operación: garantía de consistencia
+
+| Operación | Garantía de consistencia | Mecanismo | Límite conocido en el MVP |
+|---|---|---|---|
+| `POST /productos` | No se crean dos productos con el mismo identificador. | El caso de uso consulta el repositorio antes de guardar y rechaza un identificador existente. | La garantía aplica dentro de una sola instancia; el repositorio actual es en memoria. |
+| `DELETE /productos/{producto_id}` | Se preserva la trazabilidad de los productos con movimientos; no se eliminan físicamente. | Consulta mediante `VerificadorDeMovimientos`; si existe historial, se desactiva el producto (borrado lógico). | La operación no es idempotente como contrato HTTP: una segunda solicitud sobre un producto ya eliminado puede devolver `404`. |
+| `POST /inventario/{producto_id}/entradas` | El stock y el movimiento de entrada se actualizan de forma serializada por producto. | Validación de producto activo y `asyncio.Lock` por SKU durante la actualización de stock y el registro del movimiento. | El cerrojo solo coordina una instancia del proceso; la operación no ofrece deduplicación por `Idempotency-Key`. |
+| `POST /inventario/{producto_id}/salidas` | No se produce stock negativo ni se pierden descuentos por carreras concurrentes aceptadas. | Validación de producto activo, comprobación de disponibilidad y `asyncio.Lock` por SKU durante la actualización y el registro. | Ante contención superior a 2 segundos se rechaza con `503`; un reintento puede duplicar el movimiento porque no es idempotente. |
+| `GET /inventario/{producto_id}` | La lectura devuelve el saldo almacenado para el producto, sin modificarlo. | Consulta directa al repositorio de stock; las escrituras concurrentes se serializan por el caso de uso. | La consistencia está limitada a la memoria de la instancia y no implica una lectura distribuida entre réplicas. |
+
+La tabla distingue la garantía funcional de su alcance operativo: el MVP protege la
+consistencia inmediata dentro de un proceso, pero no resuelve deduplicación
+durable ni coordinación entre réplicas. Estas capacidades quedan condicionadas
+a la evolución descrita en el [ADR-0011](adr/0011-idempotencia-y-sagas-en-movimientos.md).
+
+---
+
 ### C4: dónde vive este aspecto
 
 El [diagrama de contenedores (C4 Nivel 2)](c4/containers.md) y el [diagrama de contexto (C4 Nivel 1)](c4/context.md) muestran que este aspecto vive en la capa de Backend (`API Backend (Monolito Modular)`), la cual expone las reglas de negocio hacia la interfaz mediante el [Contrato de API](api/inventrack-contrato.md). En la estructura del código, se implementó como corte vertical en los módulos [`app/productos/`](../app/productos/) e [`app/inventario/`](../app/inventario/), desacoplados mediante puertos y adaptadores según el [ADR-0001](adr/0001-usar-monolito-modular-con-hexagonal-por-modulo.md). El [C4 Nivel 3](c4/components.md) abre esos dos módulos hasta el nivel de componente, y el [mapa de contextos](context-map.md) documenta la relación cliente-proveedor entre ambos, tipificada según el [ADR-0003](adr/0003-integracion-productos-inventario-via-puertos-de-aplicacion.md).
