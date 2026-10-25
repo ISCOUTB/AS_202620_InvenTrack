@@ -1,6 +1,6 @@
 # Tabla de Propiedad de Datos — InvenTrack
 
-**Principio de Arquitectura:** Regla de dueño único (Single Ownership). Cada entidad o conjunto de datos dentro del sistema tiene exactamente un módulo responsable de autorizar y ejecutar sus escrituras. Ningún otro módulo puede modificar directamente tablas de un dominio ajeno; el acceso entre contextos se realiza estrictamente a través de puertos de aplicación o APIs expuestas (`ADR-0001`, `ADR-0003`).
+**Principio de Arquitectura:** Regla de dueño único (Single Ownership). Cada entidad o conjunto de datos dentro del sistema tiene exactamente un módulo responsable de autorizar y ejecutar sus escrituras. Ningún otro módulo puede modificar directamente tablas de un dominio ajeno; el acceso entre contextos se realiza estrictamente a través de puertos de aplicación o APIs expuestas (`ADR-0001`, `ADR-0003`). En el MVP, los repositorios son en memoria; `ADR-0012` establece que una futura persistencia durable debe conservar estas mismas fronteras.
 
 ---
 
@@ -26,3 +26,15 @@
    * Controla de manera exclusiva la cantidad física disponible (`StockProducto`) y el registro de auditoría (`Movimiento`).
    * Aplica un mecanismo de exclusión mutua por SKU (`asyncio.Lock` / `ADR-0002`) para asegurar consistencia ante llamadas concurrentes.
    * Expone el puerto `ConsultarHistorialMovimientos` para que `productos` verifique si el ítem tiene transacciones activas antes de permitir su eliminación (`ESC-02`).
+
+## Persistencia y evolución
+
+La implementación vigente usa adaptadores `InMemory` para `Producto`,
+`StockProducto` y `Movimiento`. Esto permite operar el MVP sin un servicio de
+datos externo, pero implica pérdida de información ante reinicio o redeploy y
+no permite coordinar varias réplicas. Según el
+[ADR-0012](adr/0012-mantener-repositorios-en-memoria-en-el-mvp.md), la
+evolución preferida es evaluar una base relacional compartida mediante
+adaptadores separados por módulo. La migración no debe transferir la escritura
+de `StockProducto` o `Movimiento` a `productos`, ni permitir consultas directas
+entre infraestructuras.

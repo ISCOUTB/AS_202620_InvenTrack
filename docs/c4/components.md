@@ -76,7 +76,7 @@ flowchart TB
 - `ValidadorDeProductoAdapter` consume `ConsultarProducto`.
 - `asyncio.Lock` se crea dentro de `RegistrarMovimientoInventario` y se mantiene por `producto_id` para serializar movimientos del mismo producto (`ADR-0002`).
 - Las respuestas y esquemas de los routers se adhieren al [Contrato de API de InvenTrack](../api/inventrack-contrato.md) (`ADR-0004`).
-- La persistencia actual es in-memory. PostgreSQL o SQLite son alternativas futuras que deberán implementarse como adaptadores detrás de los puertos.
+- La persistencia actual es in-memory. La evolución preferida es evaluar una base relacional compartida como adaptadores detrás de los puertos, preservando la propiedad por módulo y la decisión de [ADR-0012](../adr/0012-mantener-repositorios-en-memoria-en-el-mvp.md).
 
 ## Alcance actual y objetivo
 

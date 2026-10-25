@@ -80,7 +80,7 @@ La API actual de InvenTrack no utiliza contratos asíncronos (AsyncAPI, colas de
 | Salidas de inventario con validación de stock | Sí | Sí, mediante `POST /inventario/{producto_id}/salidas` |
 | Consulta de stock por producto | Sí | Sí, mediante `GET /inventario/{producto_id}` |
 | Aislamiento de concurrencia por SKU | Sí | Sí, mediante `asyncio.Lock` en memoria |
-| Trazabilidad e historial de movimientos | Sí | Sí, en repositorio en memoria |
+| Trazabilidad e historial de movimientos | Sí | Sí, en repositorio en memoria; los datos son volátiles según [ADR-0012](../adr/0012-mantener-repositorios-en-memoria-en-el-mvp.md) |
 | Predicción de demanda con IA | No | No (declarado fuera de alcance en el MVP) |
 | Autenticación y roles de usuario | No | No (planificado para entregas futuras) |
 
@@ -89,6 +89,11 @@ La API actual de InvenTrack no utiliza contratos asíncronos (AsyncAPI, colas de
 ## 7. Relación con la Arquitectura Hexagonal
 
 El sistema está estructurado mediante un Monolito Modular con Arquitectura Hexagonal por módulo (`productos` e `inventario`). Los módulos no se acoplan directamente a nivel de infraestructura ni base de datos, sino a través de **Puertos de Aplicación y Adaptadores Cruzados (ADR-0003)**.
+
+La persistencia actual es volátil y vive en adaptadores en memoria; no forma
+parte del contrato una base de datos externa ni se garantiza conservación de
+datos entre reinicios. La decisión y la ruta de evolución durable están
+documentadas en [ADR-0012](../adr/0012-mantener-repositorios-en-memoria-en-el-mvp.md).
 
 ```text
 Cliente HTTP / Frontend

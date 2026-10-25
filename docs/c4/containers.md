@@ -22,7 +22,7 @@ flowchart TB
         FastAPI + Uvicorn"]]
         Db[("🗄️ Persistencia
         Actual: In-Memory
-        Objetivo: PostgreSQL o SQLite")]
+        Evolución: PostgreSQL compartido")]
     end
 
     Notif(["✉️ Notificaciones
@@ -32,7 +32,7 @@ flowchart TB
     Vendedor -- "HTTPS / HTML (UI)" --> Web
     Empleado -- "HTTPS / HTML (UI)" --> Web
     Web -- "HTTPS / JSON (REST API)" --> Api
-    Api -- "In-Process Memory / Objetos Python (Futuro: TCP / Wire SQL)" --> Db
+    Api -- "In-Process Memory / Objetos Python (Evolución: adaptadores SQL)" --> Db
     Api -- "SMTP / MIME (Texto Plano)" --> Notif
 
     classDef person fill:#1168bd,stroke:#0b4884,color:#ffffff,font-weight:bold
@@ -52,7 +52,7 @@ flowchart TB
 |---|---|---|---|
 | 👤 | Círculo doble | Azul medio `#1168bd` | **Persona** — igual que en el Nivel 1 |
 | 🖥️ / ⚙️ | Rectángulo de doble borde | Azul contenedor `#1a6fc4` | **Contenedor de aplicación** — algo que se ejecuta (web o API) |
-| 🗄️ | Cilindro (persistencia) | Azul base de datos `#2e86c1` | **Contenedor de datos** — actualmente repositorios in-memory; PostgreSQL o SQLite son alternativas futuras |
+| 🗄️ | Cilindro (persistencia) | Azul base de datos `#2e86c1` | **Contenedor de datos** — actualmente repositorios in-memory; una base relacional compartida es la evolución preferida según [ADR-0012](../adr/0012-mantener-repositorios-en-memoria-en-el-mvp.md) |
 | ✉️ | Óvalo (estadio) | Gris `#999999` | **Externo** — igual que en el Nivel 1 |
 
 ---
@@ -71,7 +71,7 @@ Si en el futuro el equipo decide extraer algún módulo a su propio servicio (po
 |---|---|---|
 | API Backend | Toda la carpeta [`app/`](../../app/) — un único proceso FastAPI que ensambla los módulos en `app/main.py`. Expone la interfaz pública descrita en el [Contrato de API de InvenTrack](../api/inventrack-contrato.md). | Funcional con cortes verticales en [`app/productos/`](../../app/productos/) y [`app/inventario/`](../../app/inventario/) (Arquitectura Hexagonal + Mutex para concurrencia) |
 | Frontend | Aún no existe en el repositorio | Flutter planificado como aplicación cliente; pendiente de implementación |
-| Persistencia | Repositorios de productos e inventario | **Actual:** adaptadores *In-Memory*. **Objetivo:** seleccionar e implementar PostgreSQL o SQLite mediante los mismos puertos. |
+| Persistencia | Repositorios de productos e inventario | **Actual:** adaptadores *In-Memory*. **Evolución preferida:** evaluar e implementar una base relacional compartida mediante los mismos puertos, preservando la propiedad por módulo ([ADR-0012](../adr/0012-mantener-repositorios-en-memoria-en-el-mvp.md)). |
 
 ---
 
@@ -124,5 +124,5 @@ flowchart LR
 - **Contrato de API:** Documentado y formalizado en [Contrato de API de InvenTrack](../api/inventrack-contrato.md) e implementado técnicamente bajo OpenAPI en `contracts/openapi/v1.json`.
 - **Nivel 3 (Componentes):** Está documentado en [components.md](components.md) y refleja los componentes implementados de `productos` e `inventario`.
 - **Interfaz web:** Flutter está planificado, pero todavía no existe en el repositorio.
-- **Persistencia:** PostgreSQL y SQLite son alternativas objetivo; actualmente solo existe persistencia in-memory.
+- **Persistencia:** actualmente solo existen adaptadores in-memory. La evolución preferida es evaluar una base relacional compartida; cualquier alternativa requiere una decisión sucesora que considere operación, concurrencia, migraciones y recuperación ([ADR-0012](../adr/0012-mantener-repositorios-en-memoria-en-el-mvp.md)).
 - **Notificaciones y módulos restantes:** `alertas`, `usuarios` y `proveedores` están definidos como extensiones futuras.

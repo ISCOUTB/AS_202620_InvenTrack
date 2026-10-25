@@ -622,6 +622,18 @@ en [ADR-0011](../adr/0011-idempotencia-y-sagas-en-movimientos.md). La decisión
 de no extraer el módulo en el MVP está en
 [ADR-0010](../adr/0010-decision-extraccion-microservicios.md).
 
+### Persistencia y propiedad de datos
+
+El MVP conserva repositorios en memoria para `Producto`, `StockProducto` y
+`Movimiento`. Esta elección evita agregar una dependencia operativa mientras se
+validan los cortes verticales, pero implica pérdida de datos ante reinicio y no
+permite coordinar varias réplicas. [ADR-0012](../adr/0012-mantener-repositorios-en-memoria-en-el-mvp.md)
+formaliza esta decisión y establece como evolución preferida evaluar una base
+relacional compartida mediante adaptadores separados por módulo. La migración
+debe conservar los puertos y la propiedad única de los datos; una base por
+servicio solo se considerará si el crecimiento justifica consistencia
+distribuida.
+
 ```mermaid
 flowchart TB
     REQ["Requisitos y<br/>Escenarios de calidad"]
@@ -783,15 +795,15 @@ secciones para saber por qué un escenario importa más que otro.
 
 1. **Consistencia vs. Latencia (Prioridad Alta):** Se sacrifica un margen mínimo de tiempo de respuesta (enqueuing en event loop mediante `asyncio.Lock` en `ADR-0002`) para garantizar que nunca existan descuadres ni stock negativo en el módulo `inventario`.
 2. **Monolito Modular vs. Despliegue Independiente (Prioridad Media):** Se adopta un monolito modular (`ADR-0001`) sacrificando el despliegue independiente de microservicios a cambio de simplificar la operación, reducir los costos de infraestructura (C5) y evitar latencias por red entre componentes.
-3. **Persistencia In-Memory vs. Persistencia en Disco (Transición):** Para el Corte 1 se priorizó la velocidad de desarrollo y pruebas de concurrencia en memoria, asumiendo la volatilidad a cambio de validar el modelo de dominio antes de acoplar un ORM o motor SQL.
+3. **Persistencia In-Memory vs. Persistencia Durable (Transición):** Para el MVP se priorizó la velocidad de desarrollo, el costo cero y las pruebas de concurrencia en memoria, asumiendo la volatilidad. [ADR-0012](../adr/0012-mantener-repositorios-en-memoria-en-el-mvp.md) conserva los puertos como frontera para evaluar una base relacional compartida sin trasladar la propiedad de los datos entre módulos.
 
 # 11. Risks and Technical Debt (Riesgos y Deuda Técnica)
 
 Esta sección documenta explícitamente las divergencias conocidas, riesgos asumidos y la deuda técnica del MVP actual desplegado:
 
-- **Almacenamiento en Memoria (In-Memory Adapter):** Para cumplir estrictamente con la restricción de presupuesto cero (C5) del MVP, la persistencia se apoya en diccionarios en memoria RAM con cerrojos asíncronos (`asyncio.Lock`).
+- **Almacenamiento en Memoria (In-Memory Adapter):** Según [ADR-0012](../adr/0012-mantener-repositorios-en-memoria-en-el-mvp.md), para cumplir estrictamente con la restricción de presupuesto cero (C5) del MVP, la persistencia se apoya en diccionarios en memoria RAM con cerrojos asíncronos (`asyncio.Lock`).
   - *Riesgo:* Ante reinicios del contenedor o despliegue en múltiples réplicas horizontales, el estado del inventario no es persistente ni compartido.
-  - *Mitigación:* La prueba vigente ejecuta 20 peticiones concurrentes sobre salidas reales, comprueba el stock final y exige $p95 \le 400\text{ ms}$ en una instancia. La migración a una base de datos relacional (PostgreSQL/SQLite) constituye la evolución natural prioritaria post-MVP.
+  - *Mitigación:* La prueba vigente ejecuta 20 peticiones concurrentes sobre salidas reales, comprueba el stock final y exige $p95 \le 400\text{ ms}$ en una instancia. La evolución prioritaria post-MVP es evaluar una base relacional compartida mediante los puertos existentes, incluyendo migración, respaldos y restauración.
 - **Inmutabilidad de ADRs Previos:** Los ADRs 0002, 0004 y 0005 sufrieron ediciones posteriores en iteraciones anteriores. Esto se zanja formalmente mediante el **ADR-0009**, decretando la inmutabilidad estricta de cualquier ADR aceptado a partir de la fecha.
 
 ## Tabla de modos de fallo y mitigaciones
@@ -805,7 +817,7 @@ implementadas las capacidades que permanecen fuera del MVP.
 | Cantidad de entrada o salida igual a cero o negativa | La entrada inválida podría alcanzar el dominio y producir un error interno no contractual. | Validación `Field(gt=0)` en el borde HTTP; FastAPI responde `422` antes de invocar el caso de uso. | [Router](../../app/inventario/infrastructure/router.py), [pruebas HTTP](../../tests/inventario/test_inventario.py), contrato OpenAPI. Implementado. |
 | Stock insuficiente para una salida | El inventario podría quedar negativo o la operación podría aplicarse parcialmente. | `StockInsuficienteError` se traduce a `409`; el lock protege la lectura y actualización del stock. | [Caso de uso](../../app/inventario/application/registrar_movimiento.py), [prueba de inventario](../../tests/inventario/test_inventario.py). Implementado. |
 | Espera del lock superior a 2 segundos | Una petición queda retenida durante una contención excesiva. | Timeout por SKU y respuesta `503 Service Unavailable`; el contexto libera el lock en `finally`. | [ADR-0002](../adr/0002-control-concurrencia-memoria-inventario.md), [prueba de degradación](../../tests/inventario/test_degradacion_lock.py). Implementado. |
-| Reinicio del proceso o múltiples réplicas | Se pierde o diverge el estado almacenado en memoria. | Mantener una instancia para el MVP; migrar a persistencia transaccional y lock distribuido antes de escalar horizontalmente. | [ADR-0006](../adr/0006-desplegar-en-dokploy-institucional.md), deuda aceptada. Pendiente post-MVP. |
+| Reinicio del proceso o múltiples réplicas | Se pierde o diverge el estado almacenado en memoria. | Mantener una instancia para el MVP; evaluar persistencia relacional compartida y lock distribuido antes de escalar horizontalmente. | [ADR-0012](../adr/0012-mantener-repositorios-en-memoria-en-el-mvp.md), deuda aceptada. Pendiente post-MVP. |
 | Arranque en frío del destino gratuito | La primera solicitud puede superar el umbral de latencia por suspensión del servicio. | Calentar la instancia antes de medir y separar la sonda `/health` de la medición de negocio. | [ADR-0005](../adr/0005-eleccion-plataforma-despliegue.md), [experimento S10](../retos/corte-2-experimento.md). Mitigación operativa. |
 | Reintento de una entrada o salida después de un timeout de red | El mismo movimiento puede registrarse dos veces porque el MVP no deduplica comandos. | No reintentar automáticamente en clientes actuales; antes de extraer módulos o habilitar reintentos, persistir `Idempotency-Key` y el resultado del movimiento. | [ADR-0011](../adr/0011-idempotencia-y-sagas-en-movimientos.md). Riesgo conocido, pendiente post-MVP. |
 | Acceso sin autenticación o rol insuficiente | Un usuario podría acceder a operaciones administrativas sin autorización. | Mantener autenticación y roles fuera del MVP declarado; no presentar ESC-05 como implementado y exigir un cambio arquitectónico antes de habilitar usuarios reales. | [Contrato API](../api/inventrack-contrato.md), ESC-05. Pendiente de alcance. |

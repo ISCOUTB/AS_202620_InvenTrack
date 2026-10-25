@@ -93,6 +93,7 @@
 | [ADR-0008](docs/adr/0008-no-incorporar-componente-generativo.md) | No incorporar un componente generativo al MVP (Aceptado) |
 | [ADR-0010](docs/adr/0010-decision-extraccion-microservicios.md) | No extraer inventario a un microservicio en el MVP (Aceptado) |
 | [ADR-0011](docs/adr/0011-idempotencia-y-sagas-en-movimientos.md) | Idempotencia de movimientos y no uso de Saga en el MVP (Aceptado) |
+| [ADR-0012](docs/adr/0012-mantener-repositorios-en-memoria-en-el-mvp.md) | Mantener repositorios en memoria en el MVP y ruta de evolución de persistencia (Aceptado) |
 | [Evidencia de prueba contractual](docs/evidencia-prueba-contrato.md) | Reproducción del fallo ante un cambio incompatible y recuperación de la prueba |
 | [Despliegue y costos](docs/despliegue-y-costos.md) | URL pública, IaC (`render.yaml`), observabilidad, secretos y estimación mensual |
 | [Medición Reto Corte 1](docs/retos/corte-1-medicion.md) | Diagnóstico, pruebas de concurrencia, degradación controlada y comando de reproducción |
@@ -190,13 +191,17 @@ Las decisiones arquitectónicas se documentan como archivos individuales en [`do
 - **[ADR-0008](docs/adr/0008-no-incorporar-componente-generativo.md):** Decisión de no incorporar un componente generativo al MVP.
 - **[ADR-0010](docs/adr/0010-decision-extraccion-microservicios.md):** Decisión de no extraer inventario a un microservicio independiente en el MVP.
 - **[ADR-0011](docs/adr/0011-idempotencia-y-sagas-en-movimientos.md):** Tratamiento de idempotencia y Saga para los movimientos de inventario.
+- **[ADR-0012](docs/adr/0012-mantener-repositorios-en-memoria-en-el-mvp.md):** Mantener los repositorios en memoria durante el MVP y conservar los puertos para una futura persistencia durable.
 
 ## Despliegue en iscoutb.dev
 
 El proyecto está desplegado en el servidor institucional Dokploy descrito en
 [iscoutb.dev](https://github.com/ISCOUTB/iscoutb.dev#3-paso-a-paso-para-publicar-tu-proyecto).
 La definición reproducible está en [`deploy/compose.lab.yaml`](deploy/compose.lab.yaml).
-Este MVP publica únicamente la API y no necesita base de datos ni variables secretas.
+Este MVP publica únicamente la API y no necesita una base de datos externa ni
+variables secretas. Los datos viven en repositorios en memoria y se pierden al
+reiniciar o redeplegar el proceso; este límite y la ruta de migración están
+documentados en [ADR-0012](docs/adr/0012-mantener-repositorios-en-memoria-en-el-mvp.md).
 Dokploy se incorporó después del cierre de la semana 8 y se mantiene en paralelo
 con el despliegue existente en Render.
 
@@ -222,7 +227,7 @@ montajes bind ni secretos al repositorio.
 |---|---|---|
 | Frontend | Flutter | Pendiente |
 | Backend | FastAPI + Uvicorn | Implementado |
-| Base de datos | Adaptador In-Memory (Transición a PostgreSQL/SQLite) | Implementado para MVP |
+| Persistencia | Adaptadores In-Memory; PostgreSQL compartido es la evolución preferida | Implementado para MVP; persistencia durable pendiente de ADR sucesor |
 | Hosting / despliegue | Render + Dokploy + Docker | Operativo en `https://inventrack-api.onrender.com` y `https://inventrack.iscoutb.dev` |
 | CI / calidad de código | GitHub Actions + Pytest + pytest-asyncio + pytest-cov | Suite síncrona y asíncrona con cobertura XML (`coverage.xml`), validación del contrato OpenAPI y análisis SonarCloud configurado |
 

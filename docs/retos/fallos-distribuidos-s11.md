@@ -2,7 +2,7 @@
 
 - **Sistema:** InvenTrack — Monolito Modular
 - **Integración Analizada:** Módulo de `Inventario` ↔ Módulo de `Productos` (vía `ValidadorDeProductoAdapter`)
-- **Contrato y Patrón Relacionado:** ADR-0003 (Integración mediante Puertos de Aplicación) y ADR-0002 (Control de Concurrencia por SKU)
+- **Contrato y Patrón Relacionado:** ADR-0003 (Integración mediante Puertos de Aplicación), ADR-0002 (Control de Concurrencia por SKU) y ADR-0012 (Persistencia del MVP)
 - **Corte:** Tercer Corte (Sistemas Distribuidos y Tolerancia a Fallos)
 
 ---
@@ -36,4 +36,3 @@ distribuidos:
 ### 11.3 Fallos Parciales en Integraciones Distribuidas
 - **Mitigación de Latencia y Bloqueo:** El sistema previene bloqueos en cascada mediante llamadas asíncronas y timeouts acotados en los adaptadores cruzados entre módulos (`ADR-0003`).
 - **Límite de Idempotencia:** La serialización de transacciones sobre el mismo SKU (`ADR-0002`) garantiza atomicidad, pero no evita que un comando repetido se aplique dos veces. El diseño de deduplicación durable y la condición para usar Saga u Outbox están en [ADR-0011](../adr/0011-idempotencia-y-sagas-en-movimientos.md).
-- **Deuda de Redundancia:** Al mantenerse como Monolito Modular en memoria RAM (C5), los patrones distribuidos pesados (como Sagas orquestadas o Patrón Outbox) se evalúan como sobreingeniería injustificada en la etapa actual (ver `ADR-0010`).

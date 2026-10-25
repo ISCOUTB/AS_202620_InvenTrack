@@ -92,7 +92,7 @@ En ambos destinos, `/metrics` contiene, como mínimo, las series
 El modelo gratuito se romperá bajo cualquiera de las siguientes condiciones:
 1. **Agotamiento de Memoria (OOM):** El catálogo e historial *in-memory* no deben superar la memoria disponible en el destino usado: 512 MB en Dokploy o el límite del plan gratuito de Render.
 2. **Cuota de CPU o compilación:** En Dokploy el equipo no debe superar 0.5 CPU por contenedor ni la memoria compartida durante el build.
-3. **Persistencia:** Si la pérdida de datos en memoria deja de ser aceptable, se requiere PostgreSQL u otra persistencia y un nuevo ADR.
+3. **Persistencia:** Si la pérdida de datos en memoria deja de ser aceptable, se requiere persistencia durable; [ADR-0012](adr/0012-mantener-repositorios-en-memoria-en-el-mvp.md) establece evaluar primero una base relacional compartida mediante adaptadores por módulo.
 
 ---
 
