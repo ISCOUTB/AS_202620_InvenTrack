@@ -64,6 +64,73 @@ a la evolución descrita en el [ADR-0011](adr/0011-idempotencia-y-sagas-en-movim
 
 ---
 
+### Diseño de caché y política de invalidación
+
+La caché es una evolución para cuando el catálogo y las consultas de inventario
+sean suficientemente frecuentes para justificar el costo de una segunda fuente
+de lectura. No se incorpora al MVP actual, cuyos repositorios son en memoria.
+Cuando se habilite, el origen de verdad seguirá siendo el repositorio del módulo
+dueño y la caché se usará únicamente como acelerador de lecturas.
+
+#### Estrategia y alcance
+
+- **Patrón:** *cache-aside*. El caso de uso consulta la caché; ante un *miss*,
+  lee el repositorio dueño y guarda el resultado con TTL.
+- **Implementación objetivo:** Redis compartido entre réplicas, no un diccionario
+  local por proceso. Esto evita que cada instancia observe una versión distinta
+  después de una escritura.
+- **Datos cacheables:** `Producto` y `StockProducto` por identificador. Los
+  `Movimiento` no se cachean por defecto: son un historial inmutable que debe
+  conservar lectura directamente desde su repositorio hasta contar con una
+  estrategia explícita de paginación y versionado.
+- **Clave y versión:** `inventrack:v1:producto:{producto_id}` y
+  `inventrack:v1:stock:{producto_id}`. El prefijo permite invalidar por versión
+  durante cambios de esquema sin mezclar valores incompatibles.
+- **TTL inicial:** 5 minutos para producto y 5 segundos para stock. El TTL de
+  stock es una barrera de seguridad, no la garantía principal de consistencia:
+  toda escritura debe invalidarlo inmediatamente.
+
+#### Política de invalidación
+
+| Operación | Claves afectadas | Política | Orden requerido |
+|---|---|---|---|
+| `POST /productos` | `producto:{producto_id}` | No se precarga la caché. El primer `GET` posterior hace *miss* y carga el valor persistido. | Persistir primero; la caché nunca confirma la escritura. |
+| `DELETE /productos/{producto_id}` con borrado físico | `producto:{producto_id}`, `stock:{producto_id}` | Eliminar ambas claves. Cualquier lectura posterior debe volver al origen y recibir `404`. | Completar el borrado; después invalidar. |
+| `DELETE /productos/{producto_id}` con desactivación | `producto:{producto_id}` | Eliminar la representación cacheada para que no se sirva como activa. | Persistir el estado inactivo; después invalidar. |
+| `POST /inventario/{producto_id}/entradas` | `stock:{producto_id}` | Invalidación exacta del SKU modificado; no se conserva el saldo anterior. | Registrar el movimiento y guardar el stock bajo el lock; después invalidar. |
+| `POST /inventario/{producto_id}/salidas` | `stock:{producto_id}` | Invalidación exacta del SKU modificado, tanto si el descuento es aceptado como si cambia el estado observado por una regla de negocio. | Solo invalidar después de una escritura exitosa; ante rechazo no modificar la caché. |
+| `GET /productos/{producto_id}` o `GET /inventario/{producto_id}` | La clave correspondiente | *Cache hit* devuelve el valor mientras su TTL sea válido; *cache miss* consulta el origen y repuebla. | Nunca escribir directamente en caché sin validar el origen. |
+
+La invalidación debe ser **síncrona dentro de la respuesta de escritura**. Si el
+repositorio se actualiza pero Redis no está disponible, la operación de negocio
+no se revierte ni se confirma una versión falsa: se registra el error, se
+continúa sin caché y la siguiente lectura debe consultar el origen. Si no es
+posible garantizar que una entrada potencialmente obsoleta fue eliminada, el
+adaptador debe aplicar *fail-safe* para esa clave (no servirla) hasta que expire
+o pueda invalidarse.
+
+#### Garantías y límites
+
+- Las operaciones de escritura siguen protegidas por el `asyncio.Lock` por SKU;
+  la caché no reemplaza el lock ni participa en la decisión de stock suficiente.
+- Una salida o entrada exitosa no puede dejar deliberadamente un saldo antiguo
+  en caché: la invalidación ocurre después de guardar el nuevo saldo.
+- El TTL limita la permanencia accidental de datos obsoletos, pero no sustituye
+  la invalidación. La consistencia fuerte de stock se obtiene leyendo el origen
+  después de un *miss*.
+- La caché no implementa idempotencia, no coordina sagas y no debe almacenar
+  respuestas de comandos `POST` o `DELETE`.
+- La activación requiere métricas de *hit rate*, *miss rate*, errores de Redis,
+  invalidaciones y edad de la entrada, además de pruebas de escritura seguida
+  de lectura y de fallo del proveedor de caché.
+
+Este diseño queda condicionado a incorporar persistencia compartida y una
+decisión arquitectónica específica antes de escalar horizontalmente; mientras
+el sistema opere con repositorios en memoria, la política efectiva es
+**sin caché**.
+
+---
+
 ### C4: dónde vive este aspecto
 
 El [diagrama de contenedores (C4 Nivel 2)](c4/containers.md) y el [diagrama de contexto (C4 Nivel 1)](c4/context.md) muestran que este aspecto vive en la capa de Backend (`API Backend (Monolito Modular)`), la cual expone las reglas de negocio hacia la interfaz mediante el [Contrato de API](api/inventrack-contrato.md). En la estructura del código, se implementó como corte vertical en los módulos [`app/productos/`](../app/productos/) e [`app/inventario/`](../app/inventario/), desacoplados mediante puertos y adaptadores según el [ADR-0001](adr/0001-usar-monolito-modular-con-hexagonal-por-modulo.md). El [C4 Nivel 3](c4/components.md) abre esos dos módulos hasta el nivel de componente, y el [mapa de contextos](context-map.md) documenta la relación cliente-proveedor entre ambos, tipificada según el [ADR-0003](adr/0003-integracion-productos-inventario-via-puertos-de-aplicacion.md).
