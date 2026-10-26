@@ -1,9 +1,10 @@
 # ADR-0012: Mantener repositorios en memoria en el MVP
 
-- **Estado:** Pendiente
+- **Estado:** Aceptado
 - **Fecha:** 2026-10-25
 - **Decisores:** Equipo de Arquitectura InvenTrack (ISCOUTB)
 - **Complementa:** [ADR-0001](0001-usar-monolito-modular-con-hexagonal-por-modulo.md), [ADR-0002](0002-control-concurrencia-memoria-inventario.md), [ADR-0003](0003-integracion-productos-inventario-via-puertos-de-aplicacion.md) y [ADR-0010](0010-decision-extraccion-microservicios.md)
+- **Complementado por:** [ADR-0014](0014-estrategia-de-almacenamiento-y-costo-de-reversion.md)
 
 ## 1. Contexto y problema
 
@@ -134,4 +135,3 @@ Se debe abrir un ADR sucesor si ocurre cualquiera de estas condiciones:
   sección de punto de quiebre.
 - **Implementación:** este ADR documenta la decisión vigente; el commit o PR de
   publicación debe registrarse al integrar el cambio.
-

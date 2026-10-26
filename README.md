@@ -94,6 +94,8 @@
 | [ADR-0010](docs/adr/0010-decision-extraccion-microservicios.md) | No extraer inventario a un microservicio en el MVP (Aceptado) |
 | [ADR-0011](docs/adr/0011-idempotencia-y-sagas-en-movimientos.md) | Idempotencia de movimientos y no uso de Saga en el MVP (Aceptado) |
 | [ADR-0012](docs/adr/0012-mantener-repositorios-en-memoria-en-el-mvp.md) | Mantener repositorios en memoria en el MVP y ruta de evolución de persistencia (Aceptado) |
+| [ADR-0014](docs/adr/0014-estrategia-de-almacenamiento-y-costo-de-reversion.md) | Almacenamiento in-memory, movimientos inmutables y costo de reversión (Aceptado) |
+| [ADR-0015](docs/adr/0015-completar-decision-de-almacenamiento-y-reversion.md) | Completar decisión de almacenamiento, consecuencias y costo de reversión (Aceptado) |
 | [Evidencia de prueba contractual](docs/evidencia-prueba-contrato.md) | Reproducción del fallo ante un cambio incompatible y recuperación de la prueba |
 | [Despliegue y costos](docs/despliegue-y-costos.md) | URL pública, IaC (`render.yaml`), observabilidad, secretos y estimación mensual |
 | [Medición Reto Corte 1](docs/retos/corte-1-medicion.md) | Diagnóstico, pruebas de concurrencia, degradación controlada y comando de reproducción |
@@ -192,6 +194,8 @@ Las decisiones arquitectónicas se documentan como archivos individuales en [`do
 - **[ADR-0010](docs/adr/0010-decision-extraccion-microservicios.md):** Decisión de no extraer inventario a un microservicio independiente en el MVP.
 - **[ADR-0011](docs/adr/0011-idempotencia-y-sagas-en-movimientos.md):** Tratamiento de idempotencia y Saga para los movimientos de inventario.
 - **[ADR-0012](docs/adr/0012-mantener-repositorios-en-memoria-en-el-mvp.md):** Mantener los repositorios en memoria durante el MVP y conservar los puertos para una futura persistencia durable.
+- **[ADR-0014](docs/adr/0014-estrategia-de-almacenamiento-y-costo-de-reversion.md):** Precisar la inmutabilidad de movimientos y cuantificar el costo de migrar el almacenamiento a una base durable.
+- **[ADR-0015](docs/adr/0015-completar-decision-de-almacenamiento-y-reversion.md):** Completar la trazabilidad, consecuencias y comparación de costos sin editar ADR-0014, que permanece inmutable.
 
 ## Despliegue en iscoutb.dev
 

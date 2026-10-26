@@ -535,11 +535,12 @@ El modelo de infraestructura gratuita entrará en quiebre bajo dos condiciones:
 
 Para responder a las operaciones reales del sistema InvenTrack, se definen explícitamente los modelos de consistencia y los mecanismos de control implementados:
 
-| Operación del Sistema | Modelo de Consistencia | Mecanismo en Código | Justificación y Límite Arquitectónico |
+| Operación del Sistema | Modelo de Consistencia | Mecanismo en Código | Prueba / Justificación y Límite Arquitectónico |
 | :--- | :--- | :--- | :--- |
-| **Registrar Entrada/Salida de Inventario** (`POST /inventario/{sku}/entradas` o `salidas`) | **Consistencia Fuerte en Proceso** | Exclusión mutua asíncrona mediante `asyncio.Lock` por SKU con **timeout estricto de 2.0 segundos** (`app/inventario/application/registrar_movimiento.py`). | Previene condiciones de carrera (*Race Conditions*) y saldos negativos bajo alta concurrencia local. Si se excede el timeout, retorna `503 Service Unavailable`. |
-| **Consultar Stock Actual** (`GET /inventario/{sku}`) | **Lectura Directa (Read-Committed local en RAM)** | Consulta síncrona no bloqueante sobre el repositorio en memoria del módulo de inventario. | Lectura directa del estado actual en RAM sin bloqueos, garantizando acceso instantáneo con latencia de microsegundos. |
-| **Eliminar / Desactivar Producto** (`DELETE/PATCH /productos/{sku}`) | **Consistencia Fuerte** | Verificación síncrona previa de dependencias y movimientos activos antes de aplicar la bandera de desactivación lógica. | Preserva la integridad referencial y evita registros huérfanos en el historial de movimientos de inventario. |
+| **Registrar entrada** (`POST /inventario/{producto_id}/entradas`) | **Consistencia fuerte en proceso** | `asyncio.Lock` por `producto_id`, validación de producto activo y actualización de stock seguida del registro de movimiento (`app/inventario/application/registrar_movimiento.py`). | [Prueba de inventario](../../tests/inventario/test_inventario.py) y [prueba de concurrencia](../../tests/inventario/test_concurrencia.py). El lock solo cubre una instancia; timeout de 2 s retorna `503`. |
+| **Registrar salida** (`POST /inventario/{producto_id}/salidas`) | **Consistencia fuerte en proceso** | Lock por `producto_id`, comprobación de stock suficiente y mutación atómica dentro del caso de uso. | [Prueba de inventario](../../tests/inventario/test_inventario.py) y [prueba de concurrencia](../../tests/inventario/test_concurrencia.py). Evita stock negativo local; no deduplica reintentos. |
+| **Consultar stock actual** (`GET /inventario/{producto_id}`) | **Lectura directa del estado local** | Consulta al repositorio de stock sin modificarlo. | [Prueba de inventario](../../tests/inventario/test_inventario.py). El dato es volátil y no se comparte entre réplicas. |
+| **Eliminar o desactivar producto** (`DELETE /productos/{producto_id}`) | **Consistencia referencial fuerte en proceso** | Consulta del historial mediante `VerificadorDeMovimientos`; desactivación si hay movimientos y borrado físico solo si no existen. | [Prueba de historial real](../../tests/productos/test_historial_real.py) y [prueba de corte vertical](../../tests/productos/test_api_corte_vertical.py). Preserva trazabilidad local. |
 
 ---
 
@@ -646,7 +647,7 @@ de no extraer el módulo en el MVP está en
 El MVP conserva repositorios en memoria para `Producto`, `StockProducto` y
 `Movimiento`. Esta elección evita agregar una dependencia operativa mientras se
 validan los cortes verticales, pero implica pérdida de datos ante reinicio y no
-permite coordinar varias réplicas. [ADR-0012](../adr/0012-mantener-repositorios-en-memoria-en-el-mvp.md)
+permite coordinar varias réplicas. [ADR-0012](../adr/0012-mantener-repositorios-en-memoria-en-el-mvp.md) y su complemento documental [ADR-0015](../adr/0015-completar-decision-de-almacenamiento-y-reversion.md)
 formaliza esta decisión y establece como evolución preferida evaluar una base
 relacional compartida mediante adaptadores separados por módulo. La migración
 debe conservar los puertos y la propiedad única de los datos; una base por
@@ -814,7 +815,7 @@ secciones para saber por qué un escenario importa más que otro.
 
 1. **Consistencia vs. Latencia (Prioridad Alta):** Se sacrifica un margen mínimo de tiempo de respuesta (enqueuing en event loop mediante `asyncio.Lock` en `ADR-0002`) para garantizar que nunca existan descuadres ni stock negativo en el módulo `inventario`.
 2. **Monolito Modular vs. Despliegue Independiente (Prioridad Media):** Se adopta un monolito modular (`ADR-0001`) sacrificando el despliegue independiente de microservicios a cambio de simplificar la operación, reducir los costos de infraestructura (C5) y evitar latencias por red entre componentes.
-3. **Persistencia In-Memory vs. Persistencia Durable (Transición):** Para el MVP se priorizó la velocidad de desarrollo, el costo cero y las pruebas de concurrencia en memoria, asumiendo la volatilidad. [ADR-0012](../adr/0012-mantener-repositorios-en-memoria-en-el-mvp.md) conserva los puertos como frontera para evaluar una base relacional compartida sin trasladar la propiedad de los datos entre módulos.
+3. **Persistencia In-Memory vs. Persistencia Durable (Transición):** Para el MVP se priorizó la velocidad de desarrollo, el costo cero y las pruebas de concurrencia en memoria, asumiendo la volatilidad. [ADR-0012](../adr/0012-mantener-repositorios-en-memoria-en-el-mvp.md) y [ADR-0015](../adr/0015-completar-decision-de-almacenamiento-y-reversion.md) conservan los puertos como frontera para evaluar una base relacional compartida sin trasladar la propiedad de los datos entre módulos.
 
 # 11. Risks and Technical Debt (Riesgos y Deuda Técnica)
 

@@ -2,7 +2,7 @@
 
 - **Sistema:** InvenTrack — Monolito Modular
 - **Integración Analizada:** Módulo de `Inventario` ↔ Módulo de `Productos` (vía `ValidadorDeProductoAdapter`)
-- **Contrato y Patrones Relacionados:** [ADR-0003](../adr/0003-puertos-y-adaptadores-para-comunicacion-inter-modulo.md) (Integración mediante Puertos de Aplicación), [ADR-0002](../adr/0002-control-concurrencia-inventario.md) (Control de Concurrencia por SKU), [ADR-0010](../adr/0010-decision-extraccion-microservicios.md) (Evaluación No-Extracción) y [ADR-0011](../adr/0011-idempotencia-y-sagas-en-movimientos.md) (Idempotencia y Sagas).
+- **Contrato y Patrones Relacionados:** [ADR-0003](../adr/0003-integracion-productos-inventario-via-puertos-de-aplicacion.md) (Integración mediante Puertos de Aplicación), [ADR-0002](../adr/0002-control-concurrencia-memoria-inventario.md) (Control de Concurrencia por SKU), [ADR-0010](../adr/0010-decision-extraccion-microservicios.md) (Evaluación No-Extracción) y [ADR-0011](../adr/0011-idempotencia-y-sagas-en-movimientos.md) (Idempotencia y Sagas).
 - **Corte:** Tercer Corte (Sistemas Distribuidos y Tolerancia a Fallos)
 
 ---
@@ -32,5 +32,5 @@ A continuación se analizan los tres escenarios fundamentales de fallo parcial d
 La **Sección 11 del documento arc42 (`docs/arc42/arc42-template-EN.md`)** formaliza el análisis de fallos distribuidos:
 
 ### 11.3 Fallos Parciales en Integraciones Distribuidas
-- **Mitigación de Latencia y Bloqueo:** El sistema previene bloqueos en cascada mediante llamadas asíncronas y timeouts acotados en los adaptadores cruzados entre módulos ([ADR-0003](../adr/0003-puertos-y-adaptadores-para-comunicacion-inter-modulo.md)).
-- **Límite de Idempotencia (Pendiente Documentado):** La serialización de transacciones sobre el mismo SKU ([ADR-0002](../adr/0002-control-concurrencia-inventario.md)) garantiza atomicidad y evita condiciones de carrera en memoria, pero **no evita que un comando idéntico reintentado por el cliente se aplique dos veces**. El diseño formal de la clave de idempotencia durable (`X-Idempotency-Key`) y las condiciones para adoptar patrones Sagas/Outbox se encuentran formalizados como un pendiente razonado en el [ADR-0011](../adr/0011-idempotencia-y-sagas-en-movimientos.md).
+- **Mitigación de Latencia y Bloqueo:** El sistema previene bloqueos en cascada mediante llamadas asíncronas y timeouts acotados en los adaptadores cruzados entre módulos ([ADR-0003](../adr/0003-integracion-productos-inventario-via-puertos-de-aplicacion.md)).
+- **Límite de Idempotencia (Pendiente Documentado):** La serialización de transacciones sobre el mismo SKU ([ADR-0002](../adr/0002-control-concurrencia-memoria-inventario.md)) garantiza atomicidad y evita condiciones de carrera en memoria, pero **no evita que un comando idéntico reintentado por el cliente se aplique dos veces**. El diseño formal de la clave de idempotencia durable (`X-Idempotency-Key`) y las condiciones para adoptar patrones Sagas/Outbox se encuentran formalizados como un pendiente razonado en el [ADR-0011](../adr/0011-idempotencia-y-sagas-en-movimientos.md).
