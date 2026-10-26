@@ -56,6 +56,11 @@ if not _http_logger.handlers:
     _handler.setFormatter(JsonFormatter())
     _http_logger.addHandler(_handler)
 _http_logger.propagate = False
+_messaging_logger = logging.getLogger("InvenTrack.Messaging")
+_messaging_logger.setLevel(logging.INFO)
+if not _messaging_logger.handlers:
+    _messaging_logger.addHandler(_handler)
+_messaging_logger.propagate = False
 
 _request_count: defaultdict[tuple[str, str], int] = defaultdict(int)
 _request_duration_seconds: defaultdict[tuple[str, str], float] = defaultdict(float)
@@ -165,7 +170,11 @@ def metrics():
         "# TYPE inventrack_http_request_duration_seconds_total counter",
         "# HELP inventrack_http_p95_latency_seconds Latencia p95 en segundos asociada al escenario ESC-04.",
         "# TYPE inventrack_http_p95_latency_seconds gauge",
+        "# HELP inventrack_messaging_messages_total Mensajes del broker por estado.",
+        "# TYPE inventrack_messaging_messages_total counter",
     ]
+    for status, value in sorted(_broker_mensajeria.metrics.items()):
+        lines.append(f'inventrack_messaging_messages_total{{status="{status}"}} {value}')
     for method, path in sorted(_request_count):
         labels = f'method="{_prometheus_escape(method)}",path="{_prometheus_escape(path)}"'
         lines.append(f"inventrack_http_requests_total{{{labels}}} {_request_count[(method, path)]}")

@@ -32,6 +32,11 @@ El simulador aplica entrega At-Least-Once durante la vida del proceso, reintento
 con backoff exponencial, deduplicación por `idempotency_key` y DLQ después de
 agotar los reintentos.
 
+La deduplicación reserva la clave bajo un lock asíncrono antes de invocar al
+consumidor. Así, dos entregas concurrentes de la misma clave ejecutan el
+consumidor una sola vez; una entrega posterior al éxito se omite usando el
+conjunto de claves procesadas.
+
 La garantía no es durable: un reinicio puede perder mensajes y la DLQ porque
 ambos son estructuras en memoria. Antes de escalar horizontalmente o exigir
 recuperación ante reinicios se debe reemplazar el simulador por un broker durable
@@ -71,4 +76,7 @@ falla explícitamente en vez de ser aceptado silenciosamente.
 - **Pruebas:** [taller de mensajería](../../tests/messaging/test_taller_mensajeria.py),
   [contrato del evento](../../tests/messaging/test_contrato_evento.py) y
   [integración de inventario](../../tests/inventario/test_inventario.py)
+- **Observabilidad:** `/metrics` expone `inventrack_messaging_messages_total`
+  por estado (`published`, `processed`, `duplicates`, `retries`, `dlq`) y los
+  logs incluyen `event_id`, `correlation_id` y tópico.
 - **Evidencia reproducible:** [evidencia del taller](../evidencia-mensajeria-s12.md)

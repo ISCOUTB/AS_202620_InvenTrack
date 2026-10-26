@@ -12,7 +12,10 @@ def test_entrada_publica_evento_de_auditoria_con_trazabilidad():
     client.post("/productos", json={"id": "p-evento", "nombre": "Producto evento"})
     response = client.post(
         "/inventario/p-evento/entradas",
-        headers={"X-Correlation-ID": "corr-real-001"},
+        headers={
+            "X-Correlation-ID": "corr-real-001",
+            "X-Idempotency-Key": "cmd-real-001",
+        },
         json={"cantidad": 4},
     )
 
@@ -20,6 +23,11 @@ def test_entrada_publica_evento_de_auditoria_con_trazabilidad():
     assert _broker_mensajeria.audit_log[-1]["status"] == "PROCESSED_SUCCESS"
     assert _broker_mensajeria.audit_log[-1]["correlation_id"] == "corr-real-001"
     assert len(_broker_mensajeria.processed_events) == 1
+    evento = _broker_mensajeria.published_messages[-1]
+    assert evento["idempotency_key"] == "cmd-real-001"
+    assert evento["data"]["tipo"] == "ENTRADA"
+    metricas = client.get("/metrics").text
+    assert 'inventrack_messaging_messages_total{status="processed"}' in metricas
 
 
 def test_entrada_y_consulta_de_stock():

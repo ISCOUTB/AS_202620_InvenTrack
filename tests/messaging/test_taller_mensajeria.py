@@ -58,6 +58,35 @@ async def test_idempotencia_y_deduplicacion():
 
 
 @pytest.mark.asyncio
+async def test_idempotencia_con_entregas_concurrentes():
+    broker = SimuladorBrokerMensajeria()
+    procesamientos = 0
+    inicio = asyncio.Event()
+
+    async def consumidor_simulado(msg):
+        nonlocal procesamientos
+        procesamientos += 1
+        inicio.set()
+        await asyncio.sleep(0.01)
+
+    mensaje = {
+        "event_id": "555e8400-e29b-41d4-a716-446655440000",
+        "correlation_id": "corr-concurrente",
+        "idempotency_key": "key-concurrente",
+        "timestamp": "2026-10-26T00:00:00Z",
+        "data": {"producto_id": "SKU-005", "cantidad": 1, "tipo": "ENTRADA", "stock_final": 1},
+    }
+
+    resultados = await asyncio.gather(
+        broker.publicar("inventario.movimientos", mensaje, consumidor_simulado),
+        broker.publicar("inventario.movimientos", mensaje, consumidor_simulado),
+    )
+
+    assert resultados == [True, True]
+    assert procesamientos == 1
+
+
+@pytest.mark.asyncio
 async def test_fallo_recuperable_con_reintentos_y_exito():
     """Verifica el comportamiento ante fallos temporales: reintento con backoff y éxito posterior."""
     broker = SimuladorBrokerMensajeria(max_retries=3, base_backoff=0.01)

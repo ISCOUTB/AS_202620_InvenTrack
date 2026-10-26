@@ -56,6 +56,7 @@ def _crear_handler_entrada(
         payload: MovimientoRequest,
         background_tasks: BackgroundTasks,
         correlation_id: str | None = Header(default=None, alias="X-Correlation-ID"),
+        idempotency_key: str | None = Header(default=None, alias="X-Idempotency-Key"),
     ) -> MovimientoResponse:
         try:
             resultado = await registro.registrar_entrada(producto_id, payload.cantidad)
@@ -65,7 +66,7 @@ def _crear_handler_entrada(
         background_tasks.add_task(
             broker.publicar,
             MOVIMIENTOS_TOPIC,
-            _crear_evento(respuesta, correlation_id),
+            _crear_evento(respuesta, correlation_id, idempotency_key),
             consumidor_auditoria,
         )
         return respuesta
@@ -83,6 +84,7 @@ def _crear_handler_salida(
         payload: MovimientoRequest,
         background_tasks: BackgroundTasks,
         correlation_id: str | None = Header(default=None, alias="X-Correlation-ID"),
+        idempotency_key: str | None = Header(default=None, alias="X-Idempotency-Key"),
     ) -> MovimientoResponse:
         try:
             resultado = await registro.registrar_salida(producto_id, payload.cantidad)
@@ -99,7 +101,7 @@ def _crear_handler_salida(
         background_tasks.add_task(
             broker.publicar,
             MOVIMIENTOS_TOPIC,
-            _crear_evento(respuesta, correlation_id),
+            _crear_evento(respuesta, correlation_id, idempotency_key),
             consumidor_auditoria,
         )
         return respuesta
@@ -119,14 +121,21 @@ def _crear_handler_stock(
     return consultar_stock
 
 
-def _crear_evento(respuesta: MovimientoResponse, correlation_id: str | None) -> dict:
+def _crear_evento(
+    respuesta: MovimientoResponse,
+    correlation_id: str | None,
+    idempotency_key: str | None = None,
+) -> dict:
     event_id = str(uuid4())
     return {
         "event_id": event_id,
         "correlation_id": correlation_id or event_id,
-        "idempotency_key": event_id,
+        "idempotency_key": idempotency_key or event_id,
         "timestamp": datetime.now(timezone.utc).isoformat(),
-        "data": respuesta.model_dump(),
+        "data": {
+            **respuesta.model_dump(),
+            "tipo": respuesta.tipo.upper(),
+        },
     }
 
 

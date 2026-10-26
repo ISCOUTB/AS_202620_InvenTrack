@@ -17,7 +17,7 @@
     },
     "idempotency_key": {
       "type": "string",
-      "description": "Clave única enviada por el cliente (o generada a partir del payload) para evitar procesamiento duplicado."
+      "description": "Clave de idempotencia del comando de origen; puede llegar en X-Idempotency-Key o generarse como event_id cuando el productor no la proporciona."
     },
     "timestamp": {
       "type": "string",

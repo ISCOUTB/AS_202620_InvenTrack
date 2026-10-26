@@ -158,6 +158,10 @@ El sistema usa un modelo híbrido conforme al [ADR-0013](docs/adr/0013-evaluacio
 4. El evento lleva `event_id`, `correlation_id`, `idempotency_key`, `timestamp`
    y el payload de inventario.
 
+Los clientes pueden enviar `X-Correlation-ID` para correlación extremo a extremo
+y `X-Idempotency-Key` para conservar la clave del comando de origen. Si esta
+última no se envía, el productor usa `event_id` como clave única del evento.
+
 La implementación se encuentra en [`app/inventario/infrastructure/router.py`](app/inventario/infrastructure/router.py),
 [`app/messaging/broker_simulador.py`](app/messaging/broker_simulador.py) y
 [`app/main.py`](app/main.py).
@@ -171,6 +175,7 @@ La implementación se encuentra en [`app/inventario/infrastructure/router.py`](a
 | Fallos recuperables | Hasta 3 intentos por defecto con backoff exponencial |
 | Fallos persistentes | Envío a Dead Letter Queue (DLQ) |
 | Trazabilidad | `event_id`, `correlation_id`, `audit_log` y log `inventory_message_consumed` |
+| Métricas | `/metrics` expone mensajes publicados, procesados, duplicados, reintentos y enviados a DLQ |
 | Durabilidad | No garantizada: broker y DLQ son volátiles en el MVP |
 
 El contrato y sus reglas de compatibilidad están en

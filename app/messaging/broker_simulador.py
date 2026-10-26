@@ -42,6 +42,16 @@ class SimuladorBrokerMensajeria:
         self.dlq = DeadLetterQueue()
         self.processed_events: set = set()  # Set para deduplicación (Idempotencia)
         self.audit_log: List[Dict[str, Any]] = []
+        self.published_messages: List[Dict[str, Any]] = []
+        self.metrics: Dict[str, int] = {
+            "published": 0,
+            "processed": 0,
+            "duplicates": 0,
+            "retries": 0,
+            "dlq": 0,
+        }
+        self._deduplication_lock = asyncio.Lock()
+        self._in_flight_keys: set[str] = set()
 
     async def publicar(self, topic: str, message: Dict[str, Any], consumidor: Callable[[Dict[str, Any]], Any]) -> bool:
         """
@@ -51,9 +61,19 @@ class SimuladorBrokerMensajeria:
         event_id = message.get("event_id")
         correlation_id = message.get("correlation_id", "N/A")
         idempotency_key = message.get("idempotency_key", event_id)
+        self.published_messages.append(message)
+        self.metrics["published"] += 1
 
-        # 1. Verificación de Idempotencia / Deduplicación (Punto 3 del Taller)
-        if idempotency_key in self.processed_events:
+        # Reservar la clave antes de ejecutar evita dos consumidores concurrentes.
+        async with self._deduplication_lock:
+            if idempotency_key in self.processed_events or idempotency_key in self._in_flight_keys:
+                duplicate_status = "DUPLICATE_SKIPPED"
+                self.metrics["duplicates"] += 1
+            else:
+                self._in_flight_keys.add(idempotency_key)
+                duplicate_status = ""
+
+        if duplicate_status:
             logger.warning(f"[Idempotencia] Mensaje duplicado detectado y omitido. Event ID: {event_id}, Key: {idempotency_key}")
             self.audit_log.append({
                 "event_id": event_id,
@@ -78,7 +98,10 @@ class SimuladorBrokerMensajeria:
                     consumidor(message)
 
                 # Éxito: Marcar como procesado para futuras deduplicaciones
-                self.processed_events.add(idempotency_key)
+                async with self._deduplication_lock:
+                    self._in_flight_keys.discard(idempotency_key)
+                    self.processed_events.add(idempotency_key)
+                self.metrics["processed"] += 1
                 self.audit_log.append({
                     "event_id": event_id,
                     "correlation_id": correlation_id,
@@ -92,6 +115,8 @@ class SimuladorBrokerMensajeria:
             except Exception as e:
                 intentos += 1
                 ultimo_error = str(e)
+                if intentos < self.max_retries:
+                    self.metrics["retries"] += 1
                 logger.warning(f"[Fallo Recuperable] Error procesando {event_id} en intento {intentos}: {ultimo_error}")
                 
                 if intentos < self.max_retries:
@@ -100,7 +125,10 @@ class SimuladorBrokerMensajeria:
                     await asyncio.sleep(backoff_time)
 
         # 3. Si se agotan los reintentos, va a la Dead Letter Queue (DLQ)
+        async with self._deduplication_lock:
+            self._in_flight_keys.discard(idempotency_key)
         self.dlq.push(message, ultimo_error)
+        self.metrics["dlq"] += 1
         self.audit_log.append({
             "event_id": event_id,
             "correlation_id": correlation_id,
