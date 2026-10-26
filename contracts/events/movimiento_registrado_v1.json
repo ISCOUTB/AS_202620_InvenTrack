@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://inventrack.utb.edu.co/contracts/events/movimiento_registrado_v1.json",
+  "title": "MovimientoDeInventarioRegistrado",
+  "description": "Contrato formal del evento de dominio emitido tras registrar con éxito una entrada o salida de inventario.",
+  "type": "object",
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Identificador único universal del evento para trazabilidad y deduplicación."
+    },
+    "correlation_id": {
+      "type": "string",
+      "description": "Identificador de correlación para rastrear el flujo de extremo a extremo desde el productor hasta el consumidor."
+    },
+    "idempotency_key": {
+      "type": "string",
+      "description": "Clave única enviada por el cliente (o generada a partir del payload) para evitar procesamiento duplicado."
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Fecha y hora en formato ISO 8601 en la que ocurrió el evento en el servidor."
+    },
+    "data": {
+      "type": "object",
+      "description": "Payload útil con los datos del dominio.",
+      "properties": {
+        "producto_id": {
+          "type": "string",
+          "description": "SKU o identificador único del producto."
+        },
+        "cantidad": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Cantidad involucrada en el movimiento (debe ser estrictamente mayor a 0)."
+        },
+        "tipo": {
+          "type": "string",
+          "enum": ["ENTRADA", "SALIDA"],
+          "description": "Tipo de movimiento realizado."
+        },
+        "stock_final": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Stock resultante tras aplicar el movimiento."
+        }
+      },
+      "required": ["producto_id", "cantidad", "tipo", "stock_final"],
+      "additionalProperties": false
+    }
+  },
+  "required": ["event_id", "correlation_id", "idempotency_key", "timestamp", "data"],
+  "additionalProperties": false
+}
