@@ -527,9 +527,28 @@ El modelo de infraestructura gratuita entrará en quiebre bajo dos condiciones:
 2. **Cuota de CPU o build:** Exceder 0.5 CPU por contenedor o la memoria compartida durante la compilación en Dokploy.
 3. **Persistencia y disponibilidad:** Requerir datos durables o un SLA superior obliga a migrar a PostgreSQL y registrar una nueva decisión de infraestructura.
 
-# Cross-cutting Concepts (Conceptos Transversales)
+---
 
-En esta sección se describen las decisiones y patrones de arquitectura que aplican a múltiples módulos del monolito de forma transversal.
+## 8. Cross-cutting Concepts (Consistencia, Concurrencia y Estrategia de Datos)
+
+### 8.1 Matriz de Operaciones y Garantías de Consistencia (S12)
+
+Para responder a las operaciones reales del sistema InvenTrack, se definen explícitamente los modelos de consistencia y los mecanismos de control implementados:
+
+| Operación del Sistema | Modelo de Consistencia | Mecanismo en Código | Justificación y Límite Arquitectónico |
+| :--- | :--- | :--- | :--- |
+| **Registrar Entrada/Salida de Inventario** (`POST /inventario/{sku}/entradas` o `salidas`) | **Consistencia Fuerte en Proceso** | Exclusión mutua asíncrona mediante `asyncio.Lock` por SKU con **timeout estricto de 2.0 segundos** (`app/inventario/application/registrar_movimiento.py`). | Previene condiciones de carrera (*Race Conditions*) y saldos negativos bajo alta concurrencia local. Si se excede el timeout, retorna `503 Service Unavailable`. |
+| **Consultar Stock Actual** (`GET /inventario/{sku}`) | **Lectura Directa (Read-Committed local en RAM)** | Consulta síncrona no bloqueante sobre el repositorio en memoria del módulo de inventario. | Lectura directa del estado actual en RAM sin bloqueos, garantizando acceso instantáneo con latencia de microsegundos. |
+| **Eliminar / Desactivar Producto** (`DELETE/PATCH /productos/{sku}`) | **Consistencia Fuerte** | Verificación síncrona previa de dependencias y movimientos activos antes de aplicar la bandera de desactivación lógica. | Preserva la integridad referencial y evita registros huérfanos en el historial de movimientos de inventario. |
+
+---
+
+### 8.2 Estrategia y Diseño de Caché (S12)
+
+- **¿Qué se almacena?** El catálogo de productos activos y las lecturas de stock de inventario.
+- **¿Dónde se almacena?** Dado que el almacenamiento primario del MVP consiste en **repositorios en memoria RAM que residen directamente dentro del espacio de proceso del Contenedor FastAPI**, **no se incorpora un motor de caché externo independiente** (como Redis o Memcached).
+- **Argumentación técnica de No-Necesidad de Caché Externa:** Al encontrarse los datos de negocio en estructuras de memoria RAM dentro del mismo proceso Python, las lecturas poseen latencia de microsegundos, cumpliendo holgadamente el requisito $p95 \le 400\text{ ms}$. Introducir un broker o motor de caché externo duplicaría la complejidad operacional de sincronización sin aportar beneficios reales en este nivel de despliegue.
+- **Política de Invalidación Explícita:** Al tratarse de un almacén primario en RAM con mutación atómica por exclusión mutua, toda escritura o desactivación lógica actualiza el estado en memoria de forma inmediata (**Write-Through / Immediate Invalidation**), previniendo problemas de obsolescencia de datos (*stale data*).
 
 ---
 
