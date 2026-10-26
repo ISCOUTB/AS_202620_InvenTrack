@@ -3,6 +3,7 @@
   "$id": "https://inventrack.utb.edu.co/contracts/events/movimiento_registrado_v1.json",
   "title": "MovimientoDeInventarioRegistrado",
   "description": "Contrato formal del evento de dominio emitido tras registrar con éxito una entrada o salida de inventario.",
+  "$comment": "Compatibilidad: los consumidores deben ignorar campos opcionales nuevos. Cambiar o eliminar campos obligatorios, tipos, enums o la semántica de campos existentes requiere una nueva versión del evento.",
   "type": "object",
   "properties": {
     "event_id": {

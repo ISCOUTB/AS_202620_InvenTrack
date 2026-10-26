@@ -16,6 +16,7 @@
 * **Medición de Concurrencia:** La prueba ejecuta 20 salidas reales sobre el mismo SKU, calcula el p95 y exige el umbral de $\le 400\text{ ms}$ ([Experimento reproducible](docs/retos/corte-2-experimento.md)).
 * **Matriz de Trazabilidad:** Cadena navegable `Aspecto → Requisito → C4 → ADR → Código → Pruebas → Evidencia` ([Aspectos de Calidad](docs/aspectos.md)).
 * **Contrato de API:** OpenAPI v1 versionado y validado automáticamente contra la implementación FastAPI ([ADR-0004](docs/adr/0004-contrato-api-versionado-openapi.md)).
+* **Mensajería asíncrona:** Las entradas y salidas publican el evento `MovimientoDeInventarioRegistrado` para auditoría en segundo plano, con trazabilidad, deduplicación, reintentos, backoff exponencial y DLQ en memoria ([ADR-0013](docs/adr/0013-evaluacion-mensajeria-asincrona-vs-sincrona.md), [ADR-0016](docs/adr/0016-integrar-eventos-de-auditoria-en-movimientos.md)).
 * **Despliegue Productivo:** Disponible en Render (PaaS) y en el servidor institucional Dokploy mediante infraestructura como código (`render.yaml` y `deploy/compose.lab.yaml`).
 * **CI y cobertura:** GitHub Actions ejecuta la suite completa con `pytest-cov`, genera `coverage.xml`, ejecuta el análisis SonarCloud y valida explícitamente el contrato OpenAPI.
 * **Transparencia en Uso de IA:** Prompts, decisiones aceptadas, correcciones y rechazos por criterio técnico ([Registro de IA](docs/ia.md)).
@@ -55,6 +56,7 @@
 - [Decisiones de arquitectura (ADR)](#decisiones-de-arquitectura-adr)
 - [Evidencia de prueba contractual](#evidencia-de-prueba-contrato)
 - [Despliegue y costos](#despliegue-y-costos)
+- [Mensajería asíncrona y auditoría](#mensajería-asíncrona-y-auditoría)
 - [Despliegue en iscoutb.dev](#despliegue-en-iscoutbdev)
 - [Stack tecnológico](#stack-tecnológico)
 - [Estructura del repositorio](#estructura-del-repositorio)
@@ -94,8 +96,10 @@
 | [ADR-0010](docs/adr/0010-decision-extraccion-microservicios.md) | No extraer inventario a un microservicio en el MVP (Aceptado) |
 | [ADR-0011](docs/adr/0011-idempotencia-y-sagas-en-movimientos.md) | Idempotencia de movimientos y no uso de Saga en el MVP (Aceptado) |
 | [ADR-0012](docs/adr/0012-mantener-repositorios-en-memoria-en-el-mvp.md) | Mantener repositorios en memoria en el MVP y ruta de evolución de persistencia (Aceptado) |
+| [ADR-0013](docs/adr/0013-evaluacion-mensajeria-asincrona-vs-sincrona.md) | Mensajería asíncrona para auditoría de movimientos y comparación con invocación síncrona (Aceptado) |
 | [ADR-0014](docs/adr/0014-estrategia-de-almacenamiento-y-costo-de-reversion.md) | Almacenamiento in-memory, movimientos inmutables y costo de reversión (Aceptado) |
 | [ADR-0015](docs/adr/0015-completar-decision-de-almacenamiento-y-reversion.md) | Completar decisión de almacenamiento, consecuencias y costo de reversión (Aceptado) |
+| [ADR-0016](docs/adr/0016-integrar-eventos-de-auditoria-en-movimientos.md) | Integrar eventos de auditoría en movimientos de inventario (Aceptado) |
 | [Evidencia de prueba contractual](docs/evidencia-prueba-contrato.md) | Reproducción del fallo ante un cambio incompatible y recuperación de la prueba |
 | [Despliegue y costos](docs/despliegue-y-costos.md) | URL pública, IaC (`render.yaml`), observabilidad, secretos y estimación mensual |
 | [Medición Reto Corte 1](docs/retos/corte-1-medicion.md) | Diagnóstico, pruebas de concurrencia, degradación controlada y comando de reproducción |
@@ -135,9 +139,49 @@ Antes de entrar a cada carpeta, vale la pena explicar la lógica detrás de la e
 - **`docs/api/`** reúne el contrato técnico y la vista funcional de la API de InvenTrack, incluyendo el contrato ejecutable de la versión actual.
 - **`docs/retos/`** documenta el diagnóstico, carga simulada, comandos de reproducción y resultados del reto del Corte 1.
 - **`docs/evidencia-prueba-contrato.md`** documenta la reproducción controlada de un cambio incompatible en OpenAPI y la recuperación de la prueba contractual.
+- **`docs/evidencia-mensajeria-s12.md`** contiene el comando y el mapa de evidencia del taller de mensajería: contrato, duplicados, reintentos, DLQ, flujo real y trazabilidad.
 - **`docs/aspectos.md`** es el índice que conecta todo siguiendo la cadena navegable: `Aspecto → Requisito → C4 → ADR → Código → Pruebas → Evidencia`.
 - **`docs/auditoria-modularidad.md`** documenta la revisión de acoplamiento y las correcciones aplicadas para mantener los límites del monolito modular.
 - **`contracts/openapi/v1.json`** contiene el contrato HTTP versionado y `tests/contract/` valida que la implementación lo cumpla.
+- **`contracts/events/movimiento_registrado_v1.json`** contiene el contrato JSON Schema del evento de inventario y `tests/messaging/test_contrato_evento.py` valida su estructura.
+
+## Mensajería asíncrona y auditoría
+
+El sistema usa un modelo híbrido conforme al [ADR-0013](docs/adr/0013-evaluacion-mensajeria-asincrona-vs-sincrona.md):
+
+1. El registro de stock y movimiento permanece síncrono y protegido por el
+   lock por SKU.
+2. Después de una entrada o salida exitosa, el router crea un evento
+   `MovimientoDeInventarioRegistrado`.
+3. La publicación y el consumidor de auditoría se ejecutan como tarea posterior
+   mediante `BackgroundTasks`, sin bloquear la respuesta principal.
+4. El evento lleva `event_id`, `correlation_id`, `idempotency_key`, `timestamp`
+   y el payload de inventario.
+
+La implementación se encuentra en [`app/inventario/infrastructure/router.py`](app/inventario/infrastructure/router.py),
+[`app/messaging/broker_simulador.py`](app/messaging/broker_simulador.py) y
+[`app/main.py`](app/main.py).
+
+### Garantías y límites
+
+| Propiedad | Implementación |
+|---|---|
+| Entrega | At-Least-Once durante la vida del proceso |
+| Duplicados | Deduplicación por `idempotency_key` |
+| Fallos recuperables | Hasta 3 intentos por defecto con backoff exponencial |
+| Fallos persistentes | Envío a Dead Letter Queue (DLQ) |
+| Trazabilidad | `event_id`, `correlation_id`, `audit_log` y log `inventory_message_consumed` |
+| Durabilidad | No garantizada: broker y DLQ son volátiles en el MVP |
+
+El contrato y sus reglas de compatibilidad están en
+[`contracts/events/movimiento_registrado_v1.json`](contracts/events/movimiento_registrado_v1.json)
+y en [ADR-0016](docs/adr/0016-integrar-eventos-de-auditoria-en-movimientos.md).
+Agregar campos opcionales sin cambiar la semántica es compatible; cambiar
+campos obligatorios, tipos, valores permitidos o semántica exige una nueva
+versión del evento.
+
+La evidencia reproducible está en
+[`docs/evidencia-mensajeria-s12.md`](docs/evidencia-mensajeria-s12.md).
 
 ## Documentación de arquitectura
 
@@ -232,6 +276,7 @@ montajes bind ni secretos al repositorio.
 | Frontend | Flutter | Pendiente |
 | Backend | FastAPI + Uvicorn | Implementado |
 | Persistencia | Adaptadores In-Memory; PostgreSQL compartido es la evolución preferida | Implementado para MVP; persistencia durable pendiente de ADR sucesor |
+| Mensajería | Simulador asíncrono local | Integrado para auditoría; broker durable u Outbox persistente pendiente |
 | Hosting / despliegue | Render + Dokploy + Docker | Operativo en `https://inventrack-api.onrender.com` y `https://inventrack.iscoutb.dev` |
 | CI / calidad de código | GitHub Actions + Pytest + pytest-asyncio + pytest-cov | Suite síncrona y asíncrona con cobertura XML (`coverage.xml`), validación del contrato OpenAPI y análisis SonarCloud configurado |
 
@@ -241,7 +286,7 @@ montajes bind ni secretos al repositorio.
 .github/
 └── workflows/
     ├── test.yml                 # Pruebas, contrato y build de la imagen
-    └── sonar.yml                # Análisis estático de calidad y cobertura SonarCloud
+    └── deploy.yml               # Despliegue de la imagen
 Dockerfile                       # Imagen reproducible de producción (no-root user)
 render.yaml                      # Configuración IaC de despliegue para Render
 deploy/
@@ -261,12 +306,11 @@ docs/
 ├── propiedad-datos.md           # Dueño único y canales de consulta
 ├── auditoria-modularidad.md     # Revisión de desacoplamiento y plan de corrección
 ├── adr/
-│   ├── 0001-usar-monolito-modular-con-hexagonal-por-modulo.md
-│   ├── 0002-control-concurrencia-memoria-inventario.md
-│   ├── 0003-integracion-productos-inventario-via-puertos-de-aplicacion.md
-│   ├── 0004-contrato-api-versionado-openapi.md
-│   └── 0005-eleccion-plataforma-despliegue.md
+│   ├── 0001–0016                  # Decisiones arquitectónicas versionadas
+│   ├── 0013-evaluacion-mensajeria-asincrona-vs-sincrona.md
+│   └── 0016-integrar-eventos-de-auditoria-en-movimientos.md
 ├── evidencia-prueba-contrato.md  # Reproducción del fallo de compatibilidad OpenAPI
+├── evidencia-mensajeria-s12.md   # Evidencia reproducible del taller de mensajería
 ├── retos/
 │   └── corte-1-medicion.md      # Diagnóstico y medición del Reto de Concurrencia
 ├── ficha_problema.md            # Planteamiento del problema
@@ -276,7 +320,9 @@ docs/
 ├── ia.md                        # Registro de uso de IA en el proyecto
 └── auditoria-modularidad.md     # Documento de revisión modular y corrección de violaciones
 contracts/
-└── openapi/v1.json              # Contrato versionado de la API HTTP
+├── openapi/v1.json              # Contrato versionado de la API HTTP
+└── events/
+    └── movimiento_registrado_v1.json # Contrato JSON Schema del evento
 app/                             # Aplicación FastAPI Monolito Modular
 ├── main.py                      # Composición, métricas p95 y rutas principales
 ├── shared/                      # Dominio compartido y utilidades
@@ -288,8 +334,13 @@ app/                             # Aplicación FastAPI Monolito Modular
 tests/                           # Batería de pruebas automatizadas
 ├── test_health.py
 ├── productos/
-└── inventario/
-    └── test_concurrencia.py     # Pruebas de simulación concurrente (20 req)
+├── inventario/
+│   └── test_concurrencia.py     # Pruebas de simulación concurrente
+├── contract/
+│   └── test_openapi_contract.py  # Compatibilidad del contrato OpenAPI
+└── messaging/
+    ├── test_taller_mensajeria.py # Duplicados, reintentos, backoff y DLQ
+    └── test_contrato_evento.py   # Validación del contrato del evento
 requirements.in                  # Dependencias directas del proyecto
 requirements.txt                 # Lock con versiones, hashes y dependencias transitivas
 ```
@@ -317,6 +368,18 @@ $env:PYTHONPATH='.'
 python -m pytest -v tests/contract/test_openapi_contract.py
 ```
 
+La evidencia focalizada del taller de mensajería se ejecuta con:
+
+```powershell
+$env:PYTHONPATH='.'
+python -m pytest -q tests/messaging/test_taller_mensajeria.py tests/messaging/test_contrato_evento.py tests/inventario/test_inventario.py tests/contract/test_openapi_contract.py
+```
+
+Esta ejecución verifica el contrato del evento, publicación desde una operación
+real de inventario, deduplicación, fallo recuperable con reintentos y backoff,
+envío a DLQ y trazabilidad mediante `correlation_id`. La evidencia detallada
+está en [`docs/evidencia-mensajeria-s12.md`](docs/evidencia-mensajeria-s12.md).
+
 ## Flujo de trabajo del equipo
 
 - Los cambios se integran en `main` manteniendo trazabilidad en cada commit.
@@ -337,6 +400,7 @@ python -m pytest -v tests/contract/test_openapi_contract.py
 | S8 | Despliegue público, IaC (`render.yaml`), observabilidad y costos (ADR-0005) | Completo (Desplegado en Render) |
 | S9 | Observabilidad de latencia, p95 HTTP y evidencia de defecto/medición con apoyo de IA (ADR-0007) | Completo |
 | S10 | Experimento operativo, hipótesis y validación de alta concurrencia de inventario (S10) | Completo |
+| S12 | Mensajería asíncrona para auditoría: contrato, integración real, duplicados, reintentos, DLQ y trazabilidad (ADR-0016) | Completo; 13 pruebas focalizadas en verde |
 
 ## Uso de IA
 

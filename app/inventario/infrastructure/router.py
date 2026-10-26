@@ -1,16 +1,20 @@
 from collections.abc import Awaitable, Callable
+from datetime import datetime, timezone
+from uuid import uuid4
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Header, HTTPException
 from pydantic import BaseModel, Field
 
 from app.inventario.application.registrar_movimiento import RegistrarMovimientoInventario
 from app.inventario.domain.exceptions import ProductoSinStockError, StockInsuficienteError
 from app.inventario.domain.exceptions_producto import ProductoInvalidoError, TiempoDeEsperaLockAgotado
 from app.inventario.domain.ports import StockRepository
+from app.messaging.broker_simulador import SimuladorBrokerMensajeria
 
 NOT_FOUND_RESPONSE = {"description": "Not Found"}
 BAD_REQUEST_RESPONSE = {"description": "Bad Request - Cantidad inválida"}
 SERVICE_UNAVAILABLE_RESPONSE = {"description": "Service Unavailable"}
+MOVIMIENTOS_TOPIC = "inventario.movimientos"
 
 class MovimientoRequest(BaseModel):
     cantidad: int = Field(gt=0)
@@ -44,21 +48,42 @@ def _error_salida(exc: Exception) -> HTTPException:
 
 def _crear_handler_entrada(
     registro: RegistrarMovimientoInventario,
+    broker: SimuladorBrokerMensajeria,
+    consumidor_auditoria: Callable[[dict], Awaitable[None]],
 ) -> Callable[[str, MovimientoRequest], Awaitable[MovimientoResponse]]:
-    async def registrar_entrada(producto_id: str, payload: MovimientoRequest) -> MovimientoResponse:
+    async def registrar_entrada(
+        producto_id: str,
+        payload: MovimientoRequest,
+        background_tasks: BackgroundTasks,
+        correlation_id: str | None = Header(default=None, alias="X-Correlation-ID"),
+    ) -> MovimientoResponse:
         try:
             resultado = await registro.registrar_entrada(producto_id, payload.cantidad)
         except (ProductoInvalidoError, ValueError, TiempoDeEsperaLockAgotado) as exc:
             raise _error_entrada(exc) from exc
-        return MovimientoResponse(**resultado.__dict__)
+        respuesta = MovimientoResponse(**resultado.__dict__)
+        background_tasks.add_task(
+            broker.publicar,
+            MOVIMIENTOS_TOPIC,
+            _crear_evento(respuesta, correlation_id),
+            consumidor_auditoria,
+        )
+        return respuesta
 
     return registrar_entrada
 
 
 def _crear_handler_salida(
     registro: RegistrarMovimientoInventario,
+    broker: SimuladorBrokerMensajeria,
+    consumidor_auditoria: Callable[[dict], Awaitable[None]],
 ) -> Callable[[str, MovimientoRequest], Awaitable[MovimientoResponse]]:
-    async def registrar_salida(producto_id: str, payload: MovimientoRequest) -> MovimientoResponse:
+    async def registrar_salida(
+        producto_id: str,
+        payload: MovimientoRequest,
+        background_tasks: BackgroundTasks,
+        correlation_id: str | None = Header(default=None, alias="X-Correlation-ID"),
+    ) -> MovimientoResponse:
         try:
             resultado = await registro.registrar_salida(producto_id, payload.cantidad)
         except (
@@ -70,7 +95,14 @@ def _crear_handler_salida(
         ) as exc:
             raise _error_salida(exc) from exc
 
-        return MovimientoResponse(**resultado.__dict__)
+        respuesta = MovimientoResponse(**resultado.__dict__)
+        background_tasks.add_task(
+            broker.publicar,
+            MOVIMIENTOS_TOPIC,
+            _crear_evento(respuesta, correlation_id),
+            consumidor_auditoria,
+        )
+        return respuesta
 
     return registrar_salida
 
@@ -87,13 +119,31 @@ def _crear_handler_stock(
     return consultar_stock
 
 
-def crear_router(registro: RegistrarMovimientoInventario, repositorio_stock: StockRepository) -> APIRouter:
+def _crear_evento(respuesta: MovimientoResponse, correlation_id: str | None) -> dict:
+    event_id = str(uuid4())
+    return {
+        "event_id": event_id,
+        "correlation_id": correlation_id or event_id,
+        "idempotency_key": event_id,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "data": respuesta.model_dump(),
+    }
+
+
+def crear_router(
+    registro: RegistrarMovimientoInventario,
+    repositorio_stock: StockRepository,
+    broker: SimuladorBrokerMensajeria | None = None,
+    consumidor_auditoria: Callable[[dict], Awaitable[None]] | None = None,
+) -> APIRouter:
 
     router = APIRouter()
+    broker = broker or SimuladorBrokerMensajeria()
+    consumidor_auditoria = consumidor_auditoria or _consumidor_auditoria_nulo
 
     router.add_api_route(
         "/inventario/{producto_id}/entradas",
-        _crear_handler_entrada(registro),
+        _crear_handler_entrada(registro, broker, consumidor_auditoria),
         methods=["POST"],
         responses={
             400: BAD_REQUEST_RESPONSE,
@@ -104,7 +154,7 @@ def crear_router(registro: RegistrarMovimientoInventario, repositorio_stock: Sto
 
     router.add_api_route(
         "/inventario/{producto_id}/salidas",
-        _crear_handler_salida(registro),
+        _crear_handler_salida(registro, broker, consumidor_auditoria),
         methods=["POST"],
         responses={
             400: BAD_REQUEST_RESPONSE,
@@ -122,3 +172,7 @@ def crear_router(registro: RegistrarMovimientoInventario, repositorio_stock: Sto
     )
 
     return router
+
+
+async def _consumidor_auditoria_nulo(message: dict) -> None:
+    """Punto de extensión del consumidor de auditoría del MVP."""

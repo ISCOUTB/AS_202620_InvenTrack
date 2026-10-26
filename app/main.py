@@ -23,6 +23,7 @@ from app.inventario.infrastructure.in_memory_movimiento_repository import (
 from app.inventario.infrastructure.in_memory_repository import InMemoryStockRepository
 from app.inventario.infrastructure.router import crear_router as crear_router_inventario
 from app.inventario.infrastructure.validador_producto_adapter import ValidadorDeProductoAdapter
+from app.messaging.broker_simulador import SimuladorBrokerMensajeria
 from app.productos.application.consultar_producto import ConsultarProducto
 from app.productos.application.crear_producto import CrearProducto
 from app.productos.application.eliminar_producto import EliminarProducto
@@ -121,6 +122,21 @@ _eliminar_producto = EliminarProducto(_productos_repo, _historial_movimientos)
 _registrar_movimiento = RegistrarMovimientoInventario(
     _stock_repo, _movimientos_repo, _validador_producto
 )
+_broker_mensajeria = SimuladorBrokerMensajeria()
+
+
+async def _consumir_auditoria_movimiento(message: dict) -> None:
+    _http_logger.info(
+        json.dumps(
+            {
+                "event": "inventory_message_consumed",
+                "event_id": message["event_id"],
+                "correlation_id": message["correlation_id"],
+                "topic": "inventario.movimientos",
+            },
+            ensure_ascii=True,
+        )
+    )
 
 app = FastAPI(
     title="InvenTrack",
@@ -166,5 +182,11 @@ app.include_router(
     crear_router_productos(_crear_producto, _eliminar_producto), tags=["productos"]
 )
 app.include_router(
-    crear_router_inventario(_registrar_movimiento, _stock_repo), tags=["inventario"]
+    crear_router_inventario(
+        _registrar_movimiento,
+        _stock_repo,
+        _broker_mensajeria,
+        _consumir_auditoria_movimiento,
+    ),
+    tags=["inventario"],
 )

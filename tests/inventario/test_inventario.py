@@ -1,8 +1,25 @@
 from fastapi.testclient import TestClient
 
-from app.main import app
+from app.main import _broker_mensajeria, app
 
 client = TestClient(app)
+
+
+def test_entrada_publica_evento_de_auditoria_con_trazabilidad():
+    _broker_mensajeria.audit_log.clear()
+    _broker_mensajeria.processed_events.clear()
+
+    client.post("/productos", json={"id": "p-evento", "nombre": "Producto evento"})
+    response = client.post(
+        "/inventario/p-evento/entradas",
+        headers={"X-Correlation-ID": "corr-real-001"},
+        json={"cantidad": 4},
+    )
+
+    assert response.status_code == 200
+    assert _broker_mensajeria.audit_log[-1]["status"] == "PROCESSED_SUCCESS"
+    assert _broker_mensajeria.audit_log[-1]["correlation_id"] == "corr-real-001"
+    assert len(_broker_mensajeria.processed_events) == 1
 
 
 def test_entrada_y_consulta_de_stock():
