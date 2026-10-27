@@ -53,7 +53,7 @@ class SimuladorBrokerMensajeria:
         self._deduplication_lock = asyncio.Lock()
         self._in_flight_keys: set[str] = set()
 
-    async def publicar(self, topic: str, message: Dict[str, Any], consumidor: Callable[[Dict[str, Any]], Any]) -> bool:
+    async def publicar(self, message: Dict[str, Any], consumidor: Callable[[Dict[str, Any]], Any]) -> bool:
         """
         Publica un mensaje garantizando entrega At-Least-Once, manejo de reintentos
         con backoff exponencial, deduplicación y derivación a DLQ.
@@ -64,26 +64,45 @@ class SimuladorBrokerMensajeria:
         self.published_messages.append(message)
         self.metrics["published"] += 1
 
-        # Reservar la clave antes de ejecutar evita dos consumidores concurrentes.
-        async with self._deduplication_lock:
-            if idempotency_key in self.processed_events or idempotency_key in self._in_flight_keys:
-                duplicate_status = "DUPLICATE_SKIPPED"
-                self.metrics["duplicates"] += 1
-            else:
-                self._in_flight_keys.add(idempotency_key)
-                duplicate_status = ""
-
-        if duplicate_status:
-            logger.warning(f"[Idempotencia] Mensaje duplicado detectado y omitido. Event ID: {event_id}, Key: {idempotency_key}")
-            self.audit_log.append({
-                "event_id": event_id,
-                "correlation_id": correlation_id,
-                "status": "DUPLICATE_SKIPPED",
-                "timestamp": datetime.now(timezone.utc).isoformat()
-            })
+        if await self._es_duplicado(
+            idempotency_key, event_id, correlation_id
+        ):
             return True  # Se considera procesado con éxito (idempotente)
 
-        # 2. Ciclo de reintentos con Exponential Backoff (Punto 4 del Taller)
+        return await self._procesar_con_reintentos(
+            message, consumidor, event_id, correlation_id, idempotency_key
+        )
+
+    async def _es_duplicado(
+        self, idempotency_key: str, event_id: Any, correlation_id: str
+    ) -> bool:
+        """Reserva la clave y registra los mensajes que ya están en proceso o procesados."""
+        async with self._deduplication_lock:
+            if idempotency_key not in self.processed_events and idempotency_key not in self._in_flight_keys:
+                self._in_flight_keys.add(idempotency_key)
+                return False
+            self.metrics["duplicates"] += 1
+
+        logger.warning(
+            f"[Idempotencia] Mensaje duplicado detectado y omitido. "
+            f"Event ID: {event_id}, Key: {idempotency_key}"
+        )
+        self.audit_log.append({
+            "event_id": event_id,
+            "correlation_id": correlation_id,
+            "status": "DUPLICATE_SKIPPED",
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        })
+        return True
+
+    async def _procesar_con_reintentos(
+        self,
+        message: Dict[str, Any],
+        consumidor: Callable[[Dict[str, Any]], Any],
+        event_id: Any,
+        correlation_id: str,
+        idempotency_key: str,
+    ) -> bool:
         intentos = 0
         ultimo_error = ""
 
@@ -124,7 +143,6 @@ class SimuladorBrokerMensajeria:
                     backoff_time = self.base_backoff * (2 ** (intentos - 1))
                     await asyncio.sleep(backoff_time)
 
-        # 3. Si se agotan los reintentos, va a la Dead Letter Queue (DLQ)
         async with self._deduplication_lock:
             self._in_flight_keys.discard(idempotency_key)
         self.dlq.push(message, ultimo_error)

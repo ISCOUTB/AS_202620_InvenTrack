@@ -1,4 +1,5 @@
 from collections.abc import Awaitable, Callable
+from typing import Any
 from datetime import datetime, timezone
 from uuid import uuid4
 
@@ -14,8 +15,6 @@ from app.messaging.broker_simulador import SimuladorBrokerMensajeria
 NOT_FOUND_RESPONSE = {"description": "Not Found"}
 BAD_REQUEST_RESPONSE = {"description": "Bad Request - Cantidad inválida"}
 SERVICE_UNAVAILABLE_RESPONSE = {"description": "Service Unavailable"}
-MOVIMIENTOS_TOPIC = "inventario.movimientos"
-
 class MovimientoRequest(BaseModel):
     cantidad: int = Field(gt=0)
 
@@ -49,7 +48,7 @@ def _error_salida(exc: Exception) -> HTTPException:
 def _crear_handler_entrada(
     registro: RegistrarMovimientoInventario,
     broker: SimuladorBrokerMensajeria,
-    consumidor_auditoria: Callable[[dict], Awaitable[None]],
+    consumidor_auditoria: Callable[[dict], Any],
 ) -> Callable[[str, MovimientoRequest], Awaitable[MovimientoResponse]]:
     async def registrar_entrada(
         producto_id: str,
@@ -65,7 +64,6 @@ def _crear_handler_entrada(
         respuesta = MovimientoResponse(**resultado.__dict__)
         background_tasks.add_task(
             broker.publicar,
-            MOVIMIENTOS_TOPIC,
             _crear_evento(respuesta, correlation_id, idempotency_key),
             consumidor_auditoria,
         )
@@ -77,7 +75,7 @@ def _crear_handler_entrada(
 def _crear_handler_salida(
     registro: RegistrarMovimientoInventario,
     broker: SimuladorBrokerMensajeria,
-    consumidor_auditoria: Callable[[dict], Awaitable[None]],
+    consumidor_auditoria: Callable[[dict], Any],
 ) -> Callable[[str, MovimientoRequest], Awaitable[MovimientoResponse]]:
     async def registrar_salida(
         producto_id: str,
@@ -100,7 +98,6 @@ def _crear_handler_salida(
         respuesta = MovimientoResponse(**resultado.__dict__)
         background_tasks.add_task(
             broker.publicar,
-            MOVIMIENTOS_TOPIC,
             _crear_evento(respuesta, correlation_id, idempotency_key),
             consumidor_auditoria,
         )
@@ -143,7 +140,7 @@ def crear_router(
     registro: RegistrarMovimientoInventario,
     repositorio_stock: StockRepository,
     broker: SimuladorBrokerMensajeria | None = None,
-    consumidor_auditoria: Callable[[dict], Awaitable[None]] | None = None,
+    consumidor_auditoria: Callable[[dict], Any] | None = None,
 ) -> APIRouter:
 
     router = APIRouter()
@@ -183,5 +180,5 @@ def crear_router(
     return router
 
 
-async def _consumidor_auditoria_nulo(message: dict) -> None:
+def _consumidor_auditoria_nulo(message: dict) -> None:
     """Punto de extensión del consumidor de auditoría del MVP."""

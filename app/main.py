@@ -130,7 +130,7 @@ _registrar_movimiento = RegistrarMovimientoInventario(
 _broker_mensajeria = SimuladorBrokerMensajeria()
 
 
-async def _consumir_auditoria_movimiento(message: dict) -> None:
+def _consumir_auditoria_movimiento(message: dict) -> None:
     _http_logger.info(
         json.dumps(
             {

@@ -20,7 +20,7 @@ async def test_procesamiento_exitoso_y_trazabilidad():
         "data": {"producto_id": "SKU-001", "cantidad": 5, "tipo": "ENTRADA", "stock_final": 15}
     }
 
-    resultado = await broker.publicar("inventario.movimientos", mensaje, consumidor_simulado)
+    resultado = await broker.publicar(mensaje, consumidor_simulado)
     
     assert resultado is True
     assert len(procesados) == 1
@@ -47,9 +47,9 @@ async def test_idempotencia_y_deduplicacion():
     }
 
     # Primera publicación (debe procesarse)
-    res1 = await broker.publicar("inventario.movimientos", mensaje, consumidor_simulado)
+    res1 = await broker.publicar(mensaje, consumidor_simulado)
     # Segunda publicación duplicada (debe ser interceptada por idempotencia)
-    res2 = await broker.publicar("inventario.movimientos", mensaje, consumidor_simulado)
+    res2 = await broker.publicar(mensaje, consumidor_simulado)
 
     assert res1 is True
     assert res2 is True
@@ -78,8 +78,8 @@ async def test_idempotencia_con_entregas_concurrentes():
     }
 
     resultados = await asyncio.gather(
-        broker.publicar("inventario.movimientos", mensaje, consumidor_simulado),
-        broker.publicar("inventario.movimientos", mensaje, consumidor_simulado),
+        broker.publicar(mensaje, consumidor_simulado),
+        broker.publicar(mensaje, consumidor_simulado),
     )
 
     assert resultados == [True, True]
@@ -107,7 +107,7 @@ async def test_fallo_recuperable_con_reintentos_y_exito():
         "data": {"producto_id": "SKU-003", "cantidad": 1, "tipo": "ENTRADA", "stock_final": 10}
     }
 
-    resultado = await broker.publicar("inventario.movimientos", mensaje, consumidor_fallo_temporal)
+    resultado = await broker.publicar(mensaje, consumidor_fallo_temporal)
 
     assert resultado is True
     assert intentos == 3
@@ -131,7 +131,7 @@ async def test_fallo_persistente_envia_a_dlq():
         "data": {"producto_id": "SKU-004", "cantidad": 3, "tipo": "SALIDA", "stock_final": 2}
     }
 
-    resultado = await broker.publicar("inventario.movimientos", mensaje, consumidor_roto)
+    resultado = await broker.publicar(mensaje, consumidor_roto)
 
     assert resultado is False
     assert broker.dlq.size() == 1
