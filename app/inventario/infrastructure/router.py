@@ -9,12 +9,17 @@ from pydantic import BaseModel, Field
 from app.inventario.application.registrar_movimiento import RegistrarMovimientoInventario
 from app.inventario.domain.exceptions import ProductoSinStockError, StockInsuficienteError
 from app.inventario.domain.exceptions_producto import ProductoInvalidoError, TiempoDeEsperaLockAgotado
+from app.inventario.infrastructure.idempotency import (
+    IdempotencyConflictError,
+    InMemoryIdempotencyStore,
+)
 from app.inventario.domain.ports import StockRepository
 from app.messaging.broker_simulador import SimuladorBrokerMensajeria
 
 NOT_FOUND_RESPONSE = {"description": "Not Found"}
 BAD_REQUEST_RESPONSE = {"description": "Bad Request - Cantidad inválida"}
 SERVICE_UNAVAILABLE_RESPONSE = {"description": "Service Unavailable"}
+CONFLICT_RESPONSE = {"description": "Conflict - Clave de idempotencia reutilizada"}
 class MovimientoRequest(BaseModel):
     cantidad: int = Field(gt=0)
 
@@ -27,6 +32,8 @@ class MovimientoResponse(BaseModel):
 
 
 def _error_entrada(exc: Exception) -> HTTPException:
+    if isinstance(exc, IdempotencyConflictError):
+        return HTTPException(status_code=409, detail=str(exc))
     if isinstance(exc, ProductoInvalidoError):
         return HTTPException(status_code=404, detail=str(exc))
     if isinstance(exc, ValueError):
@@ -35,6 +42,8 @@ def _error_entrada(exc: Exception) -> HTTPException:
 
 
 def _error_salida(exc: Exception) -> HTTPException:
+    if isinstance(exc, IdempotencyConflictError):
+        return HTTPException(status_code=409, detail=str(exc))
     if isinstance(exc, ProductoInvalidoError | ProductoSinStockError):
         return HTTPException(status_code=404, detail=str(exc))
     if isinstance(exc, StockInsuficienteError):
@@ -49,6 +58,7 @@ def _crear_handler_entrada(
     registro: RegistrarMovimientoInventario,
     broker: SimuladorBrokerMensajeria,
     consumidor_auditoria: Callable[[dict], Any],
+    idempotency_store: InMemoryIdempotencyStore,
 ) -> Callable[[str, MovimientoRequest], Awaitable[MovimientoResponse]]:
     async def registrar_entrada(
         producto_id: str,
@@ -57,16 +67,23 @@ def _crear_handler_entrada(
         correlation_id: str | None = Header(default=None, alias="X-Correlation-ID"),
         idempotency_key: str | None = Header(default=None, alias="X-Idempotency-Key"),
     ) -> MovimientoResponse:
+        fingerprint = ("entrada", producto_id, str(payload.cantidad))
         try:
-            resultado = await registro.registrar_entrada(producto_id, payload.cantidad)
+            idempotent_result = await idempotency_store.execute(
+                idempotency_key,
+                fingerprint,
+                lambda: registro.registrar_entrada(producto_id, payload.cantidad),
+            )
+            resultado = idempotent_result.value
         except (ProductoInvalidoError, ValueError, TiempoDeEsperaLockAgotado) as exc:
             raise _error_entrada(exc) from exc
         respuesta = MovimientoResponse(**resultado.__dict__)
-        background_tasks.add_task(
-            broker.publicar,
-            _crear_evento(respuesta, correlation_id, idempotency_key),
-            consumidor_auditoria,
-        )
+        if not idempotent_result.replayed:
+            background_tasks.add_task(
+                broker.publicar,
+                _crear_evento(respuesta, correlation_id, idempotency_key),
+                consumidor_auditoria,
+            )
         return respuesta
 
     return registrar_entrada
@@ -76,6 +93,7 @@ def _crear_handler_salida(
     registro: RegistrarMovimientoInventario,
     broker: SimuladorBrokerMensajeria,
     consumidor_auditoria: Callable[[dict], Any],
+    idempotency_store: InMemoryIdempotencyStore,
 ) -> Callable[[str, MovimientoRequest], Awaitable[MovimientoResponse]]:
     async def registrar_salida(
         producto_id: str,
@@ -84,8 +102,14 @@ def _crear_handler_salida(
         correlation_id: str | None = Header(default=None, alias="X-Correlation-ID"),
         idempotency_key: str | None = Header(default=None, alias="X-Idempotency-Key"),
     ) -> MovimientoResponse:
+        fingerprint = ("salida", producto_id, str(payload.cantidad))
         try:
-            resultado = await registro.registrar_salida(producto_id, payload.cantidad)
+            idempotent_result = await idempotency_store.execute(
+                idempotency_key,
+                fingerprint,
+                lambda: registro.registrar_salida(producto_id, payload.cantidad),
+            )
+            resultado = idempotent_result.value
         except (
             ProductoInvalidoError,
             ProductoSinStockError,
@@ -96,11 +120,12 @@ def _crear_handler_salida(
             raise _error_salida(exc) from exc
 
         respuesta = MovimientoResponse(**resultado.__dict__)
-        background_tasks.add_task(
-            broker.publicar,
-            _crear_evento(respuesta, correlation_id, idempotency_key),
-            consumidor_auditoria,
-        )
+        if not idempotent_result.replayed:
+            background_tasks.add_task(
+                broker.publicar,
+                _crear_evento(respuesta, correlation_id, idempotency_key),
+                consumidor_auditoria,
+            )
         return respuesta
 
     return registrar_salida
@@ -141,26 +166,29 @@ def crear_router(
     repositorio_stock: StockRepository,
     broker: SimuladorBrokerMensajeria | None = None,
     consumidor_auditoria: Callable[[dict], Any] | None = None,
+    idempotency_store: InMemoryIdempotencyStore | None = None,
 ) -> APIRouter:
 
     router = APIRouter()
     broker = broker or SimuladorBrokerMensajeria()
     consumidor_auditoria = consumidor_auditoria or _consumidor_auditoria_nulo
+    idempotency_store = idempotency_store or InMemoryIdempotencyStore()
 
     router.add_api_route(
         "/inventario/{producto_id}/entradas",
-        _crear_handler_entrada(registro, broker, consumidor_auditoria),
+        _crear_handler_entrada(registro, broker, consumidor_auditoria, idempotency_store),
         methods=["POST"],
         responses={
             400: BAD_REQUEST_RESPONSE,
             404: NOT_FOUND_RESPONSE,
+            409: CONFLICT_RESPONSE,
             503: SERVICE_UNAVAILABLE_RESPONSE,
         },
     )
 
     router.add_api_route(
         "/inventario/{producto_id}/salidas",
-        _crear_handler_salida(registro, broker, consumidor_auditoria),
+        _crear_handler_salida(registro, broker, consumidor_auditoria, idempotency_store),
         methods=["POST"],
         responses={
             400: BAD_REQUEST_RESPONSE,

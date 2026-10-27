@@ -100,6 +100,8 @@
 | [ADR-0014](docs/adr/0014-estrategia-de-almacenamiento-y-costo-de-reversion.md) | Almacenamiento in-memory, movimientos inmutables y costo de reversión (Aceptado) |
 | [ADR-0015](docs/adr/0015-completar-decision-de-almacenamiento-y-reversion.md) | Completar decisión de almacenamiento, consecuencias y costo de reversión (Aceptado) |
 | [ADR-0016](docs/adr/0016-integrar-eventos-de-auditoria-en-movimientos.md) | Integrar eventos de auditoría en movimientos de inventario (Aceptado) |
+| [ADR-0017](docs/adr/0017-idempotencia-http-en-comandos-de-inventario.md) | Idempotencia HTTP en comandos de inventario (Aceptado) |
+| [Evidencia S12 de CI y despliegue](docs/evidencia-despliegue-s12.md) | Run público, Quality Gate y estado verificable de los despliegues |
 | [Evidencia de prueba contractual](docs/evidencia-prueba-contrato.md) | Reproducción del fallo ante un cambio incompatible y recuperación de la prueba |
 | [Despliegue y costos](docs/despliegue-y-costos.md) | URL pública, IaC (`render.yaml`), observabilidad, secretos y estimación mensual |
 | [Medición Reto Corte 1](docs/retos/corte-1-medicion.md) | Diagnóstico, pruebas de concurrencia, degradación controlada y comando de reproducción |

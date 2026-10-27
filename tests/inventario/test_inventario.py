@@ -1,6 +1,10 @@
+import asyncio
+
+import httpx
+import pytest
 from fastapi.testclient import TestClient
 
-from app.main import _broker_mensajeria, app
+from app.main import _broker_mensajeria, _idempotency_store, app
 
 client = TestClient(app)
 
@@ -8,6 +12,7 @@ client = TestClient(app)
 def test_entrada_publica_evento_de_auditoria_con_trazabilidad():
     _broker_mensajeria.audit_log.clear()
     _broker_mensajeria.processed_events.clear()
+    _idempotency_store.clear()
 
     client.post("/productos", json={"id": "p-evento", "nombre": "Producto evento"})
     response = client.post(
@@ -28,6 +33,80 @@ def test_entrada_publica_evento_de_auditoria_con_trazabilidad():
     assert evento["data"]["tipo"] == "ENTRADA"
     metricas = client.get("/metrics").text
     assert 'inventrack_messaging_messages_total{status="processed"}' in metricas
+
+
+def test_repetir_post_con_la_misma_clave_no_repite_el_movimiento():
+    _idempotency_store.clear()
+    _broker_mensajeria.published_messages.clear()
+    client.post("/productos", json={"id": "p-idempotente", "nombre": "Producto idempotente"})
+
+    headers = {"X-Idempotency-Key": "cmd-idempotente"}
+    primera = client.post(
+        "/inventario/p-idempotente/entradas",
+        headers=headers,
+        json={"cantidad": 5},
+    )
+    segunda = client.post(
+        "/inventario/p-idempotente/entradas",
+        headers=headers,
+        json={"cantidad": 5},
+    )
+
+    assert primera.status_code == 200
+    assert segunda.status_code == 200
+    assert segunda.json() == primera.json()
+    assert client.get("/inventario/p-idempotente").json()["cantidad"] == 5
+    assert len(_broker_mensajeria.published_messages) == 1
+
+
+def test_reutilizar_clave_con_payload_diferente_rechaza():
+    _idempotency_store.clear()
+    client.post("/productos", json={"id": "p-conflicto", "nombre": "Producto conflicto"})
+    headers = {"X-Idempotency-Key": "cmd-conflicto"}
+
+    primera = client.post(
+        "/inventario/p-conflicto/entradas",
+        headers=headers,
+        json={"cantidad": 2},
+    )
+    segunda = client.post(
+        "/inventario/p-conflicto/entradas",
+        headers=headers,
+        json={"cantidad": 3},
+    )
+
+    assert primera.status_code == 200
+    assert segunda.status_code == 409
+    assert client.get("/inventario/p-conflicto").json()["cantidad"] == 2
+
+
+@pytest.mark.asyncio
+async def test_posts_concurrentes_con_la_misma_clave_aplican_un_solo_movimiento():
+    _idempotency_store.clear()
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as async_client:
+        await async_client.post(
+            "/productos",
+            json={"id": "p-concurrente-idempotente", "nombre": "Producto concurrente"},
+        )
+        headers = {"X-Idempotency-Key": "cmd-concurrente"}
+        respuestas = await asyncio.gather(
+            async_client.post(
+                "/inventario/p-concurrente-idempotente/entradas",
+                headers=headers,
+                json={"cantidad": 7},
+            ),
+            async_client.post(
+                "/inventario/p-concurrente-idempotente/entradas",
+                headers=headers,
+                json={"cantidad": 7},
+            ),
+        )
+        stock = await async_client.get("/inventario/p-concurrente-idempotente")
+
+    assert [respuesta.status_code for respuesta in respuestas] == [200, 200]
+    assert respuestas[0].json() == respuestas[1].json()
+    assert stock.json()["cantidad"] == 7
 
 
 def test_entrada_y_consulta_de_stock():

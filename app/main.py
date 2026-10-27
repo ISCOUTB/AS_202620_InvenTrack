@@ -21,6 +21,7 @@ from app.inventario.infrastructure.in_memory_movimiento_repository import (
     InMemoryMovimientoRepository,
 )
 from app.inventario.infrastructure.in_memory_repository import InMemoryStockRepository
+from app.inventario.infrastructure.idempotency import InMemoryIdempotencyStore
 from app.inventario.infrastructure.router import crear_router as crear_router_inventario
 from app.inventario.infrastructure.validador_producto_adapter import ValidadorDeProductoAdapter
 from app.messaging.broker_simulador import SimuladorBrokerMensajeria
@@ -128,6 +129,7 @@ _registrar_movimiento = RegistrarMovimientoInventario(
     _stock_repo, _movimientos_repo, _validador_producto
 )
 _broker_mensajeria = SimuladorBrokerMensajeria()
+_idempotency_store = InMemoryIdempotencyStore()
 
 
 def _consumir_auditoria_movimiento(message: dict) -> None:
@@ -196,6 +198,7 @@ app.include_router(
         _stock_repo,
         _broker_mensajeria,
         _consumir_auditoria_movimiento,
+        _idempotency_store,
     ),
     tags=["inventario"],
 )

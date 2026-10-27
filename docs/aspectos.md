@@ -54,14 +54,16 @@ Este aspecto se refinó en dos escenarios de calidad medibles, documentados en [
 |---|---|---|---|
 | `POST /productos` | No se crean dos productos con el mismo identificador en una instancia. | Consulta previa del repositorio y rechazo de identificador existente. | [Prueba de API](../tests/productos/test_api_corte_vertical.py). Repositorio volátil y sin coordinación entre réplicas. |
 | `DELETE /productos/{producto_id}` | Se preserva la trazabilidad; los productos con movimientos se desactivan. | `VerificadorDeMovimientos` decide entre borrado físico y lógico. | [Prueba de historial real](../tests/productos/test_historial_real.py). Una segunda solicitud puede devolver `404`. |
-| `POST /inventario/{producto_id}/entradas` | Stock y movimiento se actualizan serializadamente. | Validación de producto activo y `asyncio.Lock` por SKU. | [Pruebas de inventario y concurrencia](../tests/inventario/test_inventario.py), [concurrencia](../tests/inventario/test_concurrencia.py). Solo una instancia; sin idempotencia. |
-| `POST /inventario/{producto_id}/salidas` | No se produce stock negativo en operaciones aceptadas. | Comprobación de disponibilidad y lock por SKU durante stock y movimiento. | [Pruebas de inventario y concurrencia](../tests/inventario/test_inventario.py), [concurrencia](../tests/inventario/test_concurrencia.py). Timeout de 2 s devuelve `503`; reintentos pueden duplicar. |
+| `POST /inventario/{producto_id}/entradas` | Stock y movimiento se actualizan serializadamente; la misma clave HTTP no reaplica el comando. | Validación de producto activo, `asyncio.Lock` por SKU e `InMemoryIdempotencyStore` por clave. | [Pruebas de idempotencia](../tests/inventario/test_inventario.py). Solo una instancia; claves y resultados se pierden al reiniciar. |
+| `POST /inventario/{producto_id}/salidas` | No se produce stock negativo y la misma clave HTTP no reaplica el comando. | Comprobación de disponibilidad, lock por SKU y fingerprint de operación/producto/cantidad. | [Pruebas de inventario e idempotencia](../tests/inventario/test_inventario.py). Timeout de 2 s devuelve `503`; coordinación entre réplicas pendiente. |
 | `GET /inventario/{producto_id}` | Devuelve el saldo local sin modificarlo. | Consulta directa al repositorio de stock. | [Prueba de inventario](../tests/inventario/test_inventario.py). No es lectura distribuida ni durable. |
 
 La tabla distingue la garantía funcional de su alcance operativo: el MVP protege la
-consistencia inmediata dentro de un proceso, pero no resuelve deduplicación
-durable ni coordinación entre réplicas. Estas capacidades quedan condicionadas
-a la evolución descrita en el [ADR-0011](adr/0011-idempotencia-y-sagas-en-movimientos.md).
+consistencia inmediata y la idempotencia de comandos dentro de un proceso, pero
+no ofrece deduplicación durable ni coordinación entre réplicas. Estas
+capacidades quedan condicionadas a la evolución descrita en los
+[ADR-0011](adr/0011-idempotencia-y-sagas-en-movimientos.md) y
+[ADR-0017](adr/0017-idempotencia-http-en-comandos-de-inventario.md).
 
 ---
 
