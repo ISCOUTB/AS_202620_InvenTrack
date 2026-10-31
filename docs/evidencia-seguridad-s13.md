@@ -142,3 +142,42 @@ La mitigación debe incluir:
 La actualización de versiones y la configuración del CI no se consideran
 realizadas en este paso; quedan como acciones de mitigación para la matriz
 priorizada.
+
+## 9. Tabla de amenazas priorizadas
+
+La prioridad combina impacto sobre los activos críticos y probabilidad de
+ocurrencia en el despliegue actual. La escala usada es **Crítica**, **Alta**,
+**Media** y **Baja**. Una mitigación marcada como pendiente no se presenta
+como una capacidad disponible del sistema.
+
+| ID | Amenaza | Activo afectado | Impacto | Probabilidad | Prioridad | Mitigación asignada | Estado / evidencia |
+|---|---|---|---|---|---|---|---|
+| T-01 | Un tercero ejecuta entradas, salidas, creación o eliminación de productos porque el API no exige autenticación ni autorización. | Stock, productos y movimientos. | Crítico | Alta | **Crítica** | Incorporar autenticación y autorización por roles; restringir operaciones administrativas y registrar el actor. | Pendiente; el módulo `usuarios` aún no implementa estos controles. |
+| T-02 | Una dependencia con vulnerabilidad conocida permite afectar la superficie HTTP o el entorno de ejecución. | API, runtime y cadena de suministro. | Alto | Alta | **Alta** | Actualizar versiones compatibles de `fastapi`/`starlette`, `certifi` y `pytest`; regenerar hashes y ejecutar `pip-audit` en CI. | Pendiente; `pip-audit` reportó 18 hallazgos en 3 paquetes. |
+| T-03 | Un reinicio o redeploy elimina el stock, movimientos, claves de idempotencia y eventos almacenados en memoria. | Stock, historial, auditoría e idempotencia. | Crítico | Media-alta | **Alta** | Migrar a persistencia durable con backups y restauración; usar un almacén compartido antes de habilitar varias réplicas. | Riesgo aceptado del MVP; ADR-0012 y ADR-0017. |
+| T-04 | Dos réplicas procesan el mismo comando o actualizan el mismo SKU sin compartir locks ni claves de idempotencia. | Stock y movimientos. | Crítico | Media | **Alta** | Mantener una sola instancia en el MVP o introducir transacciones y coordinación distribuida en una persistencia compartida. | Mitigado solo dentro de una instancia; límites documentados en ADR-0002 y ADR-0017. |
+| T-05 | Un consumidor procesa un evento duplicado o falla después de modificar el stock y antes de completar la auditoría. | Movimientos y eventos de auditoría. | Alto | Media | **Media-alta** | Mantener consumidores idempotentes, reintentos y DLQ; evolucionar a Outbox durable para cerrar la ventana entre stock y publicación. | Mitigación parcial; broker y DLQ son volátiles. |
+| T-06 | La exposición pública de `/metrics` o `/docs` revela rutas, estados, latencias o detalles operativos útiles para reconocimiento. | Información operacional y superficie del API. | Medio | Alta | **Media-alta** | Restringir `/metrics` y documentación en producción mediante autenticación, red privada o configuración de despliegue; mantener `/health` mínimo y público. | Pendiente; actualmente las rutas están expuestas por la aplicación. |
+| T-07 | Los logs y eventos no identifican al usuario que ejecutó un movimiento y podrían conservar más información de la necesaria. | Trazabilidad y datos operativos. | Alto | Media | **Media-alta** | Añadir identidad del actor, política de retención y redacción; restringir acceso al sistema de logs. | Pendiente; actualmente se registran `event_id`, `correlation_id` y datos técnicos, no identidad autenticada. |
+| T-08 | Un payload malformado o una cantidad inválida provoca errores o altera reglas del dominio. | Stock y disponibilidad del servicio. | Alto | Media | **Media** | Mantener validación Pydantic, límites de entrada y pruebas contractuales; devolver errores HTTP explícitos. | Parcialmente implementado; `cantidad` exige ser mayor que cero y el contrato se valida en CI. |
+| T-09 | Un atacante o proceso comprometido accede con privilegios excesivos dentro del contenedor. | Código, memoria y datos del proceso. | Alto | Baja-media | **Media** | Mantener usuario no root, imagen mínima y permisos mínimos; escanear imagen y fijar actualizaciones de la imagen base. | Mitigación parcial; `Dockerfile` usa `python:3.11-slim` y `USER appuser`. |
+| T-10 | La manipulación o sustitución de paquetes altera el software instalado durante el build. | Cadena de suministro. | Alto | Baja-media | **Media** | Mantener `requirements.txt` con hashes, instalación `--require-hashes`, revisión de cambios y escaneo automático. | Hashes implementados; escaneo continuo pendiente. |
+
+### Orden de atención recomendado
+
+1. **T-01 — Acceso sin autenticación ni autorización.** Es la amenaza más
+   grave porque permite modificar directamente activos críticos desde el API.
+2. **T-02 — Dependencias vulnerables.** Tiene hallazgos concretos y afecta
+   componentes del runtime; debe resolverse antes de presentar el despliegue
+   como endurecido.
+3. **T-03 y T-04 — Pérdida o divergencia del estado.** Son riesgos
+   estructurales del almacenamiento en memoria y del escalamiento horizontal.
+4. **T-05, T-06 y T-07 — Auditoría, exposición operacional y privacidad.**
+   Requieren controles coordinados con la sección de privacidad.
+5. **T-08, T-09 y T-10 — Defensa en profundidad.** Ya tienen controles
+   parciales, pero necesitan validación y automatización continua.
+
+Las mitigaciones T-01, T-03, T-04, T-05, T-06 y T-07 pueden cambiar la
+estructura o los límites de confianza del sistema. Si se aceptan para
+implementación, se deberá crear o actualizar un ADR antes de presentarlas como
+decisiones arquitectónicas.
