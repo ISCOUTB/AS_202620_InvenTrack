@@ -95,3 +95,50 @@ priorizada; no deben presentarse como controles implementados.
 - [Propiedad de datos](propiedad-datos.md).
 - [Dockerfile](../Dockerfile).
 - [requirements.in](../requirements.in) y [requirements.txt](../requirements.txt).
+
+## 8. Resultado del análisis de dependencias
+
+### Método reproducible
+
+Se ejecutaron los siguientes comandos desde la raíz del repositorio:
+
+```powershell
+python -m pip check
+python -m pip_audit -r requirements.txt
+```
+
+Resultado de `pip check`: **sin dependencias rotas**.
+
+Resultado de `pip-audit` al 30 de octubre de 2026: **18 hallazgos
+reportados en 3 paquetes**. El número de hallazgos incluye identificadores
+repetidos por la resolución del lockfile; los paquetes afectados son:
+
+| Paquete | Versión fijada | Identificadores reportados | Versión mínima de corrección reportada | Tipo |
+|---|---:|---|---:|---|
+| `certifi` | 2026.7.22 | `PYSEC-2026-4320` | 2026.10.18 | Transitiva de `httpx` / cliente HTTP. |
+| `starlette` | 0.38.6 | `PYSEC-2026-1943`, `PYSEC-2026-1941`, `PYSEC-2026-161`, `PYSEC-2026-2281`, `PYSEC-2026-2280`, `PYSEC-2026-249`, `PYSEC-2026-248` | Entre 0.40.0 y 1.3.1 según el identificador | Transitiva de `fastapi`. |
+| `pytest` | 8.3.3 | `PYSEC-2026-1845` | 9.0.3 | Directa de desarrollo y pruebas. |
+
+El escaneo no se interpreta como una vulnerabilidad explotable confirmada en
+la aplicación: identifica versiones con avisos publicados y exige revisar
+compatibilidad y alcance antes de actualizar. En particular, `starlette`
+está fijada por la versión actual de `fastapi`; actualizarla de forma aislada
+podría romper las restricciones de compatibilidad del framework.
+
+### Conclusión para la matriz de amenazas
+
+El análisis de dependencias produce una amenaza de prioridad **alta para la
+cadena de suministro**: una vulnerabilidad conocida en una dependencia del
+runtime puede afectar la superficie HTTP o el cliente usado por las pruebas.
+La mitigación debe incluir:
+
+1. Actualizar conjuntamente `fastapi`, `starlette` y dependencias relacionadas
+   a versiones compatibles.
+2. Actualizar `certifi` y regenerar el lockfile con hashes.
+3. Actualizar `pytest` por separado como dependencia de desarrollo.
+4. Ejecutar nuevamente `pip-audit`, `pip check` y la suite de pruebas.
+5. Incorporar el escaneo reproducible al CI para evitar regresiones.
+
+La actualización de versiones y la configuración del CI no se consideran
+realizadas en este paso; quedan como acciones de mitigación para la matriz
+priorizada.
