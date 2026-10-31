@@ -553,6 +553,46 @@ Para responder a las operaciones reales del sistema InvenTrack, se definen expl�
 
 ---
 
+### 8.3 Seguridad, privacidad y cadena de suministro (S13)
+
+El MVP no implementa autenticación, autorización por roles ni el módulo de
+usuarios. Por tanto, las operaciones HTTP de productos e inventario no deben
+presentarse como protegidas contra acceso no autorizado. La autenticación,
+los roles, la identidad del actor y la auditoría asociada a una persona
+requieren una decisión arquitectónica antes de habilitar usuarios reales.
+
+Los controles actualmente implementados son defensivos y de consistencia:
+
+- Validación Pydantic de payloads y cantidades positivas en el borde HTTP.
+- Locks por SKU, control de stock e idempotencia HTTP dentro de una instancia.
+- Deduplicación, reintentos y DLQ para eventos de auditoría en memoria.
+- Separación modular, propiedad única de datos y contratos de aplicación.
+- Ejecución del contenedor con usuario no root.
+- Lockfile con hashes e instalación mediante `--require-hashes`.
+
+Los repositorios, las claves de idempotencia y el broker son volátiles. Un
+reinicio puede perder stock, historial, resultados de replay y eventos; varias
+réplicas tampoco comparten locks ni estado. `/metrics` y `/docs` permanecen
+expuestos por la configuración actual y deben restringirse en un despliegue
+con datos reales, manteniendo `/health` como sonda mínima.
+
+No se deben incluir nombres, correos, documentos, tokens o credenciales en
+`X-Correlation-ID`, `X-Idempotency-Key` ni logs. El MVP no solicita
+directamente esos datos, pero un proveedor de despliegue o proxy puede tratar
+IP, user-agent y registros de acceso. La futura implementación de usuarios
+deberá definir minimización, finalidad, base jurídica, retención, derechos de
+los titulares, acceso a logs y respuesta a incidentes, tomando como referencia
+la Ley 1581 de 2012 y la política aprobada por el responsable del tratamiento.
+
+El análisis reproducible de dependencias (`pip check` y `pip-audit
+-r requirements.txt`) no encontró dependencias rotas, pero reportó 18 avisos
+en `certifi`, `starlette` y `pytest`. Las versiones deben actualizarse de
+forma compatible, regenerar el lockfile y verificarse en CI antes de presentar
+la cadena de suministro como saneada. La evidencia completa está en
+[evidencia-seguridad-s13.md](../evidencia-seguridad-s13.md).
+
+---
+
 ## Lenguaje Ubicuo (Ubiquitous Language)
 
 Para garantizar la consistencia conceptual entre desarrolladores, arquitectura y dominio de negocio, se establece la siguiente tabla de términos del dominio:
@@ -635,11 +675,11 @@ La decisión completa se encuentra en:
 
 El MVP mantiene `productos` e `inventario` dentro del mismo monolito y no
 coordina pasos distribuidos; por ello una Saga no aplica actualmente. Los
-comandos HTTP de entradas y salidas tampoco ofrecen deduplicación por
-`Idempotency-Key`, por lo que no son idempotentes ante reintentos de red. Este
-límite y el diseño requerido antes de extraer `inventario` están formalizados
-en [ADR-0011](../adr/0011-idempotencia-y-sagas-en-movimientos.md). La decisión
-de no extraer el módulo en el MVP está en
+comandos HTTP de entradas y salidas ofrecen deduplicación por
+`X-Idempotency-Key` dentro de una instancia y durante la vida del proceso.
+Este control no sobrevive reinicios ni coordina réplicas; su evolución está
+formalizada en [ADR-0017](../adr/0017-idempotencia-http-en-comandos-de-inventario.md).
+La decisión de no extraer el módulo en el MVP está en
 [ADR-0010](../adr/0010-decision-extraccion-microservicios.md).
 
 ### Persistencia y propiedad de datos
@@ -841,6 +881,11 @@ implementadas las capacidades que permanecen fuera del MVP.
 | Arranque en frío del destino gratuito | La primera solicitud puede superar el umbral de latencia por suspensión del servicio. | Calentar la instancia antes de medir y separar la sonda `/health` de la medición de negocio. | [ADR-0005](../adr/0005-eleccion-plataforma-despliegue.md), [experimento S10](../retos/corte-2-experimento.md). Mitigación operativa. |
 | Reintento de una entrada o salida después de un timeout de red | Dentro de una instancia, la misma clave y payload devuelve el resultado guardado; tras reinicio o en otra réplica la clave puede no existir. | `InMemoryIdempotencyStore` reserva la clave antes del caso de uso; una clave con payload diferente devuelve `409`. Migrar a almacenamiento durable antes de escalar. | [ADR-0017](../adr/0017-idempotencia-http-en-comandos-de-inventario.md) y [pruebas HTTP](../../tests/inventario/test_inventario.py). |
 | Acceso sin autenticación o rol insuficiente | Un usuario podría acceder a operaciones administrativas sin autorización. | Mantener autenticación y roles fuera del MVP declarado; no presentar ESC-05 como implementado y exigir un cambio arquitectónico antes de habilitar usuarios reales. | [Contrato API](../api/inventrack-contrato.md), ESC-05. Pendiente de alcance. |
+| Dependencia con vulnerabilidad conocida | Un defecto publicado en una dependencia puede afectar la superficie HTTP o el entorno de ejecución. | Actualizar versiones compatibles, regenerar hashes y ejecutar `pip-audit` en CI. | [Evidencia S13](../evidencia-seguridad-s13.md). `pip-audit` reportó 18 hallazgos en `certifi`, `starlette` y `pytest`; pendiente de remediación. |
+| Exposición de `/metrics` o `/docs` | Un tercero obtiene información útil para reconocimiento operacional. | Restringir ambas rutas en producción mediante autenticación, red privada o configuración del proxy; conservar `/health` mínimo. | [Evidencia S13](../evidencia-seguridad-s13.md). Pendiente. |
+| Falta de identidad del actor en auditoría | No se puede demostrar qué usuario ejecutó un movimiento ni aplicar responsabilidad por rol. | Implementar identidad autenticada, autorización por rol, `actor_id` en eventos y política de retención de logs. | [Evidencia S13](../evidencia-seguridad-s13.md). Pendiente junto con el módulo `usuarios`. |
+| Datos personales en identificadores o logs | Un cliente puede enviar datos personales en cabeceras o la plataforma puede conservar datos de acceso. | Prohibir datos personales en cabeceras técnicas, minimizar logs, restringir acceso y definir retención y política de privacidad. | [Evidencia S13](../evidencia-seguridad-s13.md). Mitigación pendiente. |
+| Contenedor o imagen base comprometida | Un proceso comprometido puede acceder a código o memoria con privilegios innecesarios. | Mantener usuario no root, imagen mínima, permisos mínimos y escaneo de imagen/base. | [Dockerfile](../../Dockerfile), [Evidencia S13](../evidencia-seguridad-s13.md). Usuario no root implementado; escaneo pendiente. |
 
 ---
 
