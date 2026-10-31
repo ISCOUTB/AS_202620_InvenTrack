@@ -181,3 +181,72 @@ Las mitigaciones T-01, T-03, T-04, T-05, T-06 y T-07 pueden cambiar la
 estructura o los límites de confianza del sistema. Si se aceptan para
 implementación, se deberá crear o actualizar un ADR antes de presentarlas como
 decisiones arquitectónicas.
+
+## 10. Privacidad y tratamiento de datos personales
+
+### 10.1 Tratamiento efectivo en el MVP actual
+
+El MVP revisado no implementa el módulo `usuarios`, autenticación, cuentas,
+correo electrónico, teléfonos, documentos de identidad ni perfiles de
+personas. Por tanto, los endpoints actuales no solicitan directamente datos
+personales para crear productos o registrar movimientos.
+
+Los siguientes datos técnicos pueden llegar desde el cliente o generarse
+durante la operación:
+
+| Dato | ¿Personal en el contexto? | Finalidad | Estado |
+|---|---|---|---|
+| `X-Correlation-ID` | Puede serlo si el cliente incluye un identificador asociado a una persona. | Trazar una solicitud entre componentes. | Recibido opcionalmente y escrito en eventos/logs. |
+| `X-Idempotency-Key` | Normalmente es un identificador técnico, pero no debe contener nombres, correos o documentos. | Evitar repetir un comando HTTP. | Recibido opcionalmente y almacenado temporalmente en memoria. |
+| `event_id` | Identificador técnico; no identifica por sí solo a una persona. | Identificar un evento de auditoría. | Generado por el servidor y registrado. |
+| IP, user-agent y datos de acceso del proveedor | Pueden ser datos personales o identificables. | Seguridad y operación de la plataforma. | Posible tratamiento en Render, Dokploy, proxy o sistema de logs; no es almacenado explícitamente por la aplicación. |
+
+La aplicación registra datos técnicos de solicitudes y eventos, pero no tiene
+un campo de identidad autenticada del actor. Por ello, actualmente no puede
+cumplir una trazabilidad personal de quién realizó cada movimiento, aunque el
+historial del movimiento sí se conserve.
+
+### 10.2 Datos previstos si se implementa `usuarios`
+
+La siguiente tabla describe el tratamiento que deberá definirse antes de
+activar autenticación y roles. No representa funcionalidades existentes:
+
+| Dato previsto | Finalidad estrictamente necesaria | Base propuesta | Salvaguardas requeridas |
+|---|---|---|---|
+| Nombre o identificador laboral | Identificar al usuario dentro de la PYME. | Autorización previa, expresa e informada del titular, o la excepción legal aplicable según el responsable del tratamiento. | Minimización, acceso restringido y actualización. |
+| Correo electrónico | Autenticación, recuperación de cuenta y notificaciones operativas, si se justifican. | Autorización informada para la finalidad definida; revisar si existe una obligación contractual o legal aplicable. | No usarlo para fines distintos sin nueva información/autorización. |
+| Rol y estado de acceso | Aplicar autorización y retirar acceso. | Necesidad de administrar la relación laboral/operativa y autorización o base legal aplicable. | Principio de mínimo privilegio y revisión de permisos. |
+| Identidad del actor en un movimiento | Trazabilidad y auditoría de operaciones de inventario. | Necesidad de seguridad y auditoría del servicio, informada al titular y documentada por el responsable. | Inmutabilidad, acceso restringido y retención definida. |
+| Credenciales o secretos de autenticación | Verificar identidad. | Necesidad de prestar el servicio de autenticación. | Almacenar solo hashes de contraseñas; nunca registrar contraseñas ni tokens en logs. |
+
+La base jurídica final debe ser aprobada por el responsable del tratamiento
+de la PYME y reflejada en el aviso o política de privacidad. Para el contexto
+colombiano, la referencia normativa inicial es la **Ley 1581 de 2012** y su
+reglamentación aplicable; esta documentación no sustituye una revisión legal.
+No se deben recolectar datos sensibles ni documentos de identidad para el MVP
+si no existe una finalidad y base legal específica.
+
+### 10.3 Principios y obligaciones operativas
+
+Antes de activar el módulo de usuarios se debe definir:
+
+- Finalidad concreta y aviso de privacidad visible para los usuarios.
+- Autorización o base legal aplicable y evidencia de su gestión.
+- Inventario de campos, responsable del tratamiento y encargados externos.
+- Retención y eliminación de cuentas, logs, eventos y respaldos.
+- Canal para consultar, actualizar, corregir o solicitar la supresión de datos,
+  según los derechos aplicables.
+- Restricción de acceso a logs y métricas; no incluir credenciales, tokens ni
+  datos personales innecesarios.
+- Cifrado en tránsito y protección de secretos en el proveedor de despliegue.
+- Procedimiento para incidentes y comunicación al responsable del tratamiento.
+
+### 10.4 Conclusión de privacidad para S13
+
+El riesgo de privacidad actual se concentra en la ausencia de autenticación,
+la posible inclusión de datos personales en identificadores enviados por
+clientes y los logs gestionados por la plataforma. La mitigación inmediata es
+prohibir datos personales en `X-Correlation-ID` y `X-Idempotency-Key`, revisar
+la retención y el acceso a logs, y documentar la política antes de habilitar
+usuarios reales. La implementación de identidad, roles y auditoría por actor
+requiere una decisión arquitectónica posterior.
