@@ -8,6 +8,7 @@ dependencias cruzadas entre módulos (ADR-0003) y ensambla los routers.
 import json
 import logging
 import math
+import os
 import time
 from collections import defaultdict, deque
 from collections.abc import Awaitable, Callable
@@ -67,6 +68,51 @@ _request_count: defaultdict[tuple[str, str], int] = defaultdict(int)
 _request_duration_seconds: defaultdict[tuple[str, str], float] = defaultdict(float)
 # Historial acotado para cálculo de p95 sin afectar la memoria ni crear ramas muertas
 _request_durations_history: defaultdict[tuple[str, str], deque] = defaultdict(lambda: deque(maxlen=1000))
+
+
+def _is_production() -> bool:
+    return os.getenv("INVENTRACK_ENV", "development").lower() == "production"
+
+
+def _business_data_enabled() -> bool:
+    default = "false" if _is_production() else "true"
+    return os.getenv("INVENTRACK_ALLOW_BUSINESS_DATA", default).lower() == "true"
+
+
+def _internal_token_is_valid(request: Request) -> bool:
+    expected_token = os.getenv("INVENTRACK_INTERNAL_TOKEN")
+    return bool(expected_token) and request.headers.get("X-Internal-Token") == expected_token
+
+
+class AccessPolicyMiddleware(BaseHTTPMiddleware):
+    async def dispatch(
+        self,
+        request: Request,
+        call_next: Callable[[Request], Awaitable[Response]],
+    ) -> Response:
+        if _is_production() and request.url.path in {
+            "/metrics",
+            "/docs",
+            "/redoc",
+            "/openapi.json",
+        } and not _internal_token_is_valid(request):
+            return Response(status_code=404)
+
+        if (
+            _is_production()
+            and not _business_data_enabled()
+            and (
+                request.url.path.startswith("/productos")
+                or request.url.path.startswith("/inventario")
+            )
+        ):
+            return Response(
+                content="Business data endpoints are disabled until authentication and authorization are configured.",
+                status_code=503,
+                media_type="text/plain",
+            )
+
+        return await call_next(request)
 
 
 class ObservabilityMiddleware(BaseHTTPMiddleware):
@@ -145,11 +191,16 @@ def _consumir_auditoria_movimiento(message: dict) -> None:
         )
     )
 
+_production_without_internal_token = _is_production() and not os.getenv("INVENTRACK_INTERNAL_TOKEN")
 app = FastAPI(
     title="InvenTrack",
     description="Sistema de gestión de inventarios para pequeñas empresas.",
     version="0.1.0",
+    docs_url=None if _production_without_internal_token else "/docs",
+    redoc_url=None if _production_without_internal_token else "/redoc",
+    openapi_url=None if _production_without_internal_token else "/openapi.json",
 )
+app.add_middleware(AccessPolicyMiddleware)
 app.add_middleware(ObservabilityMiddleware)
 
 
@@ -160,7 +211,10 @@ def health_check() -> dict[str, str]:
 
 @app.get("/", include_in_schema=False, tags=["infraestructura"])
 def root() -> dict[str, str]:
-    return {"service": "InvenTrack", "status": "ok", "health": "/health", "docs": "/docs"}
+    response = {"service": "InvenTrack", "status": "ok", "health": "/health"}
+    if app.docs_url:
+        response["docs"] = app.docs_url
+    return response
 
 
 @app.get("/metrics", include_in_schema=False, tags=["infraestructura"], response_class=Response)

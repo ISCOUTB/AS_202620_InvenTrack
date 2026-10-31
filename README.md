@@ -27,8 +27,7 @@
 
 * **URL Pública:** `https://inventrack-api.onrender.com`
 * **Health Check:** `https://inventrack-api.onrender.com/health`
-* **Métricas (ESC-04 / p95):** `https://inventrack-api.onrender.com/metrics`
-* **Documentación Interactiva (Swagger):** `https://inventrack-api.onrender.com/docs`
+* **Métricas y Swagger:** restringidos en producción; requieren el token interno configurado por plataforma.
 
 ---
 
@@ -36,9 +35,8 @@
 
 * **URL Pública:** `https://inventrack.iscoutb.dev`
 * **Health Check:** `https://inventrack.iscoutb.dev/health`
-* **Métricas (ESC-04 / p95):** `https://inventrack.iscoutb.dev/metrics`
-* **Documentación Interactiva (Swagger):** `https://inventrack.iscoutb.dev/docs`
-* **Estado:** Desplegado y verificado mediante Dokploy con `deploy/compose.lab.yaml`.
+* **Métricas y Swagger:** restringidos en producción; requieren el token interno configurado por plataforma.
+* **Estado:** desplegado con datos de negocio deshabilitados hasta completar autenticación/autorización, mediante `deploy/compose.lab.yaml`.
 
 ---
 

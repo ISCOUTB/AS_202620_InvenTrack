@@ -9,7 +9,10 @@ aceptados o fuera de alcance.
 
 La aplicación es un monolito modular con arquitectura hexagonal por módulo.
 El despliegue usa un contenedor Docker y repositorios en memoria; no hay una
-base de datos ni un proveedor de identidad integrado en el MVP.
+base de datos ni un proveedor de identidad integrado en el MVP. Mientras esos
+controles no existan, los despliegues de producción mantienen deshabilitadas
+las rutas de negocio y no publican métricas ni documentación sin un token
+interno configurado.
 
 ## 2. Activos y datos protegidos
 
@@ -20,7 +23,7 @@ base de datos ni un proveedor de identidad integrado en el MVP.
 | Movimientos de inventario | Crítico: soporta trazabilidad y auditoría. | `inventario` | Registrar entradas y salidas; consultar historial. | Implementado como historial en memoria e inmutable. |
 | Eventos de auditoría | Alto: permiten rastrear la publicación y procesamiento de movimientos. | `inventario` / mensajería | Publicar, deduplicar, reintentar y enviar a DLQ. | Implementado en broker simulado en memoria. |
 | Claves de idempotencia | Alto: evitan repetir comandos después de reintentos HTTP. | `inventario` | Reservar clave, comparar fingerprint y reproducir resultado. | Implementado en memoria durante la vida del proceso. |
-| Métricas y logs técnicos | Medio-alto: soportan diagnóstico y evidencia de operación. | Aplicación / infraestructura | Registrar solicitudes, duración, estado y métricas p95. | Implementado; no contiene autenticación ni control de acceso. |
+| Métricas y logs técnicos | Medio-alto: soportan diagnóstico y evidencia de operación. | Aplicación / infraestructura | Registrar solicitudes, duración, estado y métricas p95. | Implementado; `/metrics` queda restringido en producción. |
 | Usuarios, roles y permisos | Alto por el impacto potencial en operaciones administrativas. | `usuarios` | Planeado para autenticación y autorización. | No implementado en el MVP actual. |
 
 La propiedad detallada de estos datos y sus fronteras está documentada en
@@ -36,8 +39,8 @@ La propiedad detallada de estos datos y sus fronteras está documentada en
 | `POST /inventario/{producto_id}/salidas` | Pública si el despliegue no añade una capa externa. | Cantidad, `X-Correlation-ID`, `X-Idempotency-Key`. | Validación positiva, lock por SKU, idempotencia y control de stock; sin autenticación. |
 | `GET /inventario/{producto_id}` | Pública si el despliegue no añade una capa externa. | Identificador del producto; devuelve stock. | Validación de existencia; sin autenticación. |
 | `GET /health` y `/` | Pública por diseño operativo. | Estado técnico y enlaces de servicio. | Sin datos de negocio. |
-| `GET /metrics` | Pública en la aplicación actual. | Contadores, rutas, estados y latencias. | Sin autenticación ni autorización. |
-| `GET /docs` | Pública por configuración predeterminada de FastAPI. | Esquema y documentación del API. | No contiene credenciales; puede revelar la superficie del API. |
+| `GET /metrics` | Solo local o con token interno en producción. | Contadores, rutas, estados y latencias. | `X-Internal-Token`; responde `404` sin token en producción. |
+| `GET /docs`, `/redoc` y `/openapi.json` | Solo local o con token interno en producción. | Esquema y documentación del API. | FastAPI las deshabilita sin token y el middleware rechaza accesos no autorizados. |
 | Broker simulado y consumidor de auditoría | Interna al proceso. | Eventos con `event_id`, `correlation_id`, tipo y datos del movimiento. | Deduplicación, reintentos, backoff y DLQ en memoria. |
 
 ## 4. Dependencias y componentes de confianza
@@ -68,6 +71,7 @@ esas dependencias se documentará en el siguiente paso.
 | Separación modular y propiedad única | Escrituras directas entre dominios. | ADR-0001, ADR-0003 y `docs/propiedad-datos.md`. | Regla arquitectónica, no enforcement automático completo. |
 | Usuario no root en Docker | Impacto de una intrusión dentro del contenedor. | `USER appuser` en `Dockerfile`. | No sustituye el aislamiento del despliegue. |
 | Logs JSON y métricas | Diagnóstico y trazabilidad técnica. | Middleware de observabilidad en `app/main.py`. | No es control de acceso ni auditoría de identidad. |
+| Política de exposición en producción | Evita habilitar datos reales antes de autenticación/autorización y reduce reconocimiento operacional. | `AccessPolicyMiddleware`, `INVENTRACK_ENV`, `INVENTRACK_ALLOW_BUSINESS_DATA` e `INVENTRACK_INTERNAL_TOKEN` en `app/main.py`; prueba de regresión en `tests/test_health.py`. | Fail closed: negocio deshabilitado y superficies internas ocultas por defecto. |
 | Lockfile con hashes | Alteración o variación de paquetes instalados. | Instalación con `--require-hashes`. | No reemplaza un escaneo de vulnerabilidades. |
 
 ## 6. Controles ausentes o fuera del MVP
@@ -81,6 +85,8 @@ esas dependencias se documentará en el siguiente paso.
 - Retención, acceso restringido y redacción de logs.
 - Coordinación de idempotencia y locks entre réplicas.
 - Escaneo de vulnerabilidades de dependencias como evidencia S13.
+- Autenticación y autorización de usuarios; el token interno solo protege
+  superficies operativas y no sustituye identidad ni roles.
 
 Estas ausencias deben aparecer como amenazas o limitaciones en la matriz
 priorizada; no deben presentarse como controles implementados.
@@ -162,6 +168,21 @@ como una capacidad disponible del sistema.
 | T-08 | Un payload malformado o una cantidad inválida provoca errores o altera reglas del dominio. | Stock y disponibilidad del servicio. | Alto | Media | **Media** | Mantener validación Pydantic, límites de entrada y pruebas contractuales; devolver errores HTTP explícitos. | Parcialmente implementado; `cantidad` exige ser mayor que cero y el contrato se valida en CI. |
 | T-09 | Un atacante o proceso comprometido accede con privilegios excesivos dentro del contenedor. | Código, memoria y datos del proceso. | Alto | Baja-media | **Media** | Mantener usuario no root, imagen mínima y permisos mínimos; escanear imagen y fijar actualizaciones de la imagen base. | Mitigación parcial; `Dockerfile` usa `python:3.11-slim` y `USER appuser`. |
 | T-10 | La manipulación o sustitución de paquetes altera el software instalado durante el build. | Cadena de suministro. | Alto | Baja-media | **Media** | Mantener `requirements.txt` con hashes, instalación `--require-hashes`, revisión de cambios y escaneo automático. | Hashes implementados; escaneo continuo pendiente. |
+
+### Responsables y evidencia de seguimiento
+
+| Amenaza | Responsable primario | Evidencia verificable | Criterio de cierre |
+|---|---|---|---|
+| T-01 — autenticación y autorización | Responsable técnico de backend + responsable de seguridad | [ESC-05 en arc42](arc42/arc42-template-EN.md), [módulo usuarios](../app/usuarios/), pruebas de `401/403` y auditoría de actor | Proveedor de identidad, roles mínimos, pruebas negativas y actor en movimientos antes de habilitar datos reales. |
+| T-02 — dependencias vulnerables | Responsable de plataforma/DevOps | [requirements.txt](../requirements.txt), workflow de CI y salida reproducible de `pip-audit` en esta evidencia | `pip-audit` sin hallazgos aplicables, `pip check` correcto y suite completa aprobada. |
+| T-03 — pérdida de estado | Responsable técnico de backend + responsable de datos | [ADR-0012](adr/0012-mantener-repositorios-en-memoria-en-el-mvp.md) y repositorios `InMemory` | Persistencia durable, backup y restauración probados antes de operar datos reales. |
+| T-04 — divergencia entre réplicas | Responsable de plataforma/DevOps | [ADR-0002](adr/0002-control-concurrencia-memoria-inventario.md) y [ADR-0017](adr/0017-idempotencia-http-en-comandos-de-inventario.md) | Una sola instancia controlada o coordinación distribuida probada antes de escalar. |
+| T-05 — auditoría asíncrona incompleta | Responsable del módulo inventario + responsable de mensajería | [broker simulado](../app/messaging/broker_simulador.py) y [evidencia S12](evidencia-mensajeria-s12.md) | Outbox durable o garantía equivalente, con reintentos y DLQ verificables. |
+| T-06 — exposición de métricas y documentación | Responsable de plataforma/DevOps | [AccessPolicyMiddleware](../app/main.py), [prueba de regresión](../tests/test_health.py), [render.yaml](../render.yaml) y [Compose institucional](../deploy/compose.lab.yaml) | Producción con negocio deshabilitado por defecto y superficies internas inaccesibles sin secreto gestionado. |
+| T-07 — identidad y privacidad en auditoría | Responsable de seguridad + responsable del módulo inventario | [propiedad de datos](propiedad-datos.md), logs de [app/main.py](../app/main.py) y política de retención pendiente | Actor autenticado, redacción de identificadores y retención/acceso aprobados. |
+| T-08 — entrada inválida | Responsable técnico de backend | [router de inventario](../app/inventario/infrastructure/router.py), [pruebas de validación](../tests/inventario/test_inventario.py) y contrato OpenAPI | Límites de entrada y pruebas contractuales mantenidos en CI. |
+| T-09 — privilegios del contenedor | Responsable de plataforma/DevOps | [Dockerfile](../Dockerfile) y escaneo de imagen pendiente | Usuario no root, imagen mínima y escaneo sin hallazgos bloqueantes. |
+| T-10 — integridad de paquetes | Responsable de plataforma/DevOps | [requirements.txt](../requirements.txt), [Dockerfile](../Dockerfile) y workflow de CI | Hashes verificados y escaneo continuo incorporado al pipeline. |
 
 ### Orden de atención recomendado
 
@@ -249,4 +270,6 @@ clientes y los logs gestionados por la plataforma. La mitigación inmediata es
 prohibir datos personales en `X-Correlation-ID` y `X-Idempotency-Key`, revisar
 la retención y el acceso a logs, y documentar la política antes de habilitar
 usuarios reales. La implementación de identidad, roles y auditoría por actor
-requiere una decisión arquitectónica posterior.
+requiere una decisión arquitectónica posterior. Hasta entonces,
+`INVENTRACK_ALLOW_BUSINESS_DATA=false` en producción evita que el MVP procese
+datos reales por accidente.
