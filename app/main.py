@@ -101,10 +101,7 @@ class AccessPolicyMiddleware(BaseHTTPMiddleware):
         if (
             _is_production()
             and not _business_data_enabled()
-            and (
-                request.url.path.startswith("/productos")
-                or request.url.path.startswith("/inventario")
-            )
+            and request.url.path.startswith(("/productos", "/inventario"))
         ):
             return Response(
                 content="Business data endpoints are disabled until authentication and authorization are configured.",
