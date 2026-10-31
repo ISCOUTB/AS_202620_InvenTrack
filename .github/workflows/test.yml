@@ -45,3 +45,16 @@ jobs:
     - name: Validate versioned API contract
       run: |
         PYTHONPATH=. pytest -v tests/contract/test_openapi_contract.py
+
+  dependency-audit:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: pip-audit (requirements.txt con hashes)
+      uses: pypa/gh-action-pip-audit@1220774d901786e6f652ae159f7b6bc8fea6d266 # v1.1.0
+      with:
+        inputs: requirements.txt
+        require-hashes: true
+        no-deps: true
