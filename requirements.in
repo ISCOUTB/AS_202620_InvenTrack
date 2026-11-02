@@ -1,4 +1,4 @@
-fastapi==0.134.0
+fastapi==0.162.0
 uvicorn==0.30.6
 pytest==9.2.0
 pytest-cov==5.0.0
