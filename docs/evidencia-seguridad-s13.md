@@ -273,3 +273,9 @@ usuarios reales. La implementación de identidad, roles y auditoría por actor
 requiere una decisión arquitectónica posterior. Hasta entonces,
 `INVENTRACK_ALLOW_BUSINESS_DATA=false` en producción evita que el MVP procese
 datos reales por accidente.
+
+## 11. Componentes de IA Generativa y Riesgos Asociados
+
+Conforme a la decisión arquitectónica formalizada en el **[ADR-0008](adr/0008-no-incorporar-componente-generativo.md)**, el sistema **InvenTrack** no incorpora ningún modelo de lenguaje (LLM), motor de inferencia ni agente generativo en el flujo de ejecución en producción. 
+
+Por consiguiente, los riesgos específicos de la *OWASP Top 10 for LLM Applications* —tales como **Inyección de Prompt** (*Prompt Injection*), **Fuga de Datos Sensibles en Contexto** o **Envenenamiento de Bases de Conocimiento**— quedan eliminados por diseño arquitectónico y no aplican al alcance operativo actual del MVP.
