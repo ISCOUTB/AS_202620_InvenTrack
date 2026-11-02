@@ -269,10 +269,15 @@ con el despliegue existente en Render.
 4. Pulsa **Deploy**. Con el autodespliegue activo, los siguientes pushes a `main`
     reconstruyen el servicio automáticamente.
 
-La API queda disponible en `https://inventrack.iscoutb.dev`, con `/health`, `/docs` y
-`/metrics`. El Compose no publica puertos directamente: Dokploy enruta el dominio al
+La API queda disponible en `https://inventrack.iscoutb.dev`. `/health` permanece
+público; `/docs`, `/redoc`, `/openapi.json` y `/metrics` requieren el token
+interno y devuelven `404` sin él. Las rutas de negocio devuelven `503` de forma
+preventiva mientras `INVENTRACK_ALLOW_BUSINESS_DATA=false`; esto no representa
+una caída del servicio ni reemplaza autenticación y autorización de usuarios.
+El Compose no publica puertos directamente: Dokploy enruta el dominio al
 puerto expuesto por el contenedor. No se deben añadir `ports:`, `container_name`,
-montajes bind ni secretos al repositorio.
+montajes bind ni secretos al repositorio. La comprobación fechada y el hash de
+la respuesta están en [`evidencia-seguridad-s13.md`](docs/evidencia-seguridad-s13.md).
 
 ## Stack tecnológico
 

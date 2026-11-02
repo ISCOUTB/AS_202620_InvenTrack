@@ -56,8 +56,8 @@ La propiedad detallada de estos datos y sus fronteras está documentada en
 
 Las versiones directas están declaradas en
 [requirements.in](../requirements.in), y el lock con hashes está en
-[requirements.txt](../requirements.txt). El análisis de vulnerabilidades de
-esas dependencias se documentará en el siguiente paso.
+[requirements.txt](../requirements.txt). El lock se regeneró para incluir
+también las dependencias condicionales de Windows, como `colorama`.
 
 ## 5. Controles de seguridad y consistencia existentes
 
@@ -84,7 +84,6 @@ esas dependencias se documentará en el siguiente paso.
 - Registro de identidad del actor que ejecutó cada movimiento.
 - Retención, acceso restringido y redacción de logs.
 - Coordinación de idempotencia y locks entre réplicas.
-- Escaneo de vulnerabilidades de dependencias como evidencia S13.
 - Autenticación y autorización de usuarios; el token interno solo protege
   superficies operativas y no sustituye identidad ni roles.
 
@@ -115,9 +114,9 @@ python -m pip_audit -r requirements.txt
 
 Resultado de `pip check`: **sin dependencias rotas**.
 
-Resultado de `pip-audit` al 30 de octubre de 2026: **18 hallazgos
-reportados en 3 paquetes**. El número de hallazgos incluye identificadores
-repetidos por la resolución del lockfile; los paquetes afectados son:
+El resultado anterior de `pip-audit` al 30 de octubre de 2026 reportó **18
+hallazgos en 3 paquetes**. Ese resultado quedó obsoleto después de actualizar
+el lock; se conserva aquí como contexto histórico, no como estado vigente:
 
 | Paquete | Versión fijada | Identificadores reportados | Versión mínima de corrección reportada | Tipo |
 |---|---:|---|---:|---|
@@ -127,27 +126,25 @@ repetidos por la resolución del lockfile; los paquetes afectados son:
 
 El escaneo no se interpreta como una vulnerabilidad explotable confirmada en
 la aplicación: identifica versiones con avisos publicados y exige revisar
-compatibilidad y alcance antes de actualizar. En particular, `starlette`
-está fijada por la versión actual de `fastapi`; actualizarla de forma aislada
-podría romper las restricciones de compatibilidad del framework.
+compatibilidad y alcance antes de actualizar. Las versiones actuales del lock
+son `certifi==2026.10.23`, `starlette==1.10.0` y `pytest==9.2.0`.
 
 ### Conclusión para la matriz de amenazas
 
-El análisis de dependencias produce una amenaza de prioridad **alta para la
-cadena de suministro**: una vulnerabilidad conocida en una dependencia del
-runtime puede afectar la superficie HTTP o el cliente usado por las pruebas.
-La mitigación debe incluir:
+El resultado actual no reporta vulnerabilidades conocidas en los paquetes
+auditados. La amenaza de cadena de suministro no desaparece: se mantiene el
+lock con hashes, la instalación con `--require-hashes` y el escaneo reproducible
+en CI. Una actualización futura debe conservar esas comprobaciones y validar
+compatibilidad con la suite.
 
-1. Actualizar conjuntamente `fastapi`, `starlette` y dependencias relacionadas
-   a versiones compatibles.
-2. Actualizar `certifi` y regenerar el lockfile con hashes.
-3. Actualizar `pytest` por separado como dependencia de desarrollo.
-4. Ejecutar nuevamente `pip-audit`, `pip check` y la suite de pruebas.
-5. Incorporar el escaneo reproducible al CI para evitar regresiones.
+### 8.1 Ejecución reproducible y estado fechado
 
-La actualización de versiones y la configuración del CI no se consideran
-realizadas en este paso; quedan como acciones de mitigación para la matriz
-priorizada.
+El 1 de noviembre de 2026 a las 22:41 (-05:00) se verificó el lock actualizado
+con `python -m pip check` (sin dependencias rotas) y
+`python -m pip_audit -r requirements.txt --no-deps` (sin vulnerabilidades
+conocidas). El workflow de CI mantiene el escaneo `pip-audit` con hashes y
+`no-deps`; esta evidencia no afirma que la auditoría sustituya el mantenimiento
+continuo de las dependencias.
 
 ## 9. Tabla de amenazas priorizadas
 
@@ -159,15 +156,37 @@ como una capacidad disponible del sistema.
 | ID | Amenaza | Activo afectado | Impacto | Probabilidad | Prioridad | Mitigación asignada | Estado / evidencia |
 |---|---|---|---|---|---|---|---|
 | T-01 | Un tercero ejecuta entradas, salidas, creación o eliminación de productos porque el API no exige autenticación ni autorización. | Stock, productos y movimientos. | Crítico | Alta | **Crítica** | Incorporar autenticación y autorización por roles; restringir operaciones administrativas y registrar el actor. | Pendiente; el módulo `usuarios` aún no implementa estos controles. |
-| T-02 | Una dependencia con vulnerabilidad conocida permite afectar la superficie HTTP o el entorno de ejecución. | API, runtime y cadena de suministro. | Alto | Alta | **Alta** | Actualizar versiones compatibles de `fastapi`/`starlette`, `certifi` y `pytest`; regenerar hashes y ejecutar `pip-audit` en CI. | Pendiente; `pip-audit` reportó 18 hallazgos en 3 paquetes. |
+| T-02 | Una dependencia con vulnerabilidad conocida permite afectar la superficie HTTP o el entorno de ejecución. | API, runtime y cadena de suministro. | Alto | Alta | **Alta** | Mantener versiones fijadas, hashes completos, `pip check` y `pip-audit` en CI; actualizar ante nuevos avisos y validar compatibilidad. | Mitigación vigente; lock regenerado y auditoría del 1 nov 2026 sin vulnerabilidades conocidas. |
 | T-03 | Un reinicio o redeploy elimina el stock, movimientos, claves de idempotencia y eventos almacenados en memoria. | Stock, historial, auditoría e idempotencia. | Crítico | Media-alta | **Alta** | Migrar a persistencia durable con backups y restauración; usar un almacén compartido antes de habilitar varias réplicas. | Riesgo aceptado del MVP; ADR-0012 y ADR-0017. |
 | T-04 | Dos réplicas procesan el mismo comando o actualizan el mismo SKU sin compartir locks ni claves de idempotencia. | Stock y movimientos. | Crítico | Media | **Alta** | Mantener una sola instancia en el MVP o introducir transacciones y coordinación distribuida en una persistencia compartida. | Mitigado solo dentro de una instancia; límites documentados en ADR-0002 y ADR-0017. |
 | T-05 | Un consumidor procesa un evento duplicado o falla después de modificar el stock y antes de completar la auditoría. | Movimientos y eventos de auditoría. | Alto | Media | **Media-alta** | Mantener consumidores idempotentes, reintentos y DLQ; evolucionar a Outbox durable para cerrar la ventana entre stock y publicación. | Mitigación parcial; broker y DLQ son volátiles. |
-| T-06 | La exposición pública de `/metrics` o `/docs` revela rutas, estados, latencias o detalles operativos útiles para reconocimiento. | Información operacional y superficie del API. | Medio | Alta | **Media-alta** | Restringir `/metrics` y documentación en producción mediante autenticación, red privada o configuración de despliegue; mantener `/health` mínimo y público. | Pendiente; actualmente las rutas están expuestas por la aplicación. |
+| T-06 | La exposición pública de `/metrics` o `/docs` revela rutas, estados, latencias o detalles operativos útiles para reconocimiento. | Información operacional y superficie del API. | Medio | Alta | **Media-alta** | Restringir `/metrics` y documentación en producción mediante token interno; mantener `/health` mínimo y público. | Mitigación preventiva vigente; sin token las superficies responden `404` y negocio responde `503`. No es autenticación de usuarios. |
 | T-07 | Los logs y eventos no identifican al usuario que ejecutó un movimiento y podrían conservar más información de la necesaria. | Trazabilidad y datos operativos. | Alto | Media | **Media-alta** | Añadir identidad del actor, política de retención y redacción; restringir acceso al sistema de logs. | Pendiente; actualmente se registran `event_id`, `correlation_id` y datos técnicos, no identidad autenticada. |
 | T-08 | Un payload malformado o una cantidad inválida provoca errores o altera reglas del dominio. | Stock y disponibilidad del servicio. | Alto | Media | **Media** | Mantener validación Pydantic, límites de entrada y pruebas contractuales; devolver errores HTTP explícitos. | Parcialmente implementado; `cantidad` exige ser mayor que cero y el contrato se valida en CI. |
 | T-09 | Un atacante o proceso comprometido accede con privilegios excesivos dentro del contenedor. | Código, memoria y datos del proceso. | Alto | Baja-media | **Media** | Mantener usuario no root, imagen mínima y permisos mínimos; escanear imagen y fijar actualizaciones de la imagen base. | Mitigación parcial; `Dockerfile` usa `python:3.11-slim` y `USER appuser`. |
-| T-10 | La manipulación o sustitución de paquetes altera el software instalado durante el build. | Cadena de suministro. | Alto | Baja-media | **Media** | Mantener `requirements.txt` con hashes, instalación `--require-hashes`, revisión de cambios y escaneo automático. | Hashes implementados; escaneo continuo pendiente. |
+| T-10 | La manipulación o sustitución de paquetes altera el software instalado durante el build. | Cadena de suministro. | Alto | Baja-media | **Media** | Mantener `requirements.txt` con hashes, instalación `--require-hashes`, revisión de cambios y escaneo automático. | Implementado en lock y CI; auditoría local del 1 nov 2026 sin vulnerabilidades conocidas. |
+
+## 9.1 Comprobación fechada del despliegue
+
+El 1 de noviembre de 2026 a las 22:41 (-05:00) se consultó
+`https://inventrack.iscoutb.dev` sin credenciales internas. La respuesta de
+`/health` fue `200` con el cuerpo
+`{"status":"ok","service":"InvenTrack"}` y SHA-256
+`1ed2705e98b5942a4acd53122fce33755628d7f722b41a90b40a8cafe74bce63`.
+En la misma comprobación se obtuvieron estos estados:
+
+| Ruta | Estado observado | Interpretación |
+|---|---:|---|
+| `/health` | 200 | Sonda técnica pública, no prueba autenticación. |
+| `/docs`, `/redoc`, `/openapi.json`, `/metrics` | 404 | Superficies internas ocultas sin token. |
+| `/productos` y `/inventario/no-existe` | 503 | Bloqueo preventivo de negocio, no caída del servicio ni autenticación de usuarios. |
+
+El acceso autorizado con `X-Internal-Token` está cubierto por
+[test_health.py](../tests/test_health.py), pero no se ejecutó contra producción
+porque el secreto real no está disponible en el repositorio ni debe registrarse
+en esta evidencia. El token interno debe gestionarse como secreto del proveedor
+de despliegue; no se debe incluir en Compose, README, logs ni comandos
+compartidos.
 
 ### Responsables y evidencia de seguimiento
 
