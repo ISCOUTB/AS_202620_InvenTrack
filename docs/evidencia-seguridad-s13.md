@@ -186,7 +186,9 @@ El acceso autorizado con `X-Internal-Token` está cubierto por
 porque el secreto real no está disponible en el repositorio ni debe registrarse
 en esta evidencia. El token interno debe gestionarse como secreto del proveedor
 de despliegue; no se debe incluir en Compose, README, logs ni comandos
-compartidos.
+compartidos. Esta comprobación precede al commit `4469575`; no demuestra que
+ese commit haya sido redesplegado ni que Render o Dokploy estén sirviendo
+actualmente esa revisión.
 
 ### Responsables y evidencia de seguimiento
 

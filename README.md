@@ -17,7 +17,7 @@
 * **Matriz de Trazabilidad:** Cadena navegable `Aspecto → Requisito → C4 → ADR → Código → Pruebas → Evidencia` ([Aspectos de Calidad](docs/aspectos.md)).
 * **Contrato de API:** OpenAPI v1 versionado y validado automáticamente contra la implementación FastAPI ([ADR-0004](docs/adr/0004-contrato-api-versionado-openapi.md)).
 * **Mensajería asíncrona:** Las entradas y salidas publican el evento `MovimientoDeInventarioRegistrado` para auditoría en segundo plano, con trazabilidad, deduplicación, reintentos, backoff exponencial y DLQ en memoria ([ADR-0013](docs/adr/0013-evaluacion-mensajeria-asincrona-vs-sincrona.md), [ADR-0016](docs/adr/0016-integrar-eventos-de-auditoria-en-movimientos.md)).
-* **Despliegue Productivo:** Disponible en Render (PaaS) y en el servidor institucional Dokploy mediante infraestructura como código (`render.yaml` y `deploy/compose.lab.yaml`).
+* **Despliegue Productivo:** Configurado para Render (PaaS) y Dokploy mediante infraestructura como código (`render.yaml` y `deploy/compose.lab.yaml`); el redespliegue y funcionamiento público del commit actual requieren verificación externa.
 * **CI y cobertura:** GitHub Actions ejecuta la suite completa con `pytest-cov`, genera `coverage.xml`, ejecuta el análisis SonarCloud y valida explícitamente el contrato OpenAPI.
 * **Transparencia en Uso de IA:** Prompts, decisiones aceptadas, correcciones y rechazos por criterio técnico ([Registro de IA](docs/ia.md)).
 
@@ -36,7 +36,7 @@
 * **URL Pública:** `https://inventrack.iscoutb.dev`
 * **Health Check:** `https://inventrack.iscoutb.dev/health`
 * **Métricas y Swagger:** restringidos en producción; requieren el token interno configurado por plataforma.
-* **Estado:** desplegado con datos de negocio deshabilitados hasta completar autenticación/autorización, mediante `deploy/compose.lab.yaml`.
+* **Estado documentado:** configuración preparada con datos de negocio deshabilitados hasta completar autenticación/autorización, mediante `deploy/compose.lab.yaml`; no se afirma que el commit actual haya sido redesplegado.
 
 ---
 
@@ -287,7 +287,7 @@ la respuesta están en [`evidencia-seguridad-s13.md`](docs/evidencia-seguridad-s
 | Backend | FastAPI + Uvicorn | Implementado |
 | Persistencia | Adaptadores In-Memory; PostgreSQL compartido es la evolución preferida | Implementado para MVP; persistencia durable pendiente de ADR sucesor |
 | Mensajería | Simulador asíncrono local | Integrado para auditoría; broker durable u Outbox persistente pendiente |
-| Hosting / despliegue | Render + Dokploy + Docker | Configurado en `https://inventrack-api.onrender.com` y `https://inventrack.iscoutb.dev`; la evidencia operativa vigente está documentada para Dokploy |
+| Hosting / despliegue | Render + Dokploy + Docker | Configurado en `https://inventrack-api.onrender.com` y `https://inventrack.iscoutb.dev`; el commit actual requiere verificación pública posterior al redespliegue |
 | CI / calidad de código | GitHub Actions + Pytest + pytest-asyncio + pytest-cov | Suite síncrona y asíncrona con cobertura XML (`coverage.xml`), validación del contrato OpenAPI y análisis SonarCloud configurado |
 
 ## Estructura del repositorio

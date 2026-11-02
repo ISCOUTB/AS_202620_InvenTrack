@@ -5,14 +5,15 @@
 El último run público consultado para `main` fue:
 
 - Workflow: `Run Tests`
-- Commit: `076c5a6b3b454f142caf29b50f6f0879c1cb77ee`
+- Commit: `44695751dd32436ab64ff7b83ba0e9e808963129`
 - Resultado: `success`
-- URL: <https://github.com/ISCOUTB/AS_202620_InvenTrack/actions/runs/40570722782>
+- URL: <https://github.com/ISCOUTB/AS_202620_InvenTrack/actions/runs/41386175523>
+- Jobs `test` y `dependency-audit`: `success`
 - Workflow versionado: [`.github/workflows/test.yml`](../.github/workflows/test.yml)
 
-Ese run corresponde al último commit publicado en `main` al momento de la
-consulta. Los cambios locales posteriores deben publicarse para obtener un run
-que incluya la idempotencia HTTP de ADR-0017.
+El run incluye la suite de 34 pruebas, la validación del contrato OpenAPI y el
+escaneo `pip-audit` con hashes. No constituye por sí solo evidencia de
+redespliegue ni de funcionamiento público de Render o Dokploy.
 
 ## SonarCloud
 
@@ -25,8 +26,12 @@ El Quality Gate público consultado para el proyecto
 - Duplicación nueva reportada: `0.0`
 - Security hotspots revisados: `100.0`
 
-La configuración local y el workflow son evidencia de ejecución, pero el estado
-del Quality Gate se acredita con la respuesta pública de la API anterior.
+La configuración local y el workflow son evidencia de ejecución. El estado del
+Quality Gate para el proyecto y la revisión analizada se acredita con la
+respuesta pública de la API:
+<https://sonarcloud.io/api/qualitygates/project_status?projectKey=ISCOUTB_AS_202620_InvenTrack>.
+Resultado: `OK`; cobertura nueva `95.4%`, duplicación nueva `0.0%` y security
+hotspots revisados `100.0%`.
 
 ## Despliegue institucional y alternativa
 
@@ -51,7 +56,9 @@ en las pruebas; esta evidencia S12 no certifica el estado actual de Render.
 
 ## Criterio de publicación
 
-Para repetir la evidencia operativa vigente, se debe consultar:
+La comprobación S13 anterior no demuestra que el commit `4469575` haya sido
+redesplegado ni que el funcionamiento público actual coincida con ese commit.
+Para repetir la evidencia operativa después del despliegue, se debe consultar:
 
 ```powershell
 curl.exe -i https://inventrack.iscoutb.dev/health
