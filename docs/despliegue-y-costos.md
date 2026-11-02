@@ -26,9 +26,9 @@ como artefacto histórico; el workflow está desactivado y no participa en la pu
 | **URL Pública Externa** | Render y Dokploy, HTTPS | `https://inventrack.iscoutb.dev` y `https://inventrack-api.onrender.com` |
 | **Infraestructura como Código** | `render.yaml`, `deploy/compose.lab.yaml` y `Dockerfile` | Versionada; Terraform en `infra/` queda como alternativa Azure exploratoria no utilizada |
 | **Pipeline CI/CD** | GitHub Actions + autodespliegue Dokploy/Render | GitHub Actions valida la suite; cada plataforma publica desde `main` según su configuración |
-| **Health Check** | `GET /health` | Configurado en Render y Dokploy; verificado externamente en ambos destinos |
+| **Health Check** | `GET /health` | Configurado en Render y Dokploy; la comprobación vigente documentada es la de Dokploy en S13 |
 | **Logs Estructurados** | JSON por línea en `stdout` | Evento `http_request`, sin credenciales ni cuerpos sensibles |
-| **Métrica Consultable** | `GET /metrics` | Formato Prometheus; contadores por método y ruta HTTP |
+| **Métrica Consultable** | `GET /metrics` | Formato Prometheus; acceso local o con token interno en producción |
 | **Protección de Secretos** | `.env` ignorado y secretos de GitHub | No hay credenciales de ambiente en la rama pública |
 | **Run Exitoso** | Dokploy/Render + GitHub Actions | `GET /health` responde 200 en ambos destinos; la suite se ejecuta en GitHub |
 
@@ -39,13 +39,13 @@ como artefacto histórico; el workflow está desactivado y no participa en la pu
 Desde una red externa (doméstica o móvil), ejecutar:
 
 ```powershell
-# Dokploy institucional
+# Dokploy institucional (health público; métricas con token interno en producción)
 curl.exe --fail https://inventrack.iscoutb.dev/health
-curl.exe --fail https://inventrack.iscoutb.dev/metrics
+curl.exe --fail -H "X-Internal-Token: <TOKEN_GESTIONADO>" https://inventrack.iscoutb.dev/metrics
 
-# Render
+# Render (health público; métricas con token interno en producción)
 curl.exe --fail https://inventrack-api.onrender.com/health
-curl.exe --fail https://inventrack-api.onrender.com/metrics
+curl.exe --fail -H "X-Internal-Token: <TOKEN_GESTIONADO>" https://inventrack-api.onrender.com/metrics
 ```
 
 En ambos destinos, `/health` debe responder:
@@ -54,9 +54,15 @@ En ambos destinos, `/health` debe responder:
 {"status":"ok","service":"InvenTrack"}
 ```
 
-En ambos destinos, `/metrics` contiene, como mínimo, las series
+Con el token interno válido, `/metrics` contiene, como mínimo, las series
 `inventrack_http_requests_total` y
 `inventrack_http_request_duration_seconds_total`.
+
+La comprobación fechada más reciente de Dokploy está en
+[evidencia-seguridad-s13.md](evidencia-seguridad-s13.md): `/health` respondió
+`200`, las superficies internas sin token respondieron `404` y las rutas de
+negocio respondieron `503` por bloqueo preventivo. No se registra el token real
+en documentación.
 
 ---
 

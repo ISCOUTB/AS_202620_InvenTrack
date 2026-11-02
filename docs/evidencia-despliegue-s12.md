@@ -30,30 +30,34 @@ del Quality Gate se acredita con la respuesta pública de la API anterior.
 
 ## Despliegue institucional y alternativa
 
-La URL institucional declarada es <https://inventrack.iscoutb.dev>. En la
-consulta del 27 de octubre de 2026 no fue posible resolver DNS/TLS para
-`/health` ni `/metrics`; por tanto, el despliegue institucional queda **no
-verificado** y no se afirma que la mensajería esté desplegada allí.
+La URL institucional declarada es <https://inventrack.iscoutb.dev>. La consulta
+del 27 de octubre de 2026 no pudo resolver DNS/TLS para `/health` ni
+`/metrics`; esa observación queda como evidencia histórica de ese corte y no
+describe el estado vigente. La comprobación posterior de S13 verificó
+`/health` con `200`, superficies internas con `404` sin token y rutas de negocio
+con `503` preventivo. Esta evidencia S12 no afirma que la mensajería sea
+consultable públicamente.
 
-La alternativa Render respondió en la raíz:
+La alternativa Render respondió en la raíz durante esa consulta:
 
 ```text
 Our server is running on port 10000
 ```
 
 Sin embargo, `/health` y `/metrics` respondieron `503` durante la misma
-consulta. La aplicación local sí expone esas rutas y las métricas de
-mensajería se validan en las pruebas; falta un despliegue verificable del
-commit que contiene ADR-0017.
+consulta. Ese resultado es histórico y no representa el estado actual. La
+aplicación local sí expone esas rutas y las métricas de mensajería se validan
+en las pruebas; esta evidencia S12 no certifica el estado actual de Render.
 
 ## Criterio de publicación
 
-Después de publicar los cambios en `main`, se debe repetir esta evidencia con:
+Para repetir la evidencia operativa vigente, se debe consultar:
 
 ```powershell
 curl.exe -i https://inventrack.iscoutb.dev/health
-curl.exe -i https://inventrack.iscoutb.dev/metrics
+curl.exe -i -H "X-Internal-Token: <TOKEN_GESTIONADO>" https://inventrack.iscoutb.dev/metrics
 ```
 
-y registrar el hash desplegado, el run de CI asociado y la presencia de
+Se debe registrar el hash desplegado, el run de CI asociado y, usando el token
+gestionado fuera del repositorio, la presencia de
 `inventrack_messaging_messages_total` en `/metrics`.

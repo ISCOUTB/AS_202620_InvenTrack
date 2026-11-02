@@ -66,7 +66,14 @@ El contrato técnico ejecutable se encuentra definido y versionado en:
 
 ## 5. Contratos asíncronos
 
-La API actual de InvenTrack no utiliza contratos asíncronos (AsyncAPI, colas de mensajería como RabbitMQ/Kafka o eventos de dominio asíncronos). Todas las operaciones de entrada/salida y consulta operan bajo la modalidad síncrona solicitud-respuesta para garantizar la consistencia inmediata del inventario.
+La operación HTTP de InvenTrack utiliza el modelo síncrono solicitud-respuesta
+para garantizar la consistencia inmediata del inventario. Después de una
+entrada o salida exitosa, el sistema publica además un evento de auditoría en
+segundo plano mediante el simulador de mensajería en memoria; este flujo no
+forma parte del contrato HTTP y no ofrece durabilidad ante reinicios. Su
+contrato JSON y sus garantías están documentados en
+[`contracts/events/movimiento_registrado_v1.json`](../../contracts/events/movimiento_registrado_v1.json)
+y [evidencia-mensajeria-s12.md](../evidencia-mensajeria-s12.md).
 
 ---
 

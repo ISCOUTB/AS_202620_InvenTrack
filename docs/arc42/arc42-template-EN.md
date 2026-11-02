@@ -572,9 +572,11 @@ Los controles actualmente implementados son defensivos y de consistencia:
 
 Los repositorios, las claves de idempotencia y el broker son volátiles. Un
 reinicio puede perder stock, historial, resultados de replay y eventos; varias
-réplicas tampoco comparten locks ni estado. `/metrics` y `/docs` permanecen
-expuestos por la configuración actual y deben restringirse en un despliegue
-con datos reales, manteniendo `/health` como sonda mínima.
+réplicas tampoco comparten locks ni estado. En producción, `/metrics`, `/docs`,
+`/redoc` y `/openapi.json` requieren el token interno y responden `404` sin él;
+las rutas de negocio permanecen bloqueadas con `503` mientras no exista
+autenticación y autorización de usuarios. `/health` se mantiene como sonda
+mínima pública.
 
 No se deben incluir nombres, correos, documentos, tokens o credenciales en
 `X-Correlation-ID`, `X-Idempotency-Key` ni logs. El MVP no solicita
@@ -584,12 +586,12 @@ deberá definir minimización, finalidad, base jurídica, retención, derechos d
 los titulares, acceso a logs y respuesta a incidentes, tomando como referencia
 la Ley 1581 de 2012 y la política aprobada por el responsable del tratamiento.
 
-El análisis reproducible de dependencias (`pip check` y `pip-audit
--r requirements.txt`) no encontró dependencias rotas, pero reportó 18 avisos
-en `certifi`, `starlette` y `pytest`. Las versiones deben actualizarse de
-forma compatible, regenerar el lockfile y verificarse en CI antes de presentar
-la cadena de suministro como saneada. La evidencia completa está en
-[evidencia-seguridad-s13.md](../evidencia-seguridad-s13.md).
+El análisis reproducible de dependencias (`pip check` y
+`pip-audit -r requirements.txt --no-deps`) no encontró dependencias rotas ni
+vulnerabilidades conocidas con el lock vigente. El lock incluye hashes
+completos, el workflow ejecuta la auditoría con hashes y las actualizaciones
+futuras deben conservar la validación de compatibilidad. La evidencia fechada
+completa está en [evidencia-seguridad-s13.md](../evidencia-seguridad-s13.md).
 
 ---
 
@@ -881,8 +883,8 @@ implementadas las capacidades que permanecen fuera del MVP.
 | Arranque en frío del destino gratuito | La primera solicitud puede superar el umbral de latencia por suspensión del servicio. | Calentar la instancia antes de medir y separar la sonda `/health` de la medición de negocio. | [ADR-0005](../adr/0005-eleccion-plataforma-despliegue.md), [experimento S10](../retos/corte-2-experimento.md). Mitigación operativa. |
 | Reintento de una entrada o salida después de un timeout de red | Dentro de una instancia, la misma clave y payload devuelve el resultado guardado; tras reinicio o en otra réplica la clave puede no existir. | `InMemoryIdempotencyStore` reserva la clave antes del caso de uso; una clave con payload diferente devuelve `409`. Migrar a almacenamiento durable antes de escalar. | [ADR-0017](../adr/0017-idempotencia-http-en-comandos-de-inventario.md) y [pruebas HTTP](../../tests/inventario/test_inventario.py). |
 | Acceso sin autenticación o rol insuficiente | Un usuario podría acceder a operaciones administrativas sin autorización. | Mantener autenticación y roles fuera del MVP declarado; no presentar ESC-05 como implementado y exigir un cambio arquitectónico antes de habilitar usuarios reales. | [Contrato API](../api/inventrack-contrato.md), ESC-05. Pendiente de alcance. |
-| Dependencia con vulnerabilidad conocida | Un defecto publicado en una dependencia puede afectar la superficie HTTP o el entorno de ejecución. | Actualizar versiones compatibles, regenerar hashes y ejecutar `pip-audit` en CI. | [Evidencia S13](../evidencia-seguridad-s13.md). `pip-audit` reportó 18 hallazgos en `certifi`, `starlette` y `pytest`; pendiente de remediación. |
-| Exposición de `/metrics` o `/docs` | Un tercero obtiene información útil para reconocimiento operacional. | Restringir ambas rutas en producción mediante autenticación, red privada o configuración del proxy; conservar `/health` mínimo. | [Evidencia S13](../evidencia-seguridad-s13.md). Pendiente. |
+| Dependencia con vulnerabilidad conocida | Un defecto publicado en una dependencia puede afectar la superficie HTTP o el entorno de ejecución. | Mantener versiones fijadas, hashes completos y ejecutar `pip-audit` en CI; actualizar ante nuevos avisos. | [Evidencia S13](../evidencia-seguridad-s13.md). Lock vigente y auditoría del 1 nov 2026 sin vulnerabilidades conocidas. |
+| Exposición de `/metrics` o `/docs` | Un tercero obtiene información útil para reconocimiento operacional. | Restringir `/metrics` y documentación en producción con token interno; conservar `/health` mínimo. | [Evidencia S13](../evidencia-seguridad-s13.md). Mitigación preventiva vigente; sin token responde `404`. |
 | Falta de identidad del actor en auditoría | No se puede demostrar qué usuario ejecutó un movimiento ni aplicar responsabilidad por rol. | Implementar identidad autenticada, autorización por rol, `actor_id` en eventos y política de retención de logs. | [Evidencia S13](../evidencia-seguridad-s13.md). Pendiente junto con el módulo `usuarios`. |
 | Datos personales en identificadores o logs | Un cliente puede enviar datos personales en cabeceras o la plataforma puede conservar datos de acceso. | Prohibir datos personales en cabeceras técnicas, minimizar logs, restringir acceso y definir retención y política de privacidad. | [Evidencia S13](../evidencia-seguridad-s13.md). Mitigación pendiente. |
 | Contenedor o imagen base comprometida | Un proceso comprometido puede acceder a código o memoria con privilegios innecesarios. | Mantener usuario no root, imagen mínima, permisos mínimos y escaneo de imagen/base. | [Dockerfile](../../Dockerfile), [Evidencia S13](../evidencia-seguridad-s13.md). Usuario no root implementado; escaneo pendiente. |

@@ -175,7 +175,7 @@ La implementación se encuentra en [`app/inventario/infrastructure/router.py`](a
 | Fallos recuperables | Hasta 3 intentos por defecto con backoff exponencial |
 | Fallos persistentes | Envío a Dead Letter Queue (DLQ) |
 | Trazabilidad | `event_id`, `correlation_id`, `audit_log` y log `inventory_message_consumed` |
-| Métricas | `/metrics` expone mensajes publicados, procesados, duplicados, reintentos y enviados a DLQ |
+| Métricas | `/metrics` expone mensajes publicados, procesados, duplicados, reintentos y enviados a DLQ cuando se accede localmente o con token interno en producción |
 | Durabilidad | No garantizada: broker y DLQ son volátiles en el MVP |
 
 El contrato y sus reglas de compatibilidad están en
@@ -287,7 +287,7 @@ la respuesta están en [`evidencia-seguridad-s13.md`](docs/evidencia-seguridad-s
 | Backend | FastAPI + Uvicorn | Implementado |
 | Persistencia | Adaptadores In-Memory; PostgreSQL compartido es la evolución preferida | Implementado para MVP; persistencia durable pendiente de ADR sucesor |
 | Mensajería | Simulador asíncrono local | Integrado para auditoría; broker durable u Outbox persistente pendiente |
-| Hosting / despliegue | Render + Dokploy + Docker | Operativo en `https://inventrack-api.onrender.com` y `https://inventrack.iscoutb.dev` |
+| Hosting / despliegue | Render + Dokploy + Docker | Configurado en `https://inventrack-api.onrender.com` y `https://inventrack.iscoutb.dev`; la evidencia operativa vigente está documentada para Dokploy |
 | CI / calidad de código | GitHub Actions + Pytest + pytest-asyncio + pytest-cov | Suite síncrona y asíncrona con cobertura XML (`coverage.xml`), validación del contrato OpenAPI y análisis SonarCloud configurado |
 
 ## Estructura del repositorio
