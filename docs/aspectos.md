@@ -238,7 +238,7 @@ En caso de que la carga supere la capacidad de atención o el tiempo de espera p
 
 - **Código:** Módulos de [`app/inventario/`](../app/inventario/) y [`app/productos/`](../app/productos/).
 - **Prueba Automatizada:** [`tests/inventario/test_concurrencia.py`](../tests/inventario/test_concurrencia.py) (simula 20 llamadas asíncronas concurrentes).
-- **Evidencia Medida:** Reporte en [`docs/retos/corte-1-medicion.md`](retos/corte-1-medicion.md) que acredita $p95 = 28\text{ ms}$ bajo carga (superando ampliamente el umbral exigido de $400\text{ ms}$).
+- **Evidencia Medida:** Reporte en [`docs/retos/corte-2-experimento.md`](retos/corte-2-experimento.md) con una ejecución reproducible de 20 salidas reales: $p95 = 32.891\text{ ms}$ frente al umbral de $400\text{ ms}$, con margen de $367.109\text{ ms}$ y stock final consistente.
 
 ---
 

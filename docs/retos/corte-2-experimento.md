@@ -29,12 +29,23 @@ resultado supera 400 ms. Por tanto, la medición ejercita una operación real de
 inventario y no una sonda de salud.
 
 ## 5. Resultados y Contraste con el Umbral
-- **Latencia $p95$ medida:** se obtiene en cada ejecución de
-  `tests/inventario/test_concurrencia.py` sobre las 20 salidas reales; la prueba
-  exige que sea menor o igual a 400 ms.
+- **Latencia $p95$ medida:** **32.891 ms** en una ejecución reproducible de
+  20 salidas reales. El umbral del escenario es **400 ms**; por tanto, el
+  resultado cumple con un margen de **367.109 ms** (el p95 medido es
+  aproximadamente 12.2 veces menor que el límite).
 - **Integridad del Stock:** Stock inicial de 100 unidades, stock final exacto de **80 unidades** (cero descuadres).
 - **Tasa de Éxito:** 100% de peticiones atendidas correctamente con código HTTP 200 OK.
 - **Resiliencia ante saturación:** El cerrojo asíncrono encola las peticiones de manera ordenada; ante tiempos de espera excesivos, degrada controladamente respondiendo HTTP 503 sin corromper la memoria.
+
+La ejecución se realizó el **2026-11-06** con el comando:
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest tests/inventario/test_concurrencia.py -q
+```
+
+La prueba terminó en verde (`1 passed`); el valor p95 se capturó con el mismo
+flujo HTTP de la prueba, antes de consultar el stock final. El resultado es una
+medición de una ejecución local y no una línea base histórica previa al lock.
 
 La entrega anterior reportó 28 ms, pero no conserva una serie de observaciones
 ni un artefacto ejecutable que permita reconstruir esa cifra exacta. Se conserva

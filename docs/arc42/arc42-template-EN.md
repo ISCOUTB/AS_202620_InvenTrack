@@ -863,6 +863,18 @@ secciones para saber por qué un escenario importa más que otro.
 
 Esta sección documenta explícitamente las divergencias conocidas, riesgos asumidos y la deuda técnica del MVP actual desplegado:
 
+- **Observaciones de la revisión de pares incorporadas:** La revisión solicitó
+  que la medición se contrastara explícitamente con el umbral del escenario y
+  que sus riesgos quedaran visibles en esta sección. La ejecución reproducible
+  de 20 salidas reales obtuvo **p95 = 32.891 ms**, frente al umbral de
+  **400 ms** (margen: **367.109 ms**), con 20 respuestas HTTP 200 y stock final
+  80; la evidencia detallada está en
+  [el experimento S10](../retos/corte-2-experimento.md). También se incorporan
+  como deuda explícita la persistencia en memoria, la falta de autenticación y
+  autorización por roles, la ausencia de identidad del actor en auditoría y la
+  limitación de idempotencia a una sola instancia. Estas capacidades no se
+  presentan como implementadas y requieren los cambios arquitectónicos
+  descritos en sus ADR y evidencias.
 - **Almacenamiento en Memoria (In-Memory Adapter):** Según [ADR-0012](../adr/0012-mantener-repositorios-en-memoria-en-el-mvp.md), para cumplir estrictamente con la restricción de presupuesto cero (C5) del MVP, la persistencia se apoya en diccionarios en memoria RAM con cerrojos asíncronos (`asyncio.Lock`).
   - *Riesgo:* Ante reinicios del contenedor o despliegue en múltiples réplicas horizontales, el estado del inventario no es persistente ni compartido.
   - *Mitigación:* La prueba vigente ejecuta 20 peticiones concurrentes sobre salidas reales, comprueba el stock final y exige $p95 \le 400\text{ ms}$ en una instancia. La evolución prioritaria post-MVP es evaluar una base relacional compartida mediante los puertos existentes, incluyendo migración, respaldos y restauración.
