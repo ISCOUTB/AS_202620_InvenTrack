@@ -58,11 +58,18 @@ Con el token interno válido, `/metrics` contiene, como mínimo, las series
 `inventrack_http_requests_total` y
 `inventrack_http_request_duration_seconds_total`.
 
-La comprobación fechada más reciente de Dokploy está en
+La comprobación fechada histórica de Dokploy está en
 [evidencia-seguridad-s13.md](evidencia-seguridad-s13.md): `/health` respondió
 `200`, las superficies internas sin token respondieron `404` y las rutas de
 negocio respondieron `503` por bloqueo preventivo. No se registra el token real
 en documentación.
+
+El CI de la punta actual `e17afb8ad59fba8c851e06338c1219f7f4bc918f` terminó
+exitosamente en el
+[run 42319774632](https://github.com/ISCOUTB/AS_202620_InvenTrack/actions/runs/42319774632).
+Este resultado no acredita redespliegue ni permite verificar `/metrics` sin el
+token gestionado por la plataforma; esas comprobaciones quedan como
+actividades externas.
 
 ---
 

@@ -2,12 +2,13 @@
 
 ## CI
 
-El último run público consultado para `main` fue:
+El último run público consultado para `main` corresponde a la punta actual
+documentada (`e17afb8ad59fba8c851e06338c1219f7f4bc918f`):
 
 - Workflow: `Run Tests`
-- Commit: `44695751dd32436ab64ff7b83ba0e9e808963129`
+- Commit: `e17afb8ad59fba8c851e06338c1219f7f4bc918f`
 - Resultado: `success`
-- URL: <https://github.com/ISCOUTB/AS_202620_InvenTrack/actions/runs/41386175523>
+- URL: <https://github.com/ISCOUTB/AS_202620_InvenTrack/actions/runs/42319774632>
 - Jobs `test` y `dependency-audit`: `success`
 - Workflow versionado: [`.github/workflows/test.yml`](../.github/workflows/test.yml)
 
@@ -56,8 +57,9 @@ en las pruebas; esta evidencia S12 no certifica el estado actual de Render.
 
 ## Criterio de publicación
 
-La comprobación S13 anterior no demuestra que el commit `4469575` haya sido
-redesplegado ni que el funcionamiento público actual coincida con ese commit.
+La comprobación pública anterior no demuestra que el commit
+`e17afb8ad59fba8c851e06338c1219f7f4bc918f` haya sido redesplegado ni que el
+funcionamiento público actual coincida con ese commit.
 Para repetir la evidencia operativa después del despliegue, se debe consultar:
 
 ```powershell
@@ -68,3 +70,22 @@ curl.exe -i -H "X-Internal-Token: <TOKEN_GESTIONADO>" https://inventrack.iscoutb
 Se debe registrar el hash desplegado, el run de CI asociado y, usando el token
 gestionado fuera del repositorio, la presencia de
 `inventrack_messaging_messages_total` en `/metrics`.
+
+El hash desplegado, la consulta autorizada con el token y la comprobación de
+las URLs públicas quedan fuera de esta actualización porque requieren acceso
+al proveedor de despliegue y un secreto externo.
+
+## Estado interno verificado el 8 de noviembre de 2026
+
+La punta local `e17afb8ad59fba8c851e06338c1219f7f4bc918f` fue validada con:
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest -q
+.\.venv\Scripts\python.exe -m pip check
+.\.venv\Scripts\python.exe -m pip_audit -r requirements.txt --no-deps
+```
+
+Resultados: **34 pruebas aprobadas**, dependencias consistentes y ninguna
+vulnerabilidad conocida reportada. Esta verificación local y el run de CI no
+demuestran que el proveedor ya sirva esa punta; esa comprobación requiere
+redespliegue externo.

@@ -72,7 +72,7 @@ también las dependencias condicionales de Windows, como `colorama`.
 | Usuario no root en Docker | Impacto de una intrusión dentro del contenedor. | `USER appuser` en `Dockerfile`. | No sustituye el aislamiento del despliegue. |
 | Logs JSON y métricas | Diagnóstico y trazabilidad técnica. | Middleware de observabilidad en `app/main.py`. | No es control de acceso ni auditoría de identidad. |
 | Política de exposición en producción | Evita habilitar datos reales antes de autenticación/autorización y reduce reconocimiento operacional. | `AccessPolicyMiddleware`, `INVENTRACK_ENV`, `INVENTRACK_ALLOW_BUSINESS_DATA` e `INVENTRACK_INTERNAL_TOKEN` en `app/main.py`; prueba de regresión en `tests/test_health.py`. | Fail closed: negocio deshabilitado y superficies internas ocultas por defecto. |
-| Lockfile con hashes | Alteración o variación de paquetes instalados. | Instalación con `--require-hashes`. | No reemplaza un escaneo de vulnerabilidades. |
+| Lockfile con hashes | Alteración o variación de paquetes instalados. | Instalación con `--require-hashes` y `pip-audit` en CI. | No reemplaza la revisión continua de dependencias ni el escaneo de la imagen. |
 
 ## 6. Controles ausentes o fuera del MVP
 
@@ -146,6 +146,16 @@ conocidas). El workflow de CI mantiene el escaneo `pip-audit` con hashes y
 `no-deps`; esta evidencia no afirma que la auditoría sustituya el mantenimiento
 continuo de las dependencias.
 
+Como comprobación adicional local del 8 de noviembre de 2026, la suite terminó
+con **34 pruebas aprobadas**, `pip check` no reportó dependencias rotas y
+`pip-audit -r requirements.txt --no-deps` no reportó vulnerabilidades
+conocidas. Permanecen abiertas para revisión de compatibilidad las PR de
+Dependabot [#8](https://github.com/ISCOUTB/AS_202620_InvenTrack/pull/8),
+[#9](https://github.com/ISCOUTB/AS_202620_InvenTrack/pull/9),
+[#10](https://github.com/ISCOUTB/AS_202620_InvenTrack/pull/10) y
+[#11](https://github.com/ISCOUTB/AS_202620_InvenTrack/pull/11); no se presentan
+como integradas ni como sustituto de una actualización validada.
+
 ## 9. Tabla de amenazas priorizadas
 
 La prioridad combina impacto sobre los activos críticos y probabilidad de
@@ -156,14 +166,14 @@ como una capacidad disponible del sistema.
 | ID | Amenaza | Activo afectado | Impacto | Probabilidad | Prioridad | Mitigación asignada | Estado / evidencia |
 |---|---|---|---|---|---|---|---|
 | T-01 | Un tercero ejecuta entradas, salidas, creación o eliminación de productos porque el API no exige autenticación ni autorización. | Stock, productos y movimientos. | Crítico | Alta | **Crítica** | Incorporar autenticación y autorización por roles; restringir operaciones administrativas y registrar el actor. | Pendiente; el módulo `usuarios` aún no implementa estos controles. |
-| T-02 | Una dependencia con vulnerabilidad conocida permite afectar la superficie HTTP o el entorno de ejecución. | API, runtime y cadena de suministro. | Alto | Alta | **Alta** | Mantener versiones fijadas, hashes completos, `pip check` y `pip-audit` en CI; actualizar ante nuevos avisos y validar compatibilidad. | Mitigación vigente; lock regenerado y auditoría del 1 nov 2026 sin vulnerabilidades conocidas. |
+| T-02 | Una dependencia con vulnerabilidad conocida permite afectar la superficie HTTP o el entorno de ejecución. | API, runtime y cadena de suministro. | Alto | Alta | **Alta** | Mantener versiones fijadas, hashes completos, `pip check` y `pip-audit` en CI; actualizar ante nuevos avisos y validar compatibilidad. | Mitigación vigente; lock regenerado, CI actual exitoso y auditoría del 1 nov 2026 sin vulnerabilidades conocidas. |
 | T-03 | Un reinicio o redeploy elimina el stock, movimientos, claves de idempotencia y eventos almacenados en memoria. | Stock, historial, auditoría e idempotencia. | Crítico | Media-alta | **Alta** | Migrar a persistencia durable con backups y restauración; usar un almacén compartido antes de habilitar varias réplicas. | Riesgo aceptado del MVP; ADR-0012 y ADR-0017. |
 | T-04 | Dos réplicas procesan el mismo comando o actualizan el mismo SKU sin compartir locks ni claves de idempotencia. | Stock y movimientos. | Crítico | Media | **Alta** | Mantener una sola instancia en el MVP o introducir transacciones y coordinación distribuida en una persistencia compartida. | Mitigado solo dentro de una instancia; límites documentados en ADR-0002 y ADR-0017. |
 | T-05 | Un consumidor procesa un evento duplicado o falla después de modificar el stock y antes de completar la auditoría. | Movimientos y eventos de auditoría. | Alto | Media | **Media-alta** | Mantener consumidores idempotentes, reintentos y DLQ; evolucionar a Outbox durable para cerrar la ventana entre stock y publicación. | Mitigación parcial; broker y DLQ son volátiles. |
 | T-06 | La exposición pública de `/metrics` o `/docs` revela rutas, estados, latencias o detalles operativos útiles para reconocimiento. | Información operacional y superficie del API. | Medio | Alta | **Media-alta** | Restringir `/metrics` y documentación en producción mediante token interno; mantener `/health` mínimo y público. | Mitigación preventiva vigente; sin token las superficies responden `404` y negocio responde `503`. No es autenticación de usuarios. |
 | T-07 | Los logs y eventos no identifican al usuario que ejecutó un movimiento y podrían conservar más información de la necesaria. | Trazabilidad y datos operativos. | Alto | Media | **Media-alta** | Añadir identidad del actor, política de retención y redacción; restringir acceso al sistema de logs. | Pendiente; actualmente se registran `event_id`, `correlation_id` y datos técnicos, no identidad autenticada. |
 | T-08 | Un payload malformado o una cantidad inválida provoca errores o altera reglas del dominio. | Stock y disponibilidad del servicio. | Alto | Media | **Media** | Mantener validación Pydantic, límites de entrada y pruebas contractuales; devolver errores HTTP explícitos. | Parcialmente implementado; `cantidad` exige ser mayor que cero y el contrato se valida en CI. |
-| T-09 | Un atacante o proceso comprometido accede con privilegios excesivos dentro del contenedor. | Código, memoria y datos del proceso. | Alto | Baja-media | **Media** | Mantener usuario no root, imagen mínima y permisos mínimos; escanear imagen y fijar actualizaciones de la imagen base. | Mitigación parcial; `Dockerfile` usa `python:3.11-slim` y `USER appuser`. |
+| T-09 | Un atacante o proceso comprometido accede con privilegios excesivos dentro del contenedor. | Código, memoria y datos del proceso. | Alto | Baja-media | **Media** | Mantener usuario no root, imagen mínima y permisos mínimos; escanear imagen y fijar actualizaciones de la imagen base. | Mitigación parcial; `Dockerfile` usa `python:3.11-slim` y `USER appuser`; el escaneo de imagen sigue pendiente. |
 | T-10 | La manipulación o sustitución de paquetes altera el software instalado durante el build. | Cadena de suministro. | Alto | Baja-media | **Media** | Mantener `requirements.txt` con hashes, instalación `--require-hashes`, revisión de cambios y escaneo automático. | Implementado en lock y CI; auditoría local del 1 nov 2026 sin vulnerabilidades conocidas. |
 
 ## 9.1 Comprobación fechada del despliegue
@@ -186,9 +196,11 @@ El acceso autorizado con `X-Internal-Token` está cubierto por
 porque el secreto real no está disponible en el repositorio ni debe registrarse
 en esta evidencia. El token interno debe gestionarse como secreto del proveedor
 de despliegue; no se debe incluir en Compose, README, logs ni comandos
-compartidos. Esta comprobación precede al commit `4469575`; no demuestra que
-ese commit haya sido redesplegado ni que Render o Dokploy estén sirviendo
-actualmente esa revisión.
+compartidos. Esta comprobación es histórica y no demuestra que la punta actual
+`e17afb8ad59fba8c851e06338c1219f7f4bc918f` haya sido redesplegada ni que Render
+o Dokploy estén sirviendo actualmente esa revisión. La comprobación autorizada
+con el token y el hash realmente servido requieren configuración y acceso
+externos, por lo que permanecen pendientes.
 
 ### Responsables y evidencia de seguimiento
 
@@ -209,9 +221,9 @@ actualmente esa revisión.
 
 1. **T-01 — Acceso sin autenticación ni autorización.** Es la amenaza más
    grave porque permite modificar directamente activos críticos desde el API.
-2. **T-02 — Dependencias vulnerables.** Tiene hallazgos concretos y afecta
-   componentes del runtime; debe resolverse antes de presentar el despliegue
-   como endurecido.
+2. **T-02 — Dependencias vulnerables.** La auditoría vigente no reporta
+   vulnerabilidades conocidas; debe mantenerse el escaneo continuo y revisar
+   las actualizaciones de Dependabot antes de integrarlas.
 3. **T-03 y T-04 — Pérdida o divergencia del estado.** Son riesgos
    estructurales del almacenamiento en memoria y del escalamiento horizontal.
 4. **T-05, T-06 y T-07 — Auditoría, exposición operacional y privacidad.**
