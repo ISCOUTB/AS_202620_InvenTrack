@@ -86,6 +86,7 @@ y [evidencia-mensajeria-s12.md](../evidencia-mensajeria-s12.md).
 | Entradas de inventario | Sí | Sí, mediante `POST /inventario/{producto_id}/entradas` |
 | Salidas de inventario con validación de stock | Sí | Sí, mediante `POST /inventario/{producto_id}/salidas` |
 | Consulta de stock por producto | Sí | Sí, mediante `GET /inventario/{producto_id}` |
+| Cliente gráfico (Frontend Flutter) | Consume este contrato | Sí, implementado en [`frontend/`](../../frontend/) sin rutas fuera de `contracts/openapi/v1.json` |
 | Aislamiento de concurrencia por SKU | Sí | Sí, mediante `asyncio.Lock` en memoria |
 | Trazabilidad e historial de movimientos | Sí | Sí, en repositorio en memoria; los datos son volátiles según [ADR-0012](../adr/0012-mantener-repositorios-en-memoria-en-el-mvp.md) |
 | Predicción de demanda con IA | No | No (declarado fuera de alcance en el MVP) |

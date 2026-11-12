@@ -8,7 +8,7 @@
 
 | Entidad / Datos | Módulo Dueño Único (Escritor) | Módulos Lectores (Solo Lectura) | Operaciones de Escritura Permitidas | Canal de Consulta Externa (Puertos) |
 | :--- | :--- | :--- | :--- | :--- |
-| **`Producto`** <br>*(id, nombre, activo)* | `app/productos` | `app/inventario` | Crear producto, actualizar datos, cambiar estado (activo/inactivo). | Puerto `ConsultarProducto` <br>*(vía `ValidadorDeProductoAdapter`)* |
+| **`Producto`** <br>*(id, nombre, activo)* | `app/productos` | `app/inventario`, Frontend *(respuesta de sesión vía API)* | Crear producto, actualizar datos, cambiar estado (activo/inactivo). | Puerto `ConsultarProducto` <br>*(vía `ValidadorDeProductoAdapter`)* y endpoints `POST /productos`, `DELETE /productos/{id}` |
 | **`StockProducto`** <br>*(producto_id, cantidad)* | `app/inventario` | `app/alertas`, Frontend | Modificar saldo disponible aplicando control de concurrencia (`ADR-0002`). | API / Caso de uso de consulta de stock |
 | **`Movimiento`** <br>*(historial de entradas y salidas)* | `app/inventario` | `app/productos`, Auditoría | Registrar movimientos de stock (Inmutable: solo escrituras `INSERT`). | Puerto `ConsultarHistorialMovimientos` <br>*(vía `HistorialMovimientosAdapter`)* |
 | **`Usuario / Rol`** <br>*(id, rol, permisos)* | `app/usuarios` <br>*(declarado en ESC-05)* | Todos los módulos | Registrar usuario, modificar rol o estado de acceso. | Middleware / Token de Autenticación |

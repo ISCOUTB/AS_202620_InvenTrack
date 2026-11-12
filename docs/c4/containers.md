@@ -17,7 +17,7 @@ flowchart TB
 
     subgraph InvenTrack["InvenTrack — Monolito Modular (ADR-0001)"]
         Web[["🖥️ Frontend
-        Flutter (Planificado)"]]
+        Flutter (Desktop Windows / Multiplataforma)"]]
         
         subgraph ApiContainer ["⚙️ API Backend (Contenedor Único FastAPI + Uvicorn)"]
             Api[["FastAPI App"]]
@@ -30,10 +30,10 @@ flowchart TB
     Notif(["✉️ Notificaciones
     Vía correo (SMTP)"])
 
-    Dueno -- "HTTPS / HTML (UI)" --> Web
-    Vendedor -- "HTTPS / HTML (UI)" --> Web
-    Empleado -- "HTTPS / HTML (UI)" --> Web
-    Web -- "HTTPS / JSON (REST API)" --> Api
+    Dueno -- "UI Material 3 (Flutter)" --> Web
+    Vendedor -- "UI Material 3 (Flutter)" --> Web
+    Empleado -- "UI Material 3 (Flutter)" --> Web
+    Web -- "HTTP/HTTPS · JSON (REST API)" --> Api
     Api -- "In-Process Memory / Objetos Python (Evolución: adaptadores SQL)" --> Db
     Api -- "SMTP / MIME (Texto Plano)" --> Notif
 
@@ -72,7 +72,7 @@ Si en el futuro el equipo decide extraer algún módulo a su propio servicio (po
 | Contenedor en el diagrama | Corresponde a | Estado |
 |---|---|---|
 | API Backend | Toda la carpeta [`app/`](../../app/) — un único proceso FastAPI que ensambla los módulos en `app/main.py`. Expone la interfaz pública descrita en el [Contrato de API de InvenTrack](../api/inventrack-contrato.md). | Funcional con cortes verticales en [`app/productos/`](../../app/productos/) y [`app/inventario/`](../../app/inventario/) (Arquitectura Hexagonal + Mutex para concurrencia) |
-| Frontend | Aún no existe en el repositorio | Flutter planificado como aplicación cliente; pendiente de implementación |
+| Frontend | Carpeta [`frontend/`](../../frontend/) — aplicación Flutter (`lib/main.dart`, `lib/services/api_service.dart`, `lib/providers/`, `lib/screens/`) | Implementado para los endpoints del contrato OpenAPI v1 (`health`, `productos`, `inventario`) con runner de escritorio `windows/` y pruebas `MockClient` |
 | Persistencia | Repositorios de productos e inventario | **Actual:** adaptadores *In-Memory* alojados estrictamente dentro del espacio de proceso y memoria RAM del contenedor FastAPI (no es un contenedor externo). **Evolución preferida:** evaluar e implementar una base relacional compartida mediante los mismos puertos, preservando la propiedad por módulo ([ADR-0012](../adr/0012-mantener-repositorios-en-memoria-en-el-mvp.md)). |
 
 ---
@@ -125,7 +125,7 @@ flowchart LR
 
 - **Contrato de API:** Documentado y formalizado en [Contrato de API de InvenTrack](../api/inventrack-contrato.md) e implementado técnicamente bajo OpenAPI en `contracts/openapi/v1.json`.
 - **Nivel 3 (Componentes):** Está documentado en [components.md](components.md) y refleja los componentes implementados de `productos` e `inventario`.
-- **Interfaz web:** Flutter está planificado, pero todavía no existe en el repositorio.
+- **Frontend cliente:** Implementado en Flutter dentro de [`frontend/`](../../frontend/) consumiendo estrictamente `contracts/openapi/v1.json` (ver [`frontend/README.md`](../../frontend/README.md)). No añade lógica de dominio ni endpoints fuera del contrato.
 - **Persistencia:** actualmente solo existen adaptadores in-memory. La evolución preferida es evaluar una base relacional compartida; cualquier alternativa requiere una decisión sucesora que considere operación, concurrencia, migraciones y recuperación ([ADR-0012](../adr/0012-mantener-repositorios-en-memoria-en-el-mvp.md)).
 - **Notificaciones y módulos restantes:** `alertas`, `usuarios` y `proveedores` están definidos como extensiones futuras.
 

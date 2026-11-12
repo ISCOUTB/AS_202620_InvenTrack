@@ -174,7 +174,7 @@ siendo una hipótesis pendiente de validar bajo C7:
 
 | Canal | Protocolo/formato | Entre |
 |---|---|---|
-| Interfaz de usuario | HTTPS | Navegador del Dueño/Empleado ↔ InvenTrack |
+| Interfaz de usuario | HTTP/HTTPS · JSON (Flutter) | Aplicación cliente Flutter (`frontend/`) ↔ API InvenTrack |
 | Envío de alertas | SMTP / API de correo | InvenTrack → Servicio de notificaciones (correo electrónico) |
 
 # Solution Strategy
@@ -206,6 +206,8 @@ Dentro de cada módulo, la dependencia apunta hacia el centro: `infrastructure`
 depende de `application`, y `application` depende de `domain`. El dominio no
 depende de FastAPI ni de otro detalle de infraestructura. Las dependencias se
 ensamblan en `app/main.py`.
+
+El cliente de interfaz gráfica reside separado en [`frontend/`](../../frontend/) (Flutter + Material 3 + Provider) y consume únicamente los endpoints REST definidos en [`contracts/openapi/v1.json`](../../contracts/openapi/v1.json), sin duplicar reglas de negocio ni acoplarse a los repositorios internos del backend.
 
 FastAPI se utilizará como adaptador HTTP y Uvicorn como servidor de desarrollo.
 El endpoint `GET /health` demuestra que la composición arranca; no contiene
@@ -412,7 +414,7 @@ El modelo de despliegue integra 6 nodos funcionales distribuidos entre el client
 ```mermaid
 flowchart TD
     subgraph CLIENTE["1. Nodo Cliente"]
-        USER["Navegador Web / Cliente HTTP<br/>(HTTPS)"]
+        USER["Cliente Flutter (frontend/) / HTTP Client<br/>(HTTP / HTTPS · JSON)"]
     end
 
     subgraph CI_CD["Entorno de Integración Continua"]
@@ -447,6 +449,12 @@ La aplicación se inicia localmente mediante:
 python -m uvicorn app.main:app --reload
 ```
 
+Y el cliente gráfico Flutter desde `frontend/` (ver [`frontend/README.md`](../../frontend/README.md)):
+
+```text
+flutter run -d windows
+```
+
 El despliegue institucional se construye con `Dockerfile` y
 `deploy/compose.lab.yaml`; Dokploy publica automáticamente los cambios de `main`
 en `https://inventrack.iscoutb.dev`. Render conserva su configuración independiente
@@ -458,7 +466,7 @@ en `render.yaml`. La evidencia de operación de ambos destinos se mantiene en
 
 | # | Nodo | Rol / Tecnología | Responsabilidad Arquitectónica |
 |---|---|---|---|
-| 1 | **Cliente Web** | Navegador / HTTP Client | Interfaz utilizada por el dueño o empleado para realizar solicitudes REST vía HTTPS. |
+| 1 | **Cliente / Frontend** | Flutter (`frontend/`) / HTTP Client | Aplicación cliente Material 3 que consume la API REST según `contracts/openapi/v1.json` (`GET /health`, `/productos`, `/inventario`). |
 | 2 | **GitHub CI/CD** | GitHub Actions Workflow | Ejecuta las pruebas automatizadas (`pytest`) y orquesta el flujo de integración. |
 | 3 | **SonarCloud** | Scanner SAST SaaS | Evalúa la calidad del código, cobertura y vulnerabilidades antes del despliegue. |
 | 4 | **Destinos operativos** | Dokploy `iscoutb.dev` y Render `onrender.com` | Ejecutan la misma API FastAPI/Uvicorn mediante `deploy/compose.lab.yaml` y `render.yaml`, respectivamente. |
@@ -879,6 +887,7 @@ Esta sección documenta explícitamente las divergencias conocidas, riesgos asum
   - *Riesgo:* Ante reinicios del contenedor o despliegue en múltiples réplicas horizontales, el estado del inventario no es persistente ni compartido.
   - *Mitigación:* La prueba vigente ejecuta 20 peticiones concurrentes sobre salidas reales, comprueba el stock final y exige $p95 \le 400\text{ ms}$ en una instancia. La evolución prioritaria post-MVP es evaluar una base relacional compartida mediante los puertos existentes, incluyendo migración, respaldos y restauración.
 - **Inmutabilidad de ADRs Previos:** Los ADRs 0002, 0004 y 0005 sufrieron ediciones posteriores en iteraciones anteriores. Esto se zanja formalmente mediante el **ADR-0009**, decretando la inmutabilidad estricta de cualquier ADR aceptado a partir de la fecha.
+- **Límites del Frontend MVP (`frontend/`):** El cliente Flutter implementa exclusivamente los endpoints declarados en `contracts/openapi/v1.json` (`GET /health`, `POST /productos`, `DELETE /productos/{producto_id}`, `GET /inventario/{producto_id}`, `POST /inventario/{producto_id}/entradas|salidas`). Como `GET /productos` no forma parte de OpenAPI v1, la pestaña de productos mantiene la lista de la sesión en memoria; además, solo está generada la plataforma `windows/` y los entornos de producción mantienen `503` en rutas de negocio mientras no exista autenticación (`usuarios`).
 
 ## Tabla de modos de fallo y mitigaciones
 

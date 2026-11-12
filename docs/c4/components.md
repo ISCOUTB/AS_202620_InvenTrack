@@ -6,7 +6,7 @@ muestra los componentes implementados actualmente. Los módulos `proveedores`,
 
 ```mermaid
 flowchart TB
-    Client["Cliente HTTP"]
+    Client["Frontend Flutter (frontend/)\nCliente HTTP OpenAPI v1"]
 
     subgraph API["API Backend · FastAPI + Uvicorn"]
         subgraph Productos["Contexto productos"]
@@ -66,6 +66,7 @@ flowchart TB
 | Repositorios de inventario | `InMemoryStockRepository`, `InMemoryMovimientoRepository` |
 | Integración entre contextos | `HistorialMovimientosAdapter`, `ValidadorDeProductoAdapter` |
 | Contrato de API | Interfaz REST formalizada en `docs/api/inventrack-contrato.md` y `contracts/openapi/v1.json` |
+| Cliente Flutter | [`frontend/`](../../frontend/) (`ApiService`, providers y pantallas Material 3 sobre OpenAPI v1) |
 | Composición | `app/main.py` |
 
 ## Reglas de dependencia
@@ -80,4 +81,4 @@ flowchart TB
 
 ## Alcance actual y objetivo
 
-El diagrama representa el estado implementado del backend. La persistencia relacional, el frontend Flutter, las alertas, los usuarios y los proveedores pertenecen a la arquitectura objetivo y no se presentan como componentes existentes.
+El diagrama representa el estado implementado del backend (`app/`), consumido por el cliente Flutter ([`frontend/`](../../frontend/)) sin salir de `contracts/openapi/v1.json`. La persistencia relacional, las alertas, los usuarios y los proveedores pertenecen a la arquitectura objetivo y no se presentan como componentes existentes.

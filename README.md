@@ -283,7 +283,7 @@ la respuesta están en [`evidencia-seguridad-s13.md`](docs/evidencia-seguridad-s
 
 | Capa | Tecnología | Estado |
 |---|---|---|
-| Frontend | Flutter | Pendiente |
+| Frontend | Flutter (Dart / Material 3 / Provider) | Implementado para el contrato OpenAPI v1 en [`frontend/`](frontend/) (`windows/`) |
 | Backend | FastAPI + Uvicorn | Implementado |
 | Persistencia | Adaptadores In-Memory; PostgreSQL compartido es la evolución preferida | Implementado para MVP; persistencia durable pendiente de ADR sucesor |
 | Mensajería | Simulador asíncrono local | Integrado para auditoría; broker durable u Outbox persistente pendiente |
@@ -341,6 +341,19 @@ app/                             # Aplicación FastAPI Monolito Modular
 ├── proveedores/                 # Módulo de proveedores
 ├── usuarios/                    # Módulo de usuarios
 └── alertas/                     # Módulo de alertas
+frontend/                        # Cliente Flutter (Material 3 + Provider)
+├── README.md                    # Guía de ejecución, pruebas y límites del cliente
+├── pubspec.yaml                 # Dependencias Flutter (http, provider, google_fonts, intl)
+├── lib/
+│   ├── main.dart                # Punto de entrada y MultiProvider
+│   ├── config/                  # Configuración de URL base y timeout
+│   ├── models/                  # Modelos alineados con OpenAPI v1
+│   ├── services/                # Cliente HTTP REST y mapeo de excepciones
+│   ├── providers/               # Gestión de estado (salud, productos, inventario)
+│   ├── screens/                 # Pantallas Home, Productos e Inventario
+│   └── widgets/                 # Diálogos y tarjetas de stock/movimientos
+├── test/                        # Pruebas unitarias y de widgets con MockClient
+└── windows/                     # Runner nativo de escritorio Windows
 tests/                           # Batería de pruebas automatizadas
 ├── test_health.py
 ├── productos/
@@ -389,6 +402,22 @@ Esta ejecución verifica el contrato del evento, publicación desde una operaci�
 real de inventario, deduplicación, fallo recuperable con reintentos y backoff,
 envío a DLQ y trazabilidad mediante `correlation_id`. La evidencia detallada
 está en [`docs/evidencia-mensajeria-s12.md`](docs/evidencia-mensajeria-s12.md).
+
+### Cómo ejecutar el frontend (Flutter)
+
+Requisitos: Flutter SDK (`>= 3.41`), Dart SDK (`>= 3.0.0`), herramientas de escritorio Windows (Visual Studio C++) y el backend FastAPI corriendo en `http://localhost:8000`. Ver detalles completos en [`frontend/README.md`](frontend/README.md).
+
+```powershell
+cd frontend
+flutter run -d windows
+```
+
+Las pruebas y el análisis estático del frontend se ejecutan desde `frontend/` con:
+
+```powershell
+flutter analyze
+flutter test
+```
 
 ## Flujo de trabajo del equipo
 
