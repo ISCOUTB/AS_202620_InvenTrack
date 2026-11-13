@@ -452,7 +452,7 @@ python -m uvicorn app.main:app --reload
 Y el cliente gráfico Flutter desde `frontend/` (ver [`frontend/README.md`](../../frontend/README.md)):
 
 ```text
-flutter run -d windows
+flutter run -d android
 ```
 
 El despliegue institucional se construye con `Dockerfile` y
@@ -887,7 +887,7 @@ Esta sección documenta explícitamente las divergencias conocidas, riesgos asum
   - *Riesgo:* Ante reinicios del contenedor o despliegue en múltiples réplicas horizontales, el estado del inventario no es persistente ni compartido.
   - *Mitigación:* La prueba vigente ejecuta 20 peticiones concurrentes sobre salidas reales, comprueba el stock final y exige $p95 \le 400\text{ ms}$ en una instancia. La evolución prioritaria post-MVP es evaluar una base relacional compartida mediante los puertos existentes, incluyendo migración, respaldos y restauración.
 - **Inmutabilidad de ADRs Previos:** Los ADRs 0002, 0004 y 0005 sufrieron ediciones posteriores en iteraciones anteriores. Esto se zanja formalmente mediante el **ADR-0009**, decretando la inmutabilidad estricta de cualquier ADR aceptado a partir de la fecha.
-- **Límites del Frontend MVP (`frontend/`):** El cliente Flutter implementa exclusivamente los endpoints declarados en `contracts/openapi/v1.json` (`GET /health`, `POST /productos`, `DELETE /productos/{producto_id}`, `GET /inventario/{producto_id}`, `POST /inventario/{producto_id}/entradas|salidas`). Como `GET /productos` no forma parte de OpenAPI v1, la pestaña de productos mantiene la lista de la sesión en memoria; además, solo está generada la plataforma `windows/` y los entornos de producción mantienen `503` en rutas de negocio mientras no exista autenticación (`usuarios`).
+- **Límites del Frontend MVP (`frontend/`):** El cliente Flutter implementa exclusivamente los endpoints declarados en `contracts/openapi/v1.json` (`GET /health`, `POST /productos`, `DELETE /productos/{producto_id}`, `GET /inventario/{producto_id}`, `POST /inventario/{producto_id}/entradas|salidas`). Como `GET /productos` no forma parte de OpenAPI v1, la pestaña de productos mantiene la lista de la sesión en memoria; las plataformas objetivo son Android e iOS y los entornos de producción mantienen `503` en rutas de negocio mientras no exista autenticación (`usuarios`).
 
 ## Tabla de modos de fallo y mitigaciones
 

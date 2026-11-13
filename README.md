@@ -353,7 +353,9 @@ frontend/                        # Cliente Flutter (Material 3 + Provider)
 │   ├── screens/                 # Pantallas Home, Productos e Inventario
 │   └── widgets/                 # Diálogos y tarjetas de stock/movimientos
 ├── test/                        # Pruebas unitarias y de widgets con MockClient
-└── windows/                     # Runner nativo de escritorio Windows
+├── android/                     # Runner nativo Android
+├── ios/                         # Runner nativo iOS
+└── windows/                     # Runner nativo Windows conservado
 tests/                           # Batería de pruebas automatizadas
 ├── test_health.py
 ├── productos/
@@ -405,11 +407,17 @@ está en [`docs/evidencia-mensajeria-s12.md`](docs/evidencia-mensajeria-s12.md).
 
 ### Cómo ejecutar el frontend (Flutter)
 
-Requisitos: Flutter SDK (`>= 3.41`), Dart SDK (`>= 3.0.0`), herramientas de escritorio Windows (Visual Studio C++) y el backend FastAPI corriendo en `http://localhost:8000`. Ver detalles completos en [`frontend/README.md`](frontend/README.md).
+Requisitos: Flutter SDK (`>= 3.41`), Dart SDK (`>= 3.0.0`), Android Studio/SDK para Android o macOS/Xcode para iOS, y el backend FastAPI corriendo. Ver detalles completos en [`frontend/README.md`](frontend/README.md).
 
 ```powershell
 cd frontend
-flutter run -d windows
+flutter run -d android
+```
+
+Para iOS se requiere macOS con Xcode:
+
+```text
+flutter run -d ios
 ```
 
 Las pruebas y el análisis estático del frontend se ejecutan desde `frontend/` con:

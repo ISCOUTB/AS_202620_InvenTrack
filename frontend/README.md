@@ -1,13 +1,14 @@
 # InvenTrack — Frontend (Flutter)
 
-Cliente gráfico multiplataforma (configurado inicialmente para escritorio **Windows**) desarrollado en **Flutter** para **InvenTrack**. Consume estrictamente la API HTTP definida en el contrato versionado [`contracts/openapi/v1.json`](../contracts/openapi/v1.json) sin añadir ni modificar endpoints del backend.
+Aplicación móvil multiplataforma para **Android e iOS**, desarrollada en **Flutter** para **InvenTrack**. Consume estrictamente la API HTTP definida en el contrato versionado [`contracts/openapi/v1.json`](../contracts/openapi/v1.json) sin añadir ni modificar endpoints del backend.
 
 ---
 
 ## Requisitos previos
 
 - **Flutter SDK** `>= 3.41` y **Dart SDK** `>= 3.0.0 <4.0.0` (verificado con Flutter `3.41.6` / Dart `3.11.4`).
-- Para ejecutar en **Windows Desktop**: herramientas de compilación C++ de Visual Studio (*Desktop development with C++*) habilitadas en `flutter doctor`.
+- Para ejecutar en **Android**: Android Studio, Android SDK y un emulador o dispositivo habilitado en `flutter doctor`.
+- Para ejecutar en **iOS**: macOS con Xcode y un simulador o dispositivo iOS. Flutter no permite compilar iOS desde Windows.
 - **Backend FastAPI** de InvenTrack en ejecución (por defecto en `http://localhost:8000`).
 
 ---
@@ -20,10 +21,10 @@ Cliente gráfico multiplataforma (configurado inicialmente para escritorio **Win
 python -m uvicorn app.main:app --reload
 ```
 
-### 2. Arrancar el frontend en un solo comando (desde `frontend/`)
+### 2. Arrancar el frontend móvil (desde `frontend/`)
 
 ```powershell
-flutter run -d windows
+flutter run -d android
 ```
 
 > Si aún no se han descargado los paquetes en el entorno local, ejecutar previamente `flutter pub get`.
@@ -33,12 +34,16 @@ flutter run -d windows
 Por defecto (`lib/config/api_config.dart`), el cliente se conecta a `http://localhost:8000`. Puede indicarse otra URL en tiempo de compilación/ejecución mediante `--dart-define`:
 
 ```powershell
-flutter run -d windows --dart-define=INVENTRACK_API_URL=http://127.0.0.1:8000
+flutter run -d android --dart-define=INVENTRACK_API_URL=http://10.0.2.2:8000
 ```
 
 > **Nota sobre entornos desplegados:** En Dokploy (`https://inventrack.iscoutb.dev`) y Render (`https://inventrack-api.onrender.com`), las rutas de negocio (`/productos`, `/inventario`) devuelven `503` mientras `INVENTRACK_ALLOW_BUSINESS_DATA=false` por política preventiva (únicamente `/health` responde `200`). Para probar los flujos completos de catálogo e inventario, ejecuta contra el backend local.
 >
-> **Otras plataformas:** Actualmente solo está generada la carpeta nativa `windows/`. Para habilitar Web, Android, Linux o macOS se requiere `flutter create --platforms=<plataforma> .` (y en el caso de Flutter Web, habilitar CORS en desarrollo en el backend).
+> **Conexión desde móvil:** En el emulador Android, `10.0.2.2` apunta al `localhost` de la máquina anfitriona. En un dispositivo físico se debe usar la IP local del equipo que ejecuta el backend, por ejemplo `http://192.168.1.10:8000`, y permitir el tráfico correspondiente en la red.
+>
+> **iOS:** Ejecuta `flutter run -d ios` desde macOS con Xcode configurado. Para el simulador iOS normalmente se puede usar `http://127.0.0.1:8000`; un dispositivo físico debe usar la IP local del equipo que ejecuta el backend.
+>
+> El proyecto conserva el runner `windows/` existente, pero la plataforma objetivo del producto es ahora móvil mediante `android/` e `ios/`.
 
 ---
 
