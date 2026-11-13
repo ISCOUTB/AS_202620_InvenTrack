@@ -24,6 +24,7 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<HealthProvider>().checkHealth();
+      context.read<ProductosProvider>().cargarProductos();
     });
   }
 

@@ -9,3 +9,6 @@ class ConsultarProducto:
 
     def ejecutar(self, producto_id: str) -> Producto | None:
         return self._repositorio.obtener(producto_id)
+
+    def listar(self) -> list[Producto]:
+        return self._repositorio.listar()

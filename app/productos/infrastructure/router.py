@@ -3,6 +3,7 @@ from pydantic import BaseModel
 
 from app.productos.application.crear_producto import CrearProducto
 from app.productos.application.eliminar_producto import EliminarProducto
+from app.productos.application.consultar_producto import ConsultarProducto
 from app.productos.domain.exceptions import ProductoNoEncontrado
 
 
@@ -23,9 +24,20 @@ class EliminarProductoResponse(BaseModel):
     mensaje: str
 
 
-def crear_router(crear_producto: CrearProducto, eliminar_producto: EliminarProducto) -> APIRouter:
+def crear_router(
+    crear_producto: CrearProducto,
+    eliminar_producto: EliminarProducto,
+    consultar_producto: ConsultarProducto,
+) -> APIRouter:
 
     router = APIRouter()
+
+    @router.get("/productos", response_model=list[ProductoResponse])
+    def listar() -> list[ProductoResponse]:
+        return [
+            ProductoResponse(id=producto.id, nombre=producto.nombre, activo=producto.activo)
+            for producto in consultar_producto.listar()
+        ]
 
     @router.post("/productos", status_code=201)
     def crear(payload: CrearProductoRequest) -> ProductoResponse:

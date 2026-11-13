@@ -9,6 +9,9 @@ class InMemoryProductoRepository(ProductoRepository):
     def obtener(self, producto_id: str) -> Producto | None:
         return self._productos.get(producto_id)
 
+    def listar(self) -> list[Producto]:
+        return list(self._productos.values())
+
     def guardar(self, producto: Producto) -> None:
         self._productos[producto.id] = producto
 

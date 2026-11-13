@@ -241,7 +241,8 @@ def metrics():
 
 
 app.include_router(
-    crear_router_productos(_crear_producto, _eliminar_producto), tags=["productos"]
+    crear_router_productos(_crear_producto, _eliminar_producto, _consultar_producto),
+    tags=["productos"],
 )
 app.include_router(
     crear_router_inventario(

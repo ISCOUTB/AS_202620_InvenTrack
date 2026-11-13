@@ -11,6 +11,26 @@ import 'package:inventrack/services/api_service.dart';
 
 void main() {
   group('ApiService contrato OpenAPI v1', () {
+    test('listarProductos consulta GET /productos', () async {
+      final client = MockClient((request) async {
+        expect(request.method, 'GET');
+        expect(request.url.path, '/productos');
+        return http.Response(
+          jsonEncode([
+            {'id': 'SKU-01', 'nombre': 'Tornillo M8', 'activo': true},
+          ]),
+          200,
+        );
+      });
+
+      final api = ApiService(client: client, baseUrl: 'http://localhost:8000');
+      final productos = await api.listarProductos();
+
+      expect(productos, hasLength(1));
+      expect(productos.single.id, 'SKU-01');
+      expect(productos.single.nombre, 'Tornillo M8');
+    });
+
     test('checkHealth consulta GET /health', () async {
       final client = MockClient((request) async {
         expect(request.method, 'GET');

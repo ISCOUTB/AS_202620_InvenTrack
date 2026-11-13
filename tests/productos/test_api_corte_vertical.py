@@ -5,6 +5,19 @@ from app.main import app
 client = TestClient(app)
 
 
+def test_listar_productos_devuelve_catalogo_actual():
+    client.post("/productos", json={"id": "api-listado", "nombre": "Café 250g"})
+
+    response = client.get("/productos")
+
+    assert response.status_code == 200
+    assert {
+        "id": "api-listado",
+        "nombre": "Café 250g",
+        "activo": True,
+    } in response.json()
+
+
 def test_corte_vertical_eliminar_producto_sin_movimientos():
     client.post("/productos", json={"id": "api-p1", "nombre": "Café 250g"})
 

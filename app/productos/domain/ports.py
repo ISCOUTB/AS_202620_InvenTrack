@@ -5,6 +5,10 @@ from app.productos.domain.producto import Producto
 
 class ProductoRepository(ABC):
     @abstractmethod
+    def listar(self) -> list[Producto]:
+        raise NotImplementedError
+
+    @abstractmethod
     def obtener(self, producto_id: str) -> Producto | None:
         raise NotImplementedError
 

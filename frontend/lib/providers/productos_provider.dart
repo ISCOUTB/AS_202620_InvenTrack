@@ -36,6 +36,25 @@ class ProductosProvider extends ChangeNotifier {
   // Acciones
   // ---------------------------------------------------------------------------
 
+  /// Carga el catálogo actual desde el backend.
+  Future<void> cargarProductos() async {
+    _setLoading(true);
+    _clearError();
+
+    try {
+      final productos = await _apiService.listarProductos();
+      _productos
+        ..clear()
+        ..addAll(productos);
+    } on ApiException catch (e) {
+      _errorMessage = e.descripcion;
+    } on Exception catch (e) {
+      _errorMessage = 'Error de conexión: $e';
+    } finally {
+      _setLoading(false);
+    }
+  }
+
   /// Crea un producto en el backend y lo agrega a la lista local si tiene éxito.
   ///
   /// Retorna el [Producto] creado o `null` si ocurre un error.

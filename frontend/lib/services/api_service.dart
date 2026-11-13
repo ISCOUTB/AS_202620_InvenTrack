@@ -47,6 +47,23 @@ class ApiService {
   // Productos
   // ---------------------------------------------------------------------------
 
+  /// GET /productos
+  Future<List<Producto>> listarProductos() async {
+    final response = await _client
+        .get(
+          Uri.parse('$_baseUrl/productos'),
+          headers: {'Accept': 'application/json'},
+        )
+        .timeout(ApiConfig.timeout);
+
+    _ensureSuccess(response);
+
+    final body = jsonDecode(response.body) as List<dynamic>;
+    return body
+        .map((item) => Producto.fromJson(item as Map<String, dynamic>))
+        .toList();
+  }
+
   /// POST /productos
   Future<Producto> crearProducto(CrearProductoRequest request) async {
     final response = await _client

@@ -8,16 +8,21 @@
   "paths": {
     "/health": {
       "get": {
+        "tags": [
+          "infraestructura"
+        ],
+        "summary": "Health Check",
+        "operationId": "health_check_health_get",
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
                   "additionalProperties": {
                     "type": "string"
                   },
+                  "type": "object",
                   "title": "Response Health Check Health Get"
                 }
               }
@@ -27,16 +32,44 @@
       }
     },
     "/productos": {
+      "get": {
+        "tags": [
+          "productos"
+        ],
+        "summary": "Listar",
+        "operationId": "listar_productos_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProductoResponse"
+                  },
+                  "type": "array",
+                  "title": "Response Listar Productos Get"
+                }
+              }
+            }
+          }
+        }
+      },
       "post": {
+        "tags": [
+          "productos"
+        ],
+        "summary": "Crear",
+        "operationId": "crear_productos_post",
         "requestBody": {
-          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/CrearProductoRequest"
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "201": {
@@ -64,6 +97,11 @@
     },
     "/productos/{producto_id}": {
       "delete": {
+        "tags": [
+          "productos"
+        ],
+        "summary": "Eliminar",
+        "operationId": "eliminar_productos__producto_id__delete",
         "parameters": [
           {
             "name": "producto_id",
@@ -104,6 +142,11 @@
     },
     "/inventario/{producto_id}/entradas": {
       "post": {
+        "tags": [
+          "inventario"
+        ],
+        "summary": "Registrar Entrada",
+        "operationId": "registrar_entrada_inventario__producto_id__entradas_post",
         "parameters": [
           {
             "name": "producto_id",
@@ -177,6 +220,9 @@
           "409": {
             "description": "Conflict - Clave de idempotencia reutilizada"
           },
+          "503": {
+            "description": "Service Unavailable"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -186,15 +232,17 @@
                 }
               }
             }
-          },
-          "503": {
-            "description": "Service Unavailable"
           }
         }
       }
     },
     "/inventario/{producto_id}/salidas": {
       "post": {
+        "tags": [
+          "inventario"
+        ],
+        "summary": "Registrar Salida",
+        "operationId": "registrar_salida_inventario__producto_id__salidas_post",
         "parameters": [
           {
             "name": "producto_id",
@@ -268,6 +316,9 @@
           "409": {
             "description": "Conflict - Stock insuficiente"
           },
+          "503": {
+            "description": "Service Unavailable"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -277,15 +328,17 @@
                 }
               }
             }
-          },
-          "503": {
-            "description": "Service Unavailable"
           }
         }
       }
     },
     "/inventario/{producto_id}": {
       "get": {
+        "tags": [
+          "inventario"
+        ],
+        "summary": "Consultar Stock",
+        "operationId": "consultar_stock_inventario__producto_id__get",
         "parameters": [
           {
             "name": "producto_id",
@@ -331,51 +384,44 @@
     "schemas": {
       "CrearProductoRequest": {
         "properties": {
-          "id": { "type": "string", "title": "Id" },
-          "nombre": { "type": "string", "title": "Nombre" }
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "nombre": {
+            "type": "string",
+            "title": "Nombre"
+          }
         },
         "type": "object",
-        "required": ["id", "nombre"],
+        "required": [
+          "id",
+          "nombre"
+        ],
         "title": "CrearProductoRequest"
-      },
-      "ProductoResponse": {
-        "properties": {
-          "id": { "type": "string", "title": "Id" },
-          "nombre": { "type": "string", "title": "Nombre" },
-          "activo": { "type": "boolean", "title": "Activo" }
-        },
-        "type": "object",
-        "required": ["id", "nombre", "activo"],
-        "title": "ProductoResponse"
       },
       "EliminarProductoResponse": {
         "properties": {
-          "eliminado_fisicamente": { "type": "boolean", "title": "Eliminado Fisicamente" },
-          "desactivado": { "type": "boolean", "title": "Desactivado" },
-          "mensaje": { "type": "string", "title": "Mensaje" }
+          "eliminado_fisicamente": {
+            "type": "boolean",
+            "title": "Eliminado Fisicamente"
+          },
+          "desactivado": {
+            "type": "boolean",
+            "title": "Desactivado"
+          },
+          "mensaje": {
+            "type": "string",
+            "title": "Mensaje"
+          }
         },
         "type": "object",
-        "required": ["eliminado_fisicamente", "desactivado", "mensaje"],
+        "required": [
+          "eliminado_fisicamente",
+          "desactivado",
+          "mensaje"
+        ],
         "title": "EliminarProductoResponse"
-      },
-      "MovimientoRequest": {
-        "properties": {
-          "cantidad": { "type": "integer", "exclusiveMinimum": 0.0, "title": "Cantidad" }
-        },
-        "type": "object",
-        "required": ["cantidad"],
-        "title": "MovimientoRequest"
-      },
-      "MovimientoResponse": {
-        "properties": {
-          "producto_id": { "type": "string", "title": "Producto Id" },
-          "cantidad": { "type": "integer", "title": "Cantidad" },
-          "tipo": { "type": "string", "title": "Tipo" },
-          "stock_final": { "type": "integer", "title": "Stock Final" }
-        },
-        "type": "object",
-        "required": ["producto_id", "cantidad", "tipo", "stock_final"],
-        "title": "MovimientoResponse"
       },
       "HTTPValidationError": {
         "properties": {
@@ -390,13 +436,82 @@
         "type": "object",
         "title": "HTTPValidationError"
       },
+      "MovimientoRequest": {
+        "properties": {
+          "cantidad": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Cantidad"
+          }
+        },
+        "type": "object",
+        "required": [
+          "cantidad"
+        ],
+        "title": "MovimientoRequest"
+      },
+      "MovimientoResponse": {
+        "properties": {
+          "producto_id": {
+            "type": "string",
+            "title": "Producto Id"
+          },
+          "cantidad": {
+            "type": "integer",
+            "title": "Cantidad"
+          },
+          "tipo": {
+            "type": "string",
+            "title": "Tipo"
+          },
+          "stock_final": {
+            "type": "integer",
+            "title": "Stock Final"
+          }
+        },
+        "type": "object",
+        "required": [
+          "producto_id",
+          "cantidad",
+          "tipo",
+          "stock_final"
+        ],
+        "title": "MovimientoResponse"
+      },
+      "ProductoResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "nombre": {
+            "type": "string",
+            "title": "Nombre"
+          },
+          "activo": {
+            "type": "boolean",
+            "title": "Activo"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "nombre",
+          "activo"
+        ],
+        "title": "ProductoResponse"
+      },
       "ValidationError": {
         "properties": {
           "loc": {
             "items": {
               "anyOf": [
-                { "type": "string" },
-                { "type": "integer" }
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
               ]
             },
             "type": "array",
@@ -409,17 +524,14 @@
           "type": {
             "type": "string",
             "title": "Error Type"
-          },
-          "input": {
-            "title": "Input"
-          },
-          "ctx": {
-            "type": "object",
-            "title": "Context"
           }
         },
         "type": "object",
-        "required": ["loc", "msg", "type"],
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
         "title": "ValidationError"
       }
     }

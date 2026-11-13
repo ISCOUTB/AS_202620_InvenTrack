@@ -65,7 +65,7 @@ class ProductosPage extends StatelessWidget {
 
     return RefreshIndicator(
       onRefresh: () async {
-        // Placeholder for future refresh logic (e.g., GET /productos)
+        await provider.cargarProductos();
       },
       child: ListView.builder(
         padding: const EdgeInsets.only(bottom: 88),
