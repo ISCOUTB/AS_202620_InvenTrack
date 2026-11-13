@@ -50,9 +50,11 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('InvenTrack'), findsOneWidget);
-    expect(find.text('No hay productos registrados'), findsOneWidget);
+    expect(find.text('Resumen de inventario'), findsOneWidget);
 
-    // Crear producto desde FAB
+    // Navegar al catálogo y crear producto
+    await tester.tap(find.text('Productos'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Nuevo Producto'));
     await tester.pumpAndSettle();
 
