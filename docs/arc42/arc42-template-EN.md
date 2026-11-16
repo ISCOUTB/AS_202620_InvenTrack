@@ -883,6 +883,29 @@ Esta sección documenta explícitamente las divergencias conocidas, riesgos asum
   limitación de idempotencia a una sola instancia. Estas capacidades no se
   presentan como implementadas y requieren los cambios arquitectónicos
   descritos en sus ADR y evidencias.
+
+### Seguimiento de observaciones de pares
+
+| Observación | Estado | Evidencia y decisión |
+|---|---|---|
+| Contrastar explícitamente la medición con el umbral del escenario y hacer visibles sus riesgos | Corregido | Se documentan el p95 histórico de 32.891 ms frente a 400 ms, las ejecuciones actuales y las deudas de persistencia, autenticación, identidad e idempotencia en [el experimento S10](../retos/corte-2-experimento.md). |
+
+No se conserva en el historial revisado un listado separado de otros
+señalamientos individuales. Por tanto, no se marcan observaciones adicionales
+como corregidas, asumidas o pendientes sin evidencia.
+
+### Deudas y riesgos vigentes
+
+| Deuda o riesgo | Estado actual |
+|---|---|
+| Autenticación y autorización por roles | Pendiente; las rutas de negocio permanecen deshabilitadas en producción. |
+| Persistencia durable, copias de seguridad y restauración | Pendiente; el MVP usa repositorios en memoria. |
+| Coordinación entre réplicas | Pendiente; locks e idempotencia solo cubren una instancia. |
+| Identidad del actor en movimientos | Pendiente; no existe autenticación de usuarios. |
+| Retención, redacción y acceso restringido a logs | Pendiente de política y controles operativos. |
+| Outbox o mensajería durable | Pendiente; el broker y la DLQ son volátiles. |
+| Escaneo de imagen Docker | Ejecutado; encontró 45 vulnerabilidades y requiere actualización de la imagen base/dependencias. |
+
 - **Almacenamiento en Memoria (In-Memory Adapter):** Según [ADR-0012](../adr/0012-mantener-repositorios-en-memoria-en-el-mvp.md), para cumplir estrictamente con la restricción de presupuesto cero (C5) del MVP, la persistencia se apoya en diccionarios en memoria RAM con cerrojos asíncronos (`asyncio.Lock`).
   - *Riesgo:* Ante reinicios del contenedor o despliegue en múltiples réplicas horizontales, el estado del inventario no es persistente ni compartido.
   - *Mitigación:* La prueba vigente ejecuta 20 peticiones concurrentes sobre salidas reales, comprueba el stock final y exige $p95 \le 400\text{ ms}$ en una instancia. La evolución prioritaria post-MVP es evaluar una base relacional compartida mediante los puertos existentes, incluyendo migración, respaldos y restauración.
@@ -908,7 +931,7 @@ implementadas las capacidades que permanecen fuera del MVP.
 | Exposición de `/metrics` o `/docs` | Un tercero obtiene información útil para reconocimiento operacional. | Restringir `/metrics` y documentación en producción con token interno; conservar `/health` mínimo. | [Evidencia S13](../evidencia-seguridad-s13.md). Mitigación preventiva vigente; sin token responde `404`. |
 | Falta de identidad del actor en auditoría | No se puede demostrar qué usuario ejecutó un movimiento ni aplicar responsabilidad por rol. | Implementar identidad autenticada, autorización por rol, `actor_id` en eventos y política de retención de logs. | [Evidencia S13](../evidencia-seguridad-s13.md). Pendiente junto con el módulo `usuarios`. |
 | Datos personales en identificadores o logs | Un cliente puede enviar datos personales en cabeceras o la plataforma puede conservar datos de acceso. | Prohibir datos personales en cabeceras técnicas, minimizar logs, restringir acceso y definir retención y política de privacidad. | [Evidencia S13](../evidencia-seguridad-s13.md). Mitigación pendiente. |
-| Contenedor o imagen base comprometida | Un proceso comprometido puede acceder a código o memoria con privilegios innecesarios. | Mantener usuario no root, imagen mínima, permisos mínimos y escaneo de imagen/base. | [Dockerfile](../../Dockerfile), [Evidencia S13](../evidencia-seguridad-s13.md). Usuario no root implementado; escaneo pendiente. |
+| Contenedor o imagen base comprometida | Un proceso comprometido puede acceder a código o memoria con privilegios innecesarios. | Mantener usuario no root, imagen mínima, permisos mínimos y escaneo de imagen/base. | [Dockerfile](../../Dockerfile), [Evidencia S13](../evidencia-seguridad-s13.md). Usuario no root implementado; el escaneo encontró 45 vulnerabilidades y requiere remediación. |
 
 ---
 

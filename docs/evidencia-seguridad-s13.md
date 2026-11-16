@@ -1,5 +1,8 @@
 # Evidencia S13 — Inventario de activos, datos y controles
 
+> **Commit evaluado:** `a5cd1d8bff1ebac701ba8b682c512929f888a459`
+> — 2026-11-13T18:53:47-05:00.
+
 ## 1. Propósito y alcance
 
 Este inventario describe el estado real de seguridad del MVP de InvenTrack
@@ -214,7 +217,7 @@ externos, por lo que permanecen pendientes.
 | T-06 — exposición de métricas y documentación | Responsable de plataforma/DevOps | [AccessPolicyMiddleware](../app/main.py), [prueba de regresión](../tests/test_health.py), [render.yaml](../render.yaml) y [Compose institucional](../deploy/compose.lab.yaml) | Producción con negocio deshabilitado por defecto y superficies internas inaccesibles sin secreto gestionado. |
 | T-07 — identidad y privacidad en auditoría | Responsable de seguridad + responsable del módulo inventario | [propiedad de datos](propiedad-datos.md), logs de [app/main.py](../app/main.py) y política de retención pendiente | Actor autenticado, redacción de identificadores y retención/acceso aprobados. |
 | T-08 — entrada inválida | Responsable técnico de backend | [router de inventario](../app/inventario/infrastructure/router.py), [pruebas de validación](../tests/inventario/test_inventario.py) y contrato OpenAPI | Límites de entrada y pruebas contractuales mantenidos en CI. |
-| T-09 — privilegios del contenedor | Responsable de plataforma/DevOps | [Dockerfile](../Dockerfile) y escaneo de imagen pendiente | Usuario no root, imagen mínima y escaneo sin hallazgos bloqueantes. |
+| T-09 — privilegios del contenedor | Responsable de plataforma/DevOps | [Dockerfile](../Dockerfile) y [resultado del escaneo de imagen](#resultado-del-escaneo-de-la-imagen-docker) | Usuario no root implementado; el escaneo encontró vulnerabilidades y requiere actualización de la imagen/dependencias. |
 | T-10 — integridad de paquetes | Responsable de plataforma/DevOps | [requirements.txt](../requirements.txt), [Dockerfile](../Dockerfile) y workflow de CI | Hashes verificados y escaneo continuo incorporado al pipeline. |
 
 ### Orden de atención recomendado
@@ -235,6 +238,35 @@ Las mitigaciones T-01, T-03, T-04, T-05, T-06 y T-07 pueden cambiar la
 estructura o los límites de confianza del sistema. Si se aceptan para
 implementación, se deberá crear o actualizar un ADR antes de presentarlas como
 decisiones arquitectónicas.
+
+## Resultado del escaneo de la imagen Docker
+
+El 15 de noviembre de 2026 se construyó y escaneó la imagen con Docker Scout:
+
+```powershell
+docker build -t inventrack:security-scan .
+docker scout cves inventrack:security-scan
+```
+
+Resultado:
+
+| Campo | Resultado |
+|---|---|
+| Imagen | `inventrack:security-scan` |
+| Digest | `sha256:82d6c10c48b044196b61915267d736883debcac2ca6d4123d1280191034a1ba6` |
+| Plataforma | `linux/amd64` |
+| Paquetes indexados | 171 |
+| Paquetes vulnerables | 17 |
+| Vulnerabilidades totales | 45 |
+| Severidad | 0 críticas, 4 altas, 7 medias, 29 bajas y 5 sin clasificar |
+
+El escaneo **no está limpio**. Entre los hallazgos se encuentran
+`CVE-2026-85091` y `CVE-2026-76844` en `zlib`, además de avisos en paquetes
+Python como `wheel`, `jaraco-context` y `pip`. T-09 queda **abierto**, aunque
+el contenedor se ejecuta como usuario no root. Se debe actualizar la imagen
+base y las dependencias afectadas, reconstruir y repetir el escaneo. No se
+sustituye este control por `pip-audit`, porque el análisis de dependencias
+Python no cubre la imagen base ni sus paquetes del sistema operativo.
 
 ## 10. Privacidad y tratamiento de datos personales
 

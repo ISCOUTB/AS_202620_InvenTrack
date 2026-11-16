@@ -1,0 +1,58 @@
+{
+  "commit_base": "a5cd1d8bff1ebac701ba8b682c512929f888a459",
+  "measured_at": "2026-11-15",
+  "environment": {
+    "execution": "local",
+    "python": "3.11",
+    "transport": "httpx.AsyncClient with ASGITransport",
+    "application": "FastAPI in-process",
+    "warmup": "product creation and stock loading before timed requests",
+    "cold_start_measured": false
+  },
+  "scenario": "ESC-01",
+  "scenario_secondary_evidence": "ESC-04",
+  "concurrent_requests_per_run": 20,
+  "threshold_ms": 400,
+  "runs": [
+    {
+      "run": 1,
+      "latencies_ms": [25.254, 25.573, 25.888, 26.022, 26.495, 26.795, 26.997, 27.18, 27.468, 27.737, 27.936, 28.206, 28.476, 28.686, 28.953, 29.242, 29.364, 29.396, 29.403, 29.442],
+      "p95_ms": 29.403,
+      "status_counts": {"200": 20},
+      "stock_initial": 100,
+      "stock_final": 80
+    },
+    {
+      "run": 2,
+      "latencies_ms": [23.173, 23.438, 23.716, 24.009, 24.102, 24.394, 24.687, 24.987, 25.366, 25.578, 25.955, 26.291, 26.597, 26.85, 27.147, 27.471, 27.663, 27.703, 27.729, 27.742],
+      "p95_ms": 27.729,
+      "status_counts": {"200": 20},
+      "stock_initial": 100,
+      "stock_final": 80
+    },
+    {
+      "run": 3,
+      "latencies_ms": [23.307, 23.628, 23.947, 24.253, 24.431, 24.995, 25.337, 25.651, 25.971, 26.213, 26.511, 26.815, 27.113, 27.19, 27.493, 27.785, 27.931, 27.965, 28.0, 28.011],
+      "p95_ms": 28.0,
+      "status_counts": {"200": 20},
+      "stock_initial": 100,
+      "stock_final": 80
+    },
+    {
+      "run": 4,
+      "latencies_ms": [30.593, 30.777, 30.983, 30.992, 31.164, 31.243, 31.643, 32.326, 32.767, 32.892, 33.005, 33.036, 33.181, 33.28, 33.49, 33.544, 33.684, 33.696, 33.788, 33.817],
+      "p95_ms": 33.788,
+      "status_counts": {"200": 20},
+      "stock_initial": 100,
+      "stock_final": 80
+    },
+    {
+      "run": 5,
+      "latencies_ms": [24.673, 25.007, 25.334, 25.648, 25.753, 26.055, 26.357, 26.667, 26.985, 27.215, 27.499, 27.789, 28.076, 28.317, 28.621, 28.858, 29.067, 29.07, 29.12, 29.13],
+      "p95_ms": 29.12,
+      "status_counts": {"200": 20},
+      "stock_initial": 100,
+      "stock_final": 80
+    }
+  ]
+}
