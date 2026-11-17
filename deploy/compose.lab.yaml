@@ -6,6 +6,7 @@ services:
     environment:
       INVENTRACK_ENV: production
       INVENTRACK_ALLOW_BUSINESS_DATA: "false"
+      INVENTRACK_INTERNAL_TOKEN: ${INVENTRACK_INTERNAL_TOKEN:?INVENTRACK_INTERNAL_TOKEN must be configured}
     expose:
       - "10000"
     healthcheck:
