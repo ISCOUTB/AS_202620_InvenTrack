@@ -32,7 +32,7 @@ def crear_router(
 
     router = APIRouter()
 
-    @router.get("/productos", response_model=list[ProductoResponse])
+    @router.get("/productos")
     def listar() -> list[ProductoResponse]:
         return [
             ProductoResponse(id=producto.id, nombre=producto.nombre, activo=producto.activo)
