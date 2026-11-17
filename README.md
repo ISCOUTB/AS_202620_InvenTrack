@@ -251,8 +251,9 @@ Las decisiones arquitectónicas se documentan como archivos individuales en [`do
 El proyecto está desplegado en el servidor institucional Dokploy descrito en
 [iscoutb.dev](https://github.com/ISCOUTB/iscoutb.dev#3-paso-a-paso-para-publicar-tu-proyecto).
 La definición reproducible está en [`deploy/compose.lab.yaml`](deploy/compose.lab.yaml).
-Este MVP publica únicamente la API y no necesita una base de datos externa ni
-variables secretas. Los datos viven en repositorios en memoria y se pierden al
+Este MVP publica únicamente la API y no necesita una base de datos externa. El
+token interno se configura como secreto en el entorno del proyecto Dokploy y se
+referencia desde el servicio; nunca se versiona. Los datos viven en repositorios en memoria y se pierden al
 reiniciar o redeplegar el proceso; este límite y la ruta de migración están
 documentados en [ADR-0012](docs/adr/0012-mantener-repositorios-en-memoria-en-el-mvp.md).
 Dokploy se incorporó después del cierre de la semana 8 y se mantiene en paralelo
@@ -264,9 +265,14 @@ con el despliegue existente en Render.
 2. Entra a [panel.iscoutb.dev](https://panel.iscoutb.dev), abre el proyecto `inventrack`,
     entorno `production`, servicio `sistema` y confirma el proveedor GitHub, el repositorio,
     la rama `main` y `./deploy/compose.lab.yaml` como Compose Path.
-3. En **Domains**, agrega `inventrack.iscoutb.dev` para el servicio `api`, ruta `/`,
+3. En **Project Environment**, configura `INVENTRACK_INTERNAL_TOKEN` con un valor
+    aleatorio y secreto. En las variables del servicio `api`, referencia ese valor
+    con `INVENTRACK_INTERNAL_TOKEN=${{project.INVENTRACK_INTERNAL_TOKEN}}`.
+    Mantén `INVENTRACK_ENV=production` e
+    `INVENTRACK_ALLOW_BUSINESS_DATA=false`.
+4. En **Domains**, agrega `inventrack.iscoutb.dev` para el servicio `api`, ruta `/`,
     HTTPS activado y puerto del contenedor `10000`.
-4. Pulsa **Deploy**. Con el autodespliegue activo, los siguientes pushes a `main`
+5. Pulsa **Deploy**. Con el autodespliegue activo, los siguientes pushes a `main`
     reconstruyen el servicio automáticamente.
 
 La API queda disponible en `https://inventrack.iscoutb.dev`. `/health` permanece
@@ -276,7 +282,9 @@ preventiva mientras `INVENTRACK_ALLOW_BUSINESS_DATA=false`; esto no representa
 una caída del servicio ni reemplaza autenticación y autorización de usuarios.
 El Compose no publica puertos directamente: Dokploy enruta el dominio al
 puerto expuesto por el contenedor. No se deben añadir `ports:`, `container_name`,
-montajes bind ni secretos al repositorio. La comprobación fechada y el hash de
+montajes bind ni secretos al repositorio. Compose recibe el secreto mediante
+`${INVENTRACK_INTERNAL_TOKEN:?INVENTRACK_INTERNAL_TOKEN must be configured}` y
+falla explícitamente si no está configurado. La comprobación fechada y el hash de
 la respuesta están en [`evidencia-seguridad-s13.md`](docs/evidencia-seguridad-s13.md).
 
 ## Stack tecnológico

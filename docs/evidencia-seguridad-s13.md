@@ -197,13 +197,21 @@ En la misma comprobación se obtuvieron estos estados:
 El acceso autorizado con `X-Internal-Token` está cubierto por
 [test_health.py](../tests/test_health.py), pero no se ejecutó contra producción
 porque el secreto real no está disponible en el repositorio ni debe registrarse
-en esta evidencia. El token interno debe gestionarse como secreto del proveedor
-de despliegue; no se debe incluir en Compose, README, logs ni comandos
-compartidos. Esta comprobación es histórica y no demuestra que la punta actual
+en esta evidencia. El valor real del token debe gestionarse como secreto del proveedor de
+despliegue; no se debe incluir en Compose, README, logs ni comandos
+compartidos. Compose solo contiene una referencia a la variable externa. Esta
+comprobación es histórica y no demuestra que la punta actual
 `e17afb8ad59fba8c851e06338c1219f7f4bc918f` haya sido redesplegada ni que Render
 o Dokploy estén sirviendo actualmente esa revisión. La comprobación autorizada
 con el token y el hash realmente servido requieren configuración y acceso
 externos, por lo que permanecen pendientes.
+
+La definición de Compose institucional pasa la variable al proceso mediante
+`${INVENTRACK_INTERNAL_TOKEN:?INVENTRACK_INTERNAL_TOKEN must be configured}`.
+El valor real permanece fuera del repositorio, en el entorno del proyecto
+Dokploy, y el servicio lo referencia mediante
+`${{project.INVENTRACK_INTERNAL_TOKEN}}`. La sintaxis de Compose fue validada
+localmente con una variable de prueba; no se registró el secreto real.
 
 ### Responsables y evidencia de seguimiento
 

@@ -75,6 +75,14 @@ El hash desplegado, la consulta autorizada con el token y la comprobación de
 las URLs públicas quedan fuera de esta actualización porque requieren acceso
 al proveedor de despliegue y un secreto externo.
 
+La configuración versionada ya entrega el secreto al contenedor sin
+versionarlo: [Compose institucional](../deploy/compose.lab.yaml) usa
+`${INVENTRACK_INTERNAL_TOKEN:?INVENTRACK_INTERNAL_TOKEN must be configured}`.
+Por tanto, el despliegue falla explícitamente si Dokploy no resuelve la
+variable del entorno del proyecto; esto evita arrancar una instancia que oculte
+las métricas por una configuración incompleta. La consulta autorizada y el hash
+realmente servido siguen requiriendo la configuración externa y el redeploy.
+
 ## Estado interno verificado el 8 de noviembre de 2026
 
 La punta local `e17afb8ad59fba8c851e06338c1219f7f4bc918f` fue validada con:
