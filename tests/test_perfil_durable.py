@@ -4,14 +4,34 @@ import sqlite3
 import subprocess
 import sys
 from contextlib import closing
+from pathlib import Path
+
+import pytest
 
 from app.shared.infrastructure.respaldo import copiar
 from app.shared.infrastructure.sqlite import inicializar
 from app.usuarios.infrastructure.credenciales import emitir
 
 
-def test_recuperacion_y_permisos(tmp_path):
+def test_respaldo_restringe_rutas_y_preserva_destino(tmp_path, monkeypatch):
     ruta = tmp_path / "original.sqlite3"
+    monkeypatch.setenv("INVENTRACK_DB_PATH", str(ruta))
+    inicializar(ruta)
+    for invalida in (Path("../otra.sqlite3"), tmp_path.parent / "otra.sqlite3", Path("file:copia?mode=rw")):
+        with pytest.raises(ValueError):
+            copiar(ruta, invalida)
+        with pytest.raises(ValueError):
+            copiar(invalida, Path("copia.sqlite3"))
+    destino = tmp_path / "existente.sqlite3"
+    destino.write_bytes(b"conservar")
+    with pytest.raises(FileExistsError):
+        copiar(ruta, destino)
+    assert destino.read_bytes() == b"conservar"
+
+
+def test_recuperacion_y_permisos(tmp_path, monkeypatch):
+    ruta = tmp_path / "original.sqlite3"
+    monkeypatch.setenv("INVENTRACK_DB_PATH", str(ruta))
     inicializar(ruta)
     with closing(sqlite3.connect(ruta)) as db, db:
         tokens = {rol: emitir(db, rol, rol) for rol in ("lector", "operador", "admin")}
@@ -60,7 +80,8 @@ def comprobar_perfil(fase):
                 assert db.execute("SELECT count(*) FROM comandos").fetchone()[0] == 0
                 db.execute("DROP TRIGGER simular_fallo")
         respuesta = client.post("/inventario/prueba/entradas", **comando)
-        assert respuesta.status_code == 200 and respuesta.json()["stock_final"] == 7
+        assert respuesta.status_code == 200
+        assert respuesta.json()["stock_final"] == 7
         assert client.get("/inventario/prueba", headers=headers["lector"]).json()["cantidad"] == 7
         if fase == "reinicio":
             assert client.delete("/productos/prueba", headers=headers["admin"]).json()["desactivado"]

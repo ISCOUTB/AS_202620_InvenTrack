@@ -54,7 +54,8 @@ async def test_escenarios_arc42():
                 salida_en = time.perf_counter()
                 r = await cliente.get(ruta)
                 duracion = time.perf_counter() - salida_en
-                assert r.status_code == 200 and r.json()["cantidad"] == 0
+                assert r.status_code == 200
+                assert r.json()["cantidad"] == 0
                 return {"inicio_ms": round((salida_en - inicio) * 1000, 3),
                         "latencia_ms": duracion * 1000, "http": r.status_code}
 
