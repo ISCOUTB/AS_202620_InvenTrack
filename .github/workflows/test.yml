@@ -12,7 +12,7 @@ jobs:
       run:
         working-directory: frontend
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
     - name: Preparar Flutter 3.41.6
       run: |
         git clone --depth 1 --branch 3.41.6 https://github.com/flutter/flutter.git "$RUNNER_TEMP/flutter"
@@ -25,7 +25,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         fetch-depth: 0
 
@@ -64,7 +64,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
 
     - name: pip-audit (requirements.txt con hashes)
       uses: pypa/gh-action-pip-audit@1220774d901786e6f652ae159f7b6bc8fea6d266 # v1.1.0
