@@ -26,10 +26,11 @@ flowchart TB
     Notif(["✉️ Servicio de notificaciones
     Objetivo del MVP"])
 
+    Operaciones((Operaciones)) -->|Credenciales individuales y respaldos| InvenTrack
     Dueno -- HTTPS --> InvenTrack
     Vendedor -- HTTPS --> InvenTrack
     Empleado -- HTTPS --> InvenTrack
-    InvenTrack -- SMTP --> Notif
+    InvenTrack -. SMTP previsto .-> Notif
 
     classDef person fill:#1168bd,stroke:#0b4884,color:#ffffff,font-weight:bold
     classDef system fill:#08427b,stroke:#052e56,color:#ffffff,font-weight:bold

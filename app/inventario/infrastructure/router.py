@@ -11,6 +11,7 @@ from app.inventario.domain.exceptions import ProductoSinStockError, StockInsufic
 from app.inventario.domain.exceptions_producto import ProductoInvalidoError, TiempoDeEsperaLockAgotado
 from app.inventario.infrastructure.idempotency import (
     IdempotencyConflictError,
+    IdempotencyStore,
     InMemoryIdempotencyStore,
 )
 from app.inventario.domain.ports import StockRepository
@@ -58,7 +59,8 @@ def _crear_handler_entrada(
     registro: RegistrarMovimientoInventario,
     broker: SimuladorBrokerMensajeria,
     consumidor_auditoria: Callable[[dict], Any],
-    idempotency_store: InMemoryIdempotencyStore,
+    idempotency_store: IdempotencyStore,
+    persistir_evento: Callable[[dict], None] | None,
 ) -> Callable[[str, MovimientoRequest], Awaitable[MovimientoResponse]]:
     async def registrar_entrada(
         producto_id: str,
@@ -79,9 +81,12 @@ def _crear_handler_entrada(
             raise _error_entrada(exc) from exc
         respuesta = MovimientoResponse(**resultado.__dict__)
         if not idempotent_result.replayed:
+            evento = _crear_evento(respuesta, correlation_id, idempotency_key)
+            if persistir_evento:
+                persistir_evento(evento)
             background_tasks.add_task(
                 broker.publicar,
-                _crear_evento(respuesta, correlation_id, idempotency_key),
+                evento,
                 consumidor_auditoria,
             )
         return respuesta
@@ -93,7 +98,8 @@ def _crear_handler_salida(
     registro: RegistrarMovimientoInventario,
     broker: SimuladorBrokerMensajeria,
     consumidor_auditoria: Callable[[dict], Any],
-    idempotency_store: InMemoryIdempotencyStore,
+    idempotency_store: IdempotencyStore,
+    persistir_evento: Callable[[dict], None] | None,
 ) -> Callable[[str, MovimientoRequest], Awaitable[MovimientoResponse]]:
     async def registrar_salida(
         producto_id: str,
@@ -121,9 +127,12 @@ def _crear_handler_salida(
 
         respuesta = MovimientoResponse(**resultado.__dict__)
         if not idempotent_result.replayed:
+            evento = _crear_evento(respuesta, correlation_id, idempotency_key)
+            if persistir_evento:
+                persistir_evento(evento)
             background_tasks.add_task(
                 broker.publicar,
-                _crear_evento(respuesta, correlation_id, idempotency_key),
+                evento,
                 consumidor_auditoria,
             )
         return respuesta
@@ -166,7 +175,8 @@ def crear_router(
     repositorio_stock: StockRepository,
     broker: SimuladorBrokerMensajeria | None = None,
     consumidor_auditoria: Callable[[dict], Any] | None = None,
-    idempotency_store: InMemoryIdempotencyStore | None = None,
+    idempotency_store: IdempotencyStore | None = None,
+    persistir_evento: Callable[[dict], None] | None = None,
 ) -> APIRouter:
 
     router = APIRouter()
@@ -176,7 +186,7 @@ def crear_router(
 
     router.add_api_route(
         "/inventario/{producto_id}/entradas",
-        _crear_handler_entrada(registro, broker, consumidor_auditoria, idempotency_store),
+        _crear_handler_entrada(registro, broker, consumidor_auditoria, idempotency_store, persistir_evento),
         methods=["POST"],
         responses={
             400: BAD_REQUEST_RESPONSE,
@@ -188,7 +198,7 @@ def crear_router(
 
     router.add_api_route(
         "/inventario/{producto_id}/salidas",
-        _crear_handler_salida(registro, broker, consumidor_auditoria, idempotency_store),
+        _crear_handler_salida(registro, broker, consumidor_auditoria, idempotency_store, persistir_evento),
         methods=["POST"],
         responses={
             400: BAD_REQUEST_RESPONSE,

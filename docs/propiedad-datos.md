@@ -1,5 +1,7 @@
 # Tabla de Propiedad de Datos — InvenTrack
 
+**Actualización posterior a S15.** El perfil durable añade un usuario y un rol por credencial, 401/403 en las rutas de negocio y persistencia transaccional de catálogo, stock, historial y auditoría con actor. Producción cerrada conserva el 503 preventivo. Las observaciones previas corresponden al perfil inicial. [ADR-0019](./adr/0019-autenticar-usuarios-y-autorizar-por-rol.md) · [ADR-0020](./adr/0020-persistir-inventario-y-auditoria-en-sqlite.md) · [verificación](./verificacion-final.md).
+
 **Principio de Arquitectura:** Regla de dueño único (Single Ownership). Cada entidad o conjunto de datos dentro del sistema tiene exactamente un módulo responsable de autorizar y ejecutar sus escrituras. Ningún otro módulo puede modificar directamente tablas de un dominio ajeno; el acceso entre contextos se realiza estrictamente a través de puertos de aplicación o APIs expuestas (`ADR-0001`, `ADR-0003`). En el MVP, los repositorios son en memoria; `ADR-0012` establece que una futura persistencia durable debe conservar estas mismas fronteras.
 
 ---

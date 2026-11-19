@@ -4,7 +4,7 @@ from pydantic import BaseModel
 from app.productos.application.crear_producto import CrearProducto
 from app.productos.application.eliminar_producto import EliminarProducto
 from app.productos.application.consultar_producto import ConsultarProducto
-from app.productos.domain.exceptions import ProductoNoEncontrado
+from app.productos.domain.exceptions import ProductoNoEncontrado, ProductoYaExiste
 
 
 class CrearProductoRequest(BaseModel):
@@ -39,9 +39,12 @@ def crear_router(
             for producto in consultar_producto.listar()
         ]
 
-    @router.post("/productos", status_code=201)
+    @router.post("/productos", status_code=201, responses={409: {"description": "Producto existente"}})
     def crear(payload: CrearProductoRequest) -> ProductoResponse:
-        producto = crear_producto.ejecutar(payload.id, payload.nombre)
+        try:
+            producto = crear_producto.ejecutar(payload.id, payload.nombre)
+        except ProductoYaExiste as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
         return ProductoResponse(id=producto.id, nombre=producto.nombre, activo=producto.activo)
 
     @router.delete(

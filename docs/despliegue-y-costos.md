@@ -1,5 +1,7 @@
 # Guía de Despliegue, Observabilidad y Costos — InvenTrack
 
+**Actualización posterior a S15.** El perfil durable añade un usuario y un rol por credencial, 401/403 en las rutas de negocio y persistencia transaccional de catálogo, stock, historial y auditoría con actor. Producción cerrada conserva el 503 preventivo. Las observaciones previas corresponden al perfil inicial. [ADR-0019](./adr/0019-autenticar-usuarios-y-autorizar-por-rol.md) · [ADR-0020](./adr/0020-persistir-inventario-y-auditoria-en-sqlite.md) · [verificación](./verificacion-final.md).
+
 **Propósito:** Este documento evalúa las alternativas de despliegue para la API de InvenTrack, justificando la elección operativa según las restricciones de negocio (C5: Costo $0 y sin uso de tarjetas de crédito) y su impacto en los atributos de calidad (ESC-04: p95 $\le$ 400 ms), consolidando la evidencia de observabilidad y operación.
 
 ---

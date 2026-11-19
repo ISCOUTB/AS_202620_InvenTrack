@@ -9,6 +9,24 @@
 
 ---
 
+## Ejecutar el perfil durable
+
+Requiere Python 3.11 y las dependencias de `python -m pip install --require-hashes --only-binary :all: -r requirements.txt`. Desde la raíz, `python -m uvicorn app.main:app` inicia la API. Sin configuración se obtiene la demostración local en memoria. Para el perfil autenticado en PowerShell, preparar el entorno y emitir una credencial individual en una terminal privada:
+
+```powershell
+$env:INVENTRACK_DB_PATH = 'inventrack.sqlite3'
+$env:INVENTRACK_ENV = 'production'
+$env:INVENTRACK_ALLOW_BUSINESS_DATA = 'true'
+python -m app.usuarios.infrastructure.credenciales emitir operador-01 operador
+python -m uvicorn app.main:app
+```
+
+Entregar la credencial una sola vez y usar `Authorization: Bearer <credencial individual>` por HTTPS fuera de localhost. Los roles disponibles son `admin`, `operador` y `lector`. Reemitir para el mismo ID rota la credencial. `python -m app.usuarios.infrastructure.credenciales revocar operador-01` invalida el acceso. Para crear productos se necesita un administrador. Emitir las credenciales dentro del servicio con acceso al mismo volumen. El secreto operativo de métricas y documentación se configura por separado.
+
+El Compose de Dokploy monta un volumen en `/app/data` y mantiene negocio cerrado por defecto. Verificar permisos del volumen, TLS y respaldo externo antes de activarlo. Render conserva el perfil cerrado sin disco persistente. Hacer copias con `python -m app.shared.infrastructure.respaldo inventrack.sqlite3 copia.sqlite3`. Para restaurar, detener el servicio, ejecutar el mismo comando desde la copia hacia un archivo nuevo y arrancar con esa ruta en `INVENTRACK_DB_PATH`. Proteger las copias y el volumen con permisos de operador.
+
+Para el cliente autenticado, desde `frontend/` ejecutar `flutter run --dart-define=INVENTRACK_AUTH=true --dart-define=INVENTRACK_API_URL=https://dominio-del-ensayo` y escribir el token individual en la pantalla de acceso. Para verificar el backend ejecutar `python -m pytest -q`. [Resultados y estado de los despliegues](docs/verificacion-final.md) · [decisión de identidad](docs/adr/0019-autenticar-usuarios-y-autorizar-por-rol.md) · [decisión de almacenamiento](docs/adr/0020-persistir-inventario-y-auditoria-en-sqlite.md).
+
 ## 🚀 Estado del Proyecto — Segundo Corte (AS_202620)
 
 * **Estilo Arquitectónico:** Monolito Modular con Arquitectura Hexagonal por Módulo ([ADR-0001](docs/adr/0001-usar-monolito-modular-con-hexagonal-por-modulo.md)).

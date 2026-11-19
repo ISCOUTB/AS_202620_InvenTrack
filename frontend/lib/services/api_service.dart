@@ -11,12 +11,21 @@ import 'package:inventrack/services/api_exception.dart';
 class ApiService {
   final http.Client _client;
   final String _baseUrl;
+  final String? token;
 
   ApiService({
     http.Client? client,
     String? baseUrl,
+    this.token,
   })  : _client = client ?? http.Client(),
-        _baseUrl = baseUrl ?? ApiConfig.baseUrl;
+        _baseUrl = baseUrl ?? ApiConfig.baseUrl {
+    final uri = Uri.parse(_baseUrl);
+    if (token != null &&
+        uri.scheme != 'https' &&
+        !{'localhost', '127.0.0.1', '::1'}.contains(uri.host)) {
+      throw ArgumentError('El acceso individual requiere HTTPS.');
+    }
+  }
 
   // ---------------------------------------------------------------------------
   // Headers
@@ -25,6 +34,7 @@ class ApiService {
   Map<String, String> get _jsonHeaders => {
         'Content-Type': 'application/json; charset=UTF-8',
         'Accept': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
       };
 
   // ---------------------------------------------------------------------------
@@ -52,7 +62,7 @@ class ApiService {
     final response = await _client
         .get(
           Uri.parse('$_baseUrl/productos'),
-          headers: {'Accept': 'application/json'},
+          headers: _jsonHeaders,
         )
         .timeout(ApiConfig.timeout);
 
@@ -83,7 +93,8 @@ class ApiService {
   /// DELETE /productos/{producto_id}
   Future<EliminarProductoResponse> eliminarProducto(String productoId) async {
     final response = await _client
-        .delete(Uri.parse('$_baseUrl/productos/$productoId'))
+        .delete(Uri.parse('$_baseUrl/productos/$productoId'),
+            headers: _jsonHeaders)
         .timeout(ApiConfig.timeout);
 
     _ensureSuccess(response);
@@ -155,7 +166,7 @@ class ApiService {
     final response = await _client
         .get(
           Uri.parse('$_baseUrl/inventario/$productoId'),
-          headers: {'Accept': 'application/json'},
+          headers: _jsonHeaders,
         )
         .timeout(ApiConfig.timeout);
 

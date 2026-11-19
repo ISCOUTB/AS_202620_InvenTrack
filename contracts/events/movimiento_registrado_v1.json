@@ -6,6 +6,10 @@
   "$comment": "Compatibilidad: los consumidores deben ignorar campos opcionales nuevos. Cambiar o eliminar campos obligatorios, tipos, enums o la semántica de campos existentes requiere una nueva versión del evento.",
   "type": "object",
   "properties": {
+    "actor_id": {
+      "type": "string",
+      "description": "Identidad individual verificada por el servidor en el perfil durable."
+    },
     "event_id": {
       "type": "string",
       "format": "uuid",

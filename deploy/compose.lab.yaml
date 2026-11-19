@@ -5,8 +5,11 @@ services:
       dockerfile: Dockerfile
     environment:
       INVENTRACK_ENV: production
-      INVENTRACK_ALLOW_BUSINESS_DATA: "false"
+      INVENTRACK_DB_PATH: /app/data/inventrack.sqlite3
+      INVENTRACK_ALLOW_BUSINESS_DATA: ${INVENTRACK_ALLOW_BUSINESS_DATA:-false}
       INVENTRACK_INTERNAL_TOKEN: ${INVENTRACK_INTERNAL_TOKEN:?INVENTRACK_INTERNAL_TOKEN must be configured}
+    volumes:
+      - datos:/app/data
     expose:
       - "10000"
     healthcheck:
@@ -21,3 +24,6 @@ services:
         limits:
           cpus: "0.5"
           memory: 256M
+
+volumes:
+  datos:

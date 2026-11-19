@@ -1,8 +1,7 @@
 # C4 Nivel 3: Diagrama de Componentes — API Backend InvenTrack
 
 Este nivel abre el contenedor `API Backend` del [C4 Nivel 2](containers.md) y
-muestra los componentes implementados actualmente. Los módulos `proveedores`,
-`usuarios` y `alertas` todavía no tienen componentes de código.
+muestra los componentes implementados actualmente. Los módulos `proveedores` y `alertas` todavía no tienen componentes de código.
 
 ```mermaid
 flowchart TB
@@ -31,8 +30,18 @@ flowchart TB
         Root["app/main.py\nComposition root"]
     end
 
-    Client --> ProdRouter
-    Client --> InvRouter
+    Acceso["Política HTTP · credencial individual y rol"]
+    Tx["Transacción SQLite por petición"]
+    Usuarios["Identidades y digest de credencial"]
+    Auditoria["Evento durable con actor"]
+    Broker["Broker y consumidor de demostración"]
+    Client --> Acceso
+    Acceso --> Usuarios
+    Acceso --> Tx
+    Tx --> ProdRouter
+    Tx --> InvRouter
+    InvRouter --> Auditoria
+    InvRouter --> Broker
     ProdRouter --> Crear
     ProdRouter --> Eliminar
     Crear --> ProductoRepo
@@ -77,8 +86,8 @@ flowchart TB
 - `ValidadorDeProductoAdapter` consume `ConsultarProducto`.
 - `asyncio.Lock` se crea dentro de `RegistrarMovimientoInventario` y se mantiene por `producto_id` para serializar movimientos del mismo producto (`ADR-0002`).
 - Las respuestas y esquemas de los routers se adhieren al [Contrato de API de InvenTrack](../api/inventrack-contrato.md) (`ADR-0004`).
-- La persistencia actual es in-memory. La evolución preferida es evaluar una base relacional compartida como adaptadores detrás de los puertos, preservando la propiedad por módulo y la decisión de [ADR-0012](../adr/0012-mantener-repositorios-en-memoria-en-el-mvp.md).
+- Los adaptadores de almacenamiento se seleccionan al iniciar la API según [ADR-0020](../adr/0020-persistir-inventario-y-auditoria-en-sqlite.md).
 
 ## Alcance actual y objetivo
 
-El diagrama representa el estado implementado del backend (`app/`), consumido por el cliente Flutter ([`frontend/`](../../frontend/)) sin salir de `contracts/openapi/v1.json`. La persistencia relacional, las alertas, los usuarios y los proveedores pertenecen a la arquitectura objetivo y no se presentan como componentes existentes.
+El diagrama representa el estado implementado del backend (`app/`), consumido por el cliente Flutter ([`frontend/`](../../frontend/)) sin salir de `contracts/openapi/v1.json`. El perfil durable sustituye los repositorios en memoria por ProductosSQLite, StockSQLite y MovimientosSQLite. El componente de usuarios valida credenciales individuales. Alertas y proveedores siguen como objetivos.

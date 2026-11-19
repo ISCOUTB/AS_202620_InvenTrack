@@ -1,5 +1,7 @@
 # Evidencia S13 — Inventario de activos, datos y controles
 
+**Actualización posterior a S15.** El perfil durable añade un usuario y un rol por credencial, 401/403 en las rutas de negocio y persistencia transaccional de catálogo, stock, historial y auditoría con actor. Producción cerrada conserva el 503 preventivo. Las observaciones previas corresponden al perfil inicial. [ADR-0019](./adr/0019-autenticar-usuarios-y-autorizar-por-rol.md) · [ADR-0020](./adr/0020-persistir-inventario-y-auditoria-en-sqlite.md) · [verificación](./verificacion-final.md).
+
 > **Commit evaluado:** `a5cd1d8bff1ebac701ba8b682c512929f888a459`
 > — 2026-11-13T18:53:47-05:00.
 

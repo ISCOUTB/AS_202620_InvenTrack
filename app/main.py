@@ -9,11 +9,15 @@ import json
 import logging
 import math
 import os
+import secrets
+import sqlite3
 import time
 from collections import defaultdict, deque
 from collections.abc import Awaitable, Callable
 
-from fastapi import FastAPI, Request, Response
+from fastapi import Depends, FastAPI, Request, Response
+from fastapi.responses import JSONResponse
+from fastapi.security import HTTPBearer
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.inventario.application.consultar_movimientos import ConsultarHistorialMovimientos
@@ -34,6 +38,10 @@ from app.productos.infrastructure.historial_movimientos_adapter import (
 )
 from app.productos.infrastructure.in_memory_repository import InMemoryProductoRepository
 from app.productos.infrastructure.router import crear_router as crear_router_productos
+from app.productos.infrastructure.sqlite_repository import ProductosSQLite
+from app.inventario.infrastructure.sqlite_repository import IdempotenciaSQLite, MovimientosSQLite, StockSQLite, guardar_evento
+from app.shared.infrastructure.sqlite import actor, inicializar, transaccion
+from app.usuarios.infrastructure.credenciales import autenticar, permitido
 
 
 class JsonFormatter(logging.Formatter):
@@ -74,14 +82,10 @@ def _is_production() -> bool:
     return os.getenv("INVENTRACK_ENV", "development").lower() == "production"
 
 
-def _business_data_enabled() -> bool:
-    default = "false" if _is_production() else "true"
-    return os.getenv("INVENTRACK_ALLOW_BUSINESS_DATA", default).lower() == "true"
-
-
 def _internal_token_is_valid(request: Request) -> bool:
     expected_token = os.getenv("INVENTRACK_INTERNAL_TOKEN")
-    return bool(expected_token) and request.headers.get("X-Internal-Token") == expected_token
+    provided = request.headers.get("X-Internal-Token", "")
+    return bool(expected_token) and secrets.compare_digest(provided.encode(), expected_token.encode())
 
 
 class AccessPolicyMiddleware(BaseHTTPMiddleware):
@@ -93,23 +97,38 @@ class AccessPolicyMiddleware(BaseHTTPMiddleware):
         if _is_production() and request.url.path in {
             "/metrics",
             "/docs",
+            "/docs/oauth2-redirect",
             "/redoc",
             "/openapi.json",
         } and not _internal_token_is_valid(request):
             return Response(status_code=404)
 
-        if (
-            _is_production()
-            and not _business_data_enabled()
-            and request.url.path.startswith(("/productos", "/inventario"))
-        ):
-            return Response(
-                content="Business data endpoints are disabled until authentication and authorization are configured.",
-                status_code=503,
-                media_type="text/plain",
-            )
-
-        return await call_next(request)
+        ruta = request.url.path
+        if not ruta.startswith(("/productos", "/inventario")):
+            return await call_next(request)
+        habilitado = os.getenv("INVENTRACK_ALLOW_BUSINESS_DATA", "false").lower() == "true"
+        if _is_production() and not (_db_path and habilitado):
+            return Response("Business data endpoints are disabled.", status_code=503)
+        if not _db_path:
+            return await call_next(request)
+        try:
+            async with transaccion(_db_path, request.method != "GET") as db:
+                usuario = autenticar(db, request.headers.get("Authorization", ""))
+                if usuario is None:
+                    return JSONResponse({"detail": "Credencial individual requerida"}, status_code=401,
+                                        headers={"WWW-Authenticate": "Bearer"})
+                identidad, rol = usuario
+                if not permitido(rol, request.method, ruta):
+                    return JSONResponse({"detail": "Permiso insuficiente"}, status_code=403)
+                actor.set(identidad)
+                respuesta = await call_next(request)
+                if respuesta.status_code < 400:
+                    db.commit()
+                return respuesta
+        except sqlite3.OperationalError as exc:
+            if getattr(exc, "sqlite_errorcode", None) in (sqlite3.SQLITE_BUSY, sqlite3.SQLITE_LOCKED):
+                return Response(status_code=503, headers={"Retry-After": "1"})
+            raise
 
 
 class ObservabilityMiddleware(BaseHTTPMiddleware):
@@ -153,13 +172,16 @@ def _p95_latency(history: list[float]) -> float:
 
 
 # --- productos: repositorio y casos de uso propios ---
-_productos_repo = InMemoryProductoRepository()
+_db_path = os.getenv("INVENTRACK_DB_PATH")
+if _db_path:
+    inicializar(_db_path)
+_productos_repo = ProductosSQLite() if _db_path else InMemoryProductoRepository()
 _consultar_producto = ConsultarProducto(_productos_repo)
 _crear_producto = CrearProducto(_productos_repo)
 
 # --- inventario: repositorios y casos de uso propios ---
-_stock_repo = InMemoryStockRepository()
-_movimientos_repo = InMemoryMovimientoRepository()
+_stock_repo = StockSQLite() if _db_path else InMemoryStockRepository()
+_movimientos_repo = MovimientosSQLite() if _db_path else InMemoryMovimientoRepository()
 _consultar_historial = ConsultarHistorialMovimientos(_movimientos_repo)
 
 # --- adaptadores cruzados (ADR-0003) ---
@@ -172,7 +194,7 @@ _registrar_movimiento = RegistrarMovimientoInventario(
     _stock_repo, _movimientos_repo, _validador_producto
 )
 _broker_mensajeria = SimuladorBrokerMensajeria()
-_idempotency_store = InMemoryIdempotencyStore()
+_idempotency_store = IdempotenciaSQLite() if _db_path else InMemoryIdempotencyStore()
 
 
 def _consumir_auditoria_movimiento(message: dict) -> None:
@@ -240,9 +262,13 @@ def metrics():
     return Response("\n".join(lines) + "\n", media_type="text/plain; version=0.0.4")
 
 
+_seguridad = [Depends(HTTPBearer(auto_error=False, description="Token individual del perfil durable"))]
+_errores_acceso = {401: {"description": "Credencial ausente o inválida"},
+                   403: {"description": "Rol insuficiente"}, 503: {"description": "Service Unavailable"}}
 app.include_router(
     crear_router_productos(_crear_producto, _eliminar_producto, _consultar_producto),
     tags=["productos"],
+    dependencies=_seguridad, responses=_errores_acceso,
 )
 app.include_router(
     crear_router_inventario(
@@ -251,6 +277,8 @@ app.include_router(
         _broker_mensajeria,
         _consumir_auditoria_movimiento,
         _idempotency_store,
+        guardar_evento if _db_path else None,
     ),
     tags=["inventario"],
+    dependencies=_seguridad, responses=_errores_acceso,
 )

@@ -13,6 +13,7 @@ void main() {
   group('ApiService contrato OpenAPI v1', () {
     test('listarProductos consulta GET /productos', () async {
       final client = MockClient((request) async {
+        expect(request.headers['Authorization'], 'Bearer credencial-de-prueba');
         expect(request.method, 'GET');
         expect(request.url.path, '/productos');
         return http.Response(
@@ -23,7 +24,10 @@ void main() {
         );
       });
 
-      final api = ApiService(client: client, baseUrl: 'http://localhost:8000');
+      final api = ApiService(
+          client: client,
+          baseUrl: 'http://localhost:8000',
+          token: 'credencial-de-prueba');
       final productos = await api.listarProductos();
 
       expect(productos, hasLength(1));

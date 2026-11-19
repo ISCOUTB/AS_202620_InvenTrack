@@ -1,5 +1,7 @@
 # Contrato de API de InvenTrack
 
+**Actualización posterior a S15.** El perfil durable añade un usuario y un rol por credencial, 401/403 en las rutas de negocio y persistencia transaccional de catálogo, stock, historial y auditoría con actor. Producción cerrada conserva el 503 preventivo. Las observaciones previas corresponden al perfil inicial. [ADR-0019](../adr/0019-autenticar-usuarios-y-autorizar-por-rol.md) · [ADR-0020](../adr/0020-persistir-inventario-y-auditoria-en-sqlite.md) · [verificación](../verificacion-final.md).
+
 > **Qué es este documento:** El contrato funcional y arquitectónico de la API de InvenTrack. Describe la comunicación HTTP/JSON del sistema, las operaciones expuestas, las reglas de desacoplamiento entre módulos y el manejo de concurrencia en el inventario.
 >
 > **Qué NO es:** Un listado de funcionalidades ideales. Refleja estrictamente el MVP implementado y verificado en la entrega actual.
@@ -42,11 +44,16 @@ El contrato técnico ejecutable se encuentra definido y versionado en:
 
 ### Endpoints Principales
 
+El saldo del perfil SQLite admite enteros entre cero y 9 223 372 036 854 775 807. Una entrada que excede esa capacidad devuelve 400 y revierte la operación completa.
+
+En el perfil durable todas las operaciones de negocio verifican la credencial individual. Un fallo de autenticación devuelve 401 y un rol insuficiente devuelve 403. En producción cerrada se devuelve 503.
+
 | Método | Endpoint | Código Éxito | Códigos de Error | Propósito |
 |---|---|---|---|---|
-| `POST` | `/productos` | `201 Created` | `422` | Registrar un producto en el sistema. |
+| `GET` | `/productos` | `200 OK` | Acceso según perfil | Listar el catálogo. |
+| `POST` | `/productos` | `201 Created` | `409`, `422` | Registrar un producto en el sistema. |
 | `DELETE` | `/productos/{producto_id}` | `200 OK` | `404` | Eliminar físicamente o desactivar lógicamente un producto. |
-| `POST` | `/inventario/{producto_id}/entradas` | `200 OK` | `404`, `422`, `503` | Registrar incremento de stock sobre un SKU. La cantidad debe ser positiva. |
+| `POST` | `/inventario/{producto_id}/entradas` | `200 OK` | `404`, `409`, `422`, `503` | Registrar incremento de stock sobre un SKU. La cantidad debe ser positiva. |
 | `POST` | `/inventario/{producto_id}/salidas` | `200 OK` | `404`, `409`, `422`, `503` | Registrar decremento de stock validando disponibilidad. La cantidad debe ser positiva. |
 | `GET` | `/inventario/{producto_id}` | `200 OK` | `404` | Consultar la cantidad actual en stock. |
 

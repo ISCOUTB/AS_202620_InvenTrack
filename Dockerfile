@@ -6,7 +6,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 RUN useradd --create-home --uid 10001 appuser \
-    && mkdir -p /app /opt/venv \
+    && mkdir -p /app/data /opt/venv \
     && chown -R appuser:appuser /app /opt/venv
 
 COPY --chown=appuser:appuser requirements.txt .

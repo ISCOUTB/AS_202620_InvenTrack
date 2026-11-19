@@ -49,3 +49,8 @@ def test_produccion_permite_superficies_internas_con_token_interno(monkeypatch) 
     headers = {"X-Internal-Token": "test-token"}
     for path in ("/metrics", "/docs", "/redoc", "/openapi.json"):
         assert client.get(path, headers=headers).status_code == 200
+
+    assert client.get("/docs/oauth2-redirect").status_code == 404
+    assert client.get("/metrics", headers={"X-Internal-Token": "otro"}).status_code == 404
+    monkeypatch.setenv("INVENTRACK_ALLOW_BUSINESS_DATA", "true")
+    assert client.get("/productos", headers=headers).status_code == 503

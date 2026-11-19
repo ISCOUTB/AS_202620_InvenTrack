@@ -23,5 +23,6 @@ def test_api_implementa_contrato_openapi_v1() -> None:
 
             assert contrato_operacion.get("parameters") == implementacion_operacion.get("parameters")
             assert contrato_operacion.get("requestBody") == implementacion_operacion.get("requestBody")
+            assert contrato_operacion.get("security") == implementacion_operacion.get("security")
 
-    assert contrato["components"]["schemas"] == implementacion["components"]["schemas"]
+    assert contrato["components"] == implementacion["components"]

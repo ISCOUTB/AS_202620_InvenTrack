@@ -10,7 +10,8 @@ import 'package:inventrack/screens/inventario_page.dart';
 import 'package:inventrack/widgets/crear_producto_dialog.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  const HomePage({super.key, this.salir});
+  final VoidCallback? salir;
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -37,6 +38,8 @@ class _HomePageState extends State<HomePage> {
         title: const Text('InvenTrack'),
         centerTitle: true,
         actions: [
+          if (widget.salir != null)
+            IconButton(onPressed: widget.salir, icon: const Icon(Icons.logout), tooltip: 'Cerrar sesión'),
           Padding(
             padding: const EdgeInsets.only(right: 12.0),
             child: IconButton(

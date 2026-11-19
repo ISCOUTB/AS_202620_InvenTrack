@@ -1,7 +1,7 @@
 import asyncio
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
-from typing import Any, TypeVar, cast
+from typing import Protocol, TypeVar, cast
 
 
 T = TypeVar("T")
@@ -15,6 +15,13 @@ class IdempotencyConflictError(ValueError):
 class IdempotentResult:
     value: T
     replayed: bool
+
+
+class IdempotencyStore(Protocol):
+    async def execute(
+        self, key: str | None, fingerprint: tuple[str, ...],
+        operation: Callable[[], Awaitable[T]],
+    ) -> IdempotentResult: ...
 
 
 class InMemoryIdempotencyStore:

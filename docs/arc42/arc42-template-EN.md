@@ -2,6 +2,10 @@
 
 Plantilla arc42 v9.0-EN (versión académica). Fuente: <https://arc42.org>.
 
+## Revisión posterior a S15
+
+El perfil de demostración conserva los adaptadores en memoria descritos en los cortes históricos. El perfil durable incorpora usuarios individuales, permisos y SQLite. La vista de despliegue vigente usa una instancia de la API y un volumen local en Dokploy. Las vistas de [contexto](../c4/context.md), [contenedores](../c4/containers.md) y [componentes](../c4/components.md) ubican estas fronteras. La configuración Render permanece cerrada. [Verificación del 19 de noviembre](../verificacion-final.md).
+
 ## Cómo leer este documento
 
 Este archivo es la **narrativa completa** de la arquitectura de InvenTrack:
@@ -358,6 +362,8 @@ Este corte no pretende implementar todavía toda la gestión de productos. Su ob
 
 # Runtime View
 
+En el perfil durable el middleware abre una transacción, resuelve la credencial individual y verifica el rol antes de ejecutar el caso de uso. El registro de movimiento guarda saldo, historial, evento y resultado idempotente. Tras una respuesta exitosa se confirma la transacción. Si el registro del evento falla, todo el comando se revierte. [Prueba con un fallo de auditoría inducido](../../tests/test_perfil_durable.py).
+
 ## Consulta de producto
 
 El primer escenario de ejecución implementado corresponde a una consulta mínima de productos.
@@ -533,7 +539,7 @@ cuando se habilite escalamiento horizontal.
 El modelo de infraestructura gratuita entrará en quiebre bajo dos condiciones:
 1. **Límite de RAM (OOM):** Superar los **512 MB** asignados al equipo en Dokploy o el límite operativo del plan gratuito de Render.
 2. **Cuota de CPU o build:** Exceder 0.5 CPU por contenedor o la memoria compartida durante la compilación en Dokploy.
-3. **Persistencia y disponibilidad:** Requerir datos durables o un SLA superior obliga a migrar a PostgreSQL y registrar una nueva decisión de infraestructura.
+3. **Persistencia y disponibilidad:** El perfil durable usa SQLite en una instancia. Exigir varios escritores o alta disponibilidad requiere evaluar un motor de servidor y registrar otra decisión.
 
 ---
 
@@ -561,13 +567,13 @@ Para responder a las operaciones reales del sistema InvenTrack, se definen expl�
 
 ---
 
+### Perfil durable posterior a S15
+
+La transacción abarca validación de producto, saldo, historial, respuesta idempotente por actor y evento de auditoría. Las lecturas consultan SQLite directamente. Un movimiento queda atribuido al ID autenticado incluso después de restaurar la base. El token operativo solo protege la telemetría. [ADR-0018](../adr/0018-restringir-superficies-internas-en-produccion.md), [ADR-0019](../adr/0019-autenticar-usuarios-y-autorizar-por-rol.md) y [ADR-0020](../adr/0020-persistir-inventario-y-auditoria-en-sqlite.md).
+
 ### 8.3 Seguridad, privacidad y cadena de suministro (S13)
 
-El MVP no implementa autenticación, autorización por roles ni el módulo de
-usuarios. Por tanto, las operaciones HTTP de productos e inventario no deben
-presentarse como protegidas contra acceso no autorizado. La autenticación,
-los roles, la identidad del actor y la auditoría asociada a una persona
-requieren una decisión arquitectónica antes de habilitar usuarios reales.
+Al cierre S13 el MVP aún carecía de identidad individual y roles. Los controles siguientes describen ese corte. El perfil durable posterior implementa la frontera de acceso descrita en ADR-0019.
 
 Los controles actualmente implementados son defensivos y de consistencia:
 
@@ -638,6 +644,8 @@ Los errores de dominio y de validación del borde HTTP (como `StockInsuficienteE
 
 # Architecture Decisions
 
+El perfil durable aplica [ADR-0019](../adr/0019-autenticar-usuarios-y-autorizar-por-rol.md) y [ADR-0020](../adr/0020-persistir-inventario-y-auditoria-en-sqlite.md). El registro de la frontera operativa está en [ADR-0018](../adr/0018-restringir-superficies-internas-en-produccion.md).
+
 Las decisiones arquitectónicas de InvenTrack se documentan formalmente mediante **Architecture Decision Records (ADR)** almacenados en [`docs/adr/`](../adr/).
 
 El modelo de trazabilidad utilizado en el proyecto es:
@@ -687,14 +695,14 @@ El MVP mantiene `productos` e `inventario` dentro del mismo monolito y no
 coordina pasos distribuidos; por ello una Saga no aplica actualmente. Los
 comandos HTTP de entradas y salidas ofrecen deduplicación por
 `X-Idempotency-Key` dentro de una instancia y durante la vida del proceso.
-Este control no sobrevive reinicios ni coordina réplicas; su evolución está
+En memoria este control se pierde al reiniciar. El perfil durable conserva la clave por actor junto al resultado. La decisión inicial está
 formalizada en [ADR-0017](../adr/0017-idempotencia-http-en-comandos-de-inventario.md).
 La decisión de no extraer el módulo en el MVP está en
 [ADR-0010](../adr/0010-decision-extraccion-microservicios.md).
 
 ### Persistencia y propiedad de datos
 
-El MVP conserva repositorios en memoria para `Producto`, `StockProducto` y
+El perfil de demostración conserva repositorios en memoria para `Producto`, `StockProducto` y
 `Movimiento`. Esta elección evita agregar una dependencia operativa mientras se
 validan los cortes verticales, pero implica pérdida de datos ante reinicio y no
 permite coordinar varias réplicas. [ADR-0012](../adr/0012-mantener-repositorios-en-memoria-en-el-mvp.md) y su complemento documental [ADR-0015](../adr/0015-completar-decision-de-almacenamiento-y-reversion.md)
@@ -861,6 +869,10 @@ secciones para saber por qué un escenario importa más que otro.
 
 ---
 
+### Verificación de escenarios en el perfil durable
+
+ESC-01 exige 50 transacciones simultáneas en un SKU. ESC-04 exige consultas a 20 solicitudes/s con p95 ≤ 400 ms. El ensayo de 20 escrituras de ADR-0002 sigue como reto histórico independiente. Las [tres corridas por HTTP](../verificacion-final.md) verifican los dos escenarios de §10 sobre una instancia local. ESC-05 tiene pruebas 401/403 para las operaciones existentes. La [restauración](../../tests/test_perfil_durable.py) cubre integridad de ESC-03. Su RTO operativo de dos minutos queda pendiente de simulacro en el host.
+
 ## 10.3 Trade-offs de Arquitectura
 
 1. **Consistencia vs. Latencia (Prioridad Alta):** Se sacrifica un margen mínimo de tiempo de respuesta (enqueuing en event loop mediante `asyncio.Lock` en `ADR-0002`) para garantizar que nunca existan descuadres ni stock negativo en el módulo `inventario`.
@@ -894,7 +906,11 @@ No se conserva en el historial revisado un listado separado de otros
 señalamientos individuales. Por tanto, no se marcan observaciones adicionales
 como corregidas, asumidas o pendientes sin evidencia.
 
-### Deudas y riesgos vigentes
+### Riesgos después de S15
+
+La prueba del perfil durable cubre autorización, actor y restauración en un proceso nuevo. Continúan como riesgos la pérdida del volumen sin copia externa, la cola de notificaciones volátil, la rotación manual de secretos y la contención del escritor SQLite. El responsable de despliegue debe verificar TLS, retención y restauración fuera del host. El responsable de backend debe evaluar otro motor antes de habilitar varias réplicas. [Evidencia y límites](../verificacion-final.md).
+
+### Deudas y riesgos del perfil inicial
 
 | Deuda o riesgo | Estado actual |
 |---|---|
@@ -912,7 +928,7 @@ como corregidas, asumidas o pendientes sin evidencia.
 - **Inmutabilidad de ADRs Previos:** Los ADRs 0002, 0004 y 0005 sufrieron ediciones posteriores en iteraciones anteriores. Esto se zanja formalmente mediante el **ADR-0009**, decretando la inmutabilidad estricta de cualquier ADR aceptado a partir de la fecha.
 - **Límites del Frontend MVP (`frontend/`):** El cliente Flutter implementa exclusivamente los endpoints declarados en `contracts/openapi/v1.json` (`GET /health`, `POST /productos`, `DELETE /productos/{producto_id}`, `GET /inventario/{producto_id}`, `POST /inventario/{producto_id}/entradas|salidas`). Como `GET /productos` no forma parte de OpenAPI v1, la pestaña de productos mantiene la lista de la sesión en memoria; las plataformas objetivo son Android e iOS y los entornos de producción mantienen `503` en rutas de negocio mientras no exista autenticación (`usuarios`).
 
-## Tabla de modos de fallo y mitigaciones
+## Tabla histórica de modos de fallo y mitigaciones del perfil en memoria
 
 La siguiente tabla conecta fallos previsibles con la respuesta implementada, la
 mitigación operativa o la deuda explícitamente aceptada. No presenta como
@@ -954,3 +970,8 @@ implementadas las capacidades que permanecen fuera del MVP.
 | Infrastructure | Parte del módulo que contiene los adaptadores y detalles técnicos que conectan la aplicación con elementos externos, como HTTP o mecanismos de acceso a datos. |
 | Corte vertical | Incremento que recorre de punta a punta las partes necesarias de la arquitectura para demostrar un flujo funcional completo, desde una solicitud externa hasta su respuesta. |
 | Concurrencia | Situación en la que dos o más operaciones pueden ejecutarse o afectar simultáneamente un mismo recurso del sistema, como el inventario de un producto. |
+| SKU | Identificador de producto al que pertenecen el saldo y sus movimientos. |
+| Actor | Usuario individual autenticado que origina un movimiento. |
+| Clave de idempotencia | Identificador que permite a un actor repetir un comando y recuperar su resultado. |
+| p95 | Valor de rango ceil(0,95 × N) al ordenar las N latencias de menor a mayor. |
+| WAL | Registro de escritura anticipada utilizado por SQLite para confirmar cambios. |

@@ -4,11 +4,7 @@
 > — 2026-11-13T18:53:47-05:00.
 
 ## 1. Caracterización del Escenario Operativo
-- **Escenario medido:** **ESC-01** (principal). La prueba registra 20 salidas
-  simultáneas sobre el mismo SKU y verifica consistencia exacta. También aporta
-  evidencia parcial para **ESC-04**, porque mide p95 de una operación de negocio
-  bajo concurrencia; no mide consultas de catálogo/listado ni una carga sostenida
-  de 20 solicitudes por segundo como describe ESC-04.
+- **Escenario medido:** Reto ADR-0002 de 20 salidas simultáneas. Para las 50 transacciones de ESC-01 y las consultas a 20 solicitudes/s de ESC-04, ver el [ensayo posterior a S15](../verificacion-final.md).
 - **Justificación:** Demostrar que el MVP desplegado soporta ráfagas de peticiones simultáneas sobre un mismo producto (SKU) ejecutando lógica de negocio transaccional real (descuento atómico de stock), manteniendo la latencia percentil 95 en estado caliente por debajo del umbral crítico sin recurrir a sondas estáticas de salud (`/health`).
 
 ## 2. Hipótesis del Experimento
@@ -91,7 +87,7 @@ en el historial evaluado; no se inventa una cifra retrospectiva.
 | Respuestas HTTP | 100/100 con `200` |
 | Stock inicial/final por ejecución | 100/80 |
 | Umbral | 400 ms |
-| Conclusión | Cumple para ESC-01 y aporta evidencia parcial para ESC-04 |
+| Conclusión | Cumple el reto de escrituras de ADR-0002 |
 
 La cifra histórica de 32.891 ms se conserva como resultado reportado del
 2026-11-06, no como una serie cruda reconstruida. La serie actual tiene un p95 máximo de 33.788 ms, todavía por debajo del umbral de 400 ms en las cinco
