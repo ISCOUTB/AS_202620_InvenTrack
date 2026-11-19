@@ -28,11 +28,11 @@ def copiar(origen: Path, destino: Path):
     with TemporaryDirectory(dir=base) as temporal:
         archivo = Path(temporal) / "copia.sqlite3"
         archivo.touch(mode=0o600, exist_ok=False)
-        with closing(sqlite3.connect(fuente_local.as_uri() + "?mode=ro", uri=True)) as fuente:
-            with closing(sqlite3.connect(archivo)) as copia:
-                fuente.backup(copia)
-                if copia.execute("PRAGMA integrity_check").fetchall() != [("ok",)]:
-                    raise ValueError("Falló la verificación de integridad de la copia")
+        with closing(sqlite3.connect(fuente_local.as_uri() + "?mode=ro", uri=True)) as fuente, \
+             closing(sqlite3.connect(archivo)) as copia:
+            fuente.backup(copia)
+            if copia.execute("PRAGMA integrity_check").fetchall() != [("ok",)]:
+                raise ValueError("Falló la verificación de integridad de la copia")
         # Publica solo la copia completa. Un destino existente hace fallar link.
         os.link(archivo, destino_local)
 
