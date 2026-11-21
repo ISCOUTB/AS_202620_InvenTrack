@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'package:inventrack/models/producto.dart';
 import 'package:inventrack/providers/health_provider.dart';
 import 'package:inventrack/providers/inventario_provider.dart';
 import 'package:inventrack/providers/productos_provider.dart';
-import 'package:inventrack/models/producto.dart';
-import 'package:inventrack/screens/productos_page.dart';
 import 'package:inventrack/screens/inventario_page.dart';
+import 'package:inventrack/screens/productos_page.dart';
+import 'package:inventrack/ui/inventrack_style.dart';
 import 'package:inventrack/widgets/crear_producto_dialog.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key, this.salir});
+
   final VoidCallback? salir;
 
   @override
@@ -23,37 +25,74 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       context.read<HealthProvider>().checkHealth();
       context.read<ProductosProvider>().cargarProductos();
     });
   }
 
+  void _selectPage(int index) {
+    setState(() => _selectedIndex = index);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final healthProvider = context.watch<HealthProvider>();
+    final health = context.watch<HealthProvider>();
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('InvenTrack'),
-        centerTitle: true,
-        actions: [
-          if (widget.salir != null)
-            IconButton(onPressed: widget.salir, icon: const Icon(Icons.logout), tooltip: 'Cerrar sesión'),
-          Padding(
-            padding: const EdgeInsets.only(right: 12.0),
-            child: IconButton(
-              onPressed: healthProvider.isChecking
-                  ? null
-                  : () => context.read<HealthProvider>().checkHealth(),
-              tooltip: _healthTooltip(healthProvider),
-              icon: Icon(
-                Icons.circle,
-                size: 14,
-                color: _healthColor(healthProvider),
+        titleSpacing: 20,
+        title: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.inventory_2_rounded,
+              color: InvenTrackStyle.emerald,
+              size: 27,
+            ),
+            SizedBox(width: 9),
+            Text(
+              'InvenTrack',
+              style: TextStyle(
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.6,
+                color: InvenTrackStyle.ink,
               ),
             ),
+          ],
+        ),
+        actions: [
+          IconButton(
+            tooltip: health.isHealthy
+                ? 'Servicio disponible'
+                : 'Comprobar conexión',
+            onPressed: health.isChecking
+                ? null
+                : () => context
+                    .read<HealthProvider>()
+                    .checkHealth(),
+            icon: Icon(
+              health.isChecking
+                  ? Icons.sync
+                  : health.isHealthy
+                      ? Icons.cloud_done_outlined
+                      : Icons.cloud_off_outlined,
+              color: health.isChecking
+                  ? InvenTrackStyle.muted
+                  : health.isHealthy
+                      ? InvenTrackStyle.emerald
+                      : InvenTrackStyle.orange,
+            ),
           ),
+          if (widget.salir != null)
+            IconButton(
+              tooltip: 'Cerrar sesión',
+              onPressed: widget.salir,
+              icon: const Icon(Icons.logout_rounded),
+            ),
+          const SizedBox(width: 8),
         ],
       ),
       body: IndexedStack(
@@ -66,334 +105,483 @@ class _HomePageState extends State<HomePage> {
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
-        onDestinationSelected: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
-        },
+        onDestinationSelected: _selectPage,
         destinations: const [
           NavigationDestination(
-            icon: Icon(Icons.dashboard_outlined),
-            selectedIcon: Icon(Icons.dashboard),
+            icon: Icon(Icons.space_dashboard_outlined),
+            selectedIcon: Icon(Icons.space_dashboard_rounded),
             label: 'Inicio',
           ),
           NavigationDestination(
             icon: Icon(Icons.inventory_2_outlined),
-            selectedIcon: Icon(Icons.inventory_2),
+            selectedIcon: Icon(Icons.inventory_2_rounded),
             label: 'Productos',
           ),
           NavigationDestination(
             icon: Icon(Icons.warehouse_outlined),
-            selectedIcon: Icon(Icons.warehouse),
+            selectedIcon: Icon(Icons.warehouse_rounded),
             label: 'Inventario',
           ),
         ],
       ),
     );
   }
-
-  void _selectPage(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-  }
-
-  Color _healthColor(HealthProvider provider) {
-    if (provider.isChecking) return Colors.grey;
-    if (provider.isHealthy) return Colors.green;
-    return Colors.red;
-  }
-
-  String _healthTooltip(HealthProvider provider) {
-    if (provider.isChecking) return 'Verificando conexión...';
-    if (provider.isHealthy) return 'Servicio disponible (toca para reverificar)';
-    return provider.lastError ?? 'Servicio no disponible (toca para reintentar)';
-  }
 }
 
 class DashboardPage extends StatelessWidget {
-    const DashboardPage({super.key, required this.onNavigate});
+  const DashboardPage({
+    super.key,
+    required this.onNavigate,
+  });
 
-    final ValueChanged<int> onNavigate;
+  final ValueChanged<int> onNavigate;
 
-    @override
-    Widget build(BuildContext context) {
-      final productos = context.watch<ProductosProvider>();
-      final inventario = context.watch<InventarioProvider>();
-      final health = context.watch<HealthProvider>();
-      final theme = Theme.of(context);
-      final activos = productos.productos.where((producto) => producto.activo).length;
-      final totalStock =
-          inventario.stockCache.values.fold<int>(0, (total, stock) => total + stock);
+  Future<void> _actualizar(BuildContext context) async {
+    await Future.wait([
+      context.read<HealthProvider>().checkHealth(),
+      context.read<ProductosProvider>().cargarProductos(),
+    ]);
+  }
 
-      return RefreshIndicator(
-        onRefresh: health.checkHealth,
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+  @override
+  Widget build(BuildContext context) {
+    final productos = context.watch<ProductosProvider>();
+    final inventario = context.watch<InventarioProvider>();
+    final health = context.watch<HealthProvider>();
+
+    final activos = productos.productos
+        .where((producto) => producto.activo)
+        .length;
+
+    final stockConsultado = inventario.stockCache.values
+        .fold<int>(0, (total, cantidad) => total + cantidad);
+
+    return RefreshIndicator(
+      onRefresh: () => _actualizar(context),
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(18, 14, 18, 32),
+        children: [
+          const Text(
+            'Resumen de inventario',
+            style: TextStyle(
+              fontSize: 23,
+              fontWeight: FontWeight.w800,
+              color: InvenTrackStyle.ink,
+              letterSpacing: -0.6,
+            ),
+          ),
+          const SizedBox(height: 5),
+          const Text(
+            'Todo lo importante de tu negocio, en un solo lugar.',
+            style: TextStyle(
+              fontSize: 13,
+              color: InvenTrackStyle.muted,
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          _WelcomeCard(
+            onOpen: () => onNavigate(2),
+          ),
+
+          const SizedBox(height: 17),
+
+          _ConnectionPanel(health: health),
+
+          const SizedBox(height: 26),
+
+          const SectionHeading(
+            'Tu inventario en números',
+            subtitle: 'Resumen de la información disponible',
+          ),
+          const SizedBox(height: 14),
+
+          GridView.count(
+            crossAxisCount: 2,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            childAspectRatio: 0.78,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            children: [
+              StatTile(
+                label: 'Productos activos',
+                value: '$activos',
+                icon: Icons.inventory_2_outlined,
+                color: InvenTrackStyle.emerald,
+              ),
+              StatTile(
+                label: 'Stock consultado',
+                value: '$stockConsultado',
+                icon: Icons.warehouse_outlined,
+                color: InvenTrackStyle.orange,
+              ),
+              StatTile(
+                label: 'Movimientos recientes',
+                value: '${inventario.movimientosRecientes.length}',
+                icon: Icons.swap_vert_rounded,
+                color: InvenTrackStyle.lavender,
+              ),
+              StatTile(
+                label: 'Productos registrados',
+                value: '${productos.productos.length}',
+                icon: Icons.category_outlined,
+                color: InvenTrackStyle.deepGreen,
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 26),
+
+          const SectionHeading(
+            'Acciones rápidas',
+            subtitle: 'Gestiona tu negocio en pocos pasos',
+          ),
+          const SizedBox(height: 13),
+
+          _ActionTile(
+            icon: Icons.add_box_rounded,
+            color: InvenTrackStyle.emerald,
+            title: 'Nuevo Producto',
+            subtitle: 'Agrega un producto al catálogo',
+            onTap: () => _crearProducto(context),
+          ),
+
+          const SizedBox(height: 11),
+
+          _ActionTile(
+            icon: Icons.warehouse_rounded,
+            color: InvenTrackStyle.orange,
+            title: 'Gestionar inventario',
+            subtitle: 'Consulta stock, entradas y salidas',
+            onTap: () => onNavigate(2),
+          ),
+
+          const SizedBox(height: 26),
+
+          SectionHeading(
+            'Productos recientes',
+            subtitle: 'Últimos productos del catálogo',
+            trailing: TextButton(
+              onPressed: () => onNavigate(1),
+              child: const Text('Ver todos'),
+            ),
+          ),
+          const SizedBox(height: 13),
+
+          if (productos.productos.isEmpty)
+            const EmptyPanel(
+              icon: Icons.inventory_2_outlined,
+              title: 'Aún no hay productos',
+              subtitle:
+                  'Agrega tu primer producto para comenzar a gestionar el inventario.',
+            )
+          else
+            SurfacePanel(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 8,
+              ),
+              child: Column(
+                children: productos.productos
+                    .take(3)
+                    .map(
+                      (producto) => ListTile(
+                        contentPadding:
+                            const EdgeInsets.symmetric(horizontal: 6),
+                        leading: const SoftIcon(
+                          Icons.inventory_2_outlined,
+                          size: 42,
+                        ),
+                        title: Text(
+                          producto.nombre,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            color: InvenTrackStyle.ink,
+                          ),
+                        ),
+                        subtitle: Text(
+                          'ID: ${producto.id}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        trailing: StatusTag(
+                          producto.activo ? 'Activo' : 'Inactivo',
+                          color: producto.activo
+                              ? InvenTrackStyle.emerald
+                              : InvenTrackStyle.muted,
+                        ),
+                        onTap: () => onNavigate(1),
+                      ),
+                    )
+                    .toList(),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _crearProducto(BuildContext context) async {
+    final request = await showDialog<CrearProductoRequest>(
+      context: context,
+      builder: (_) => const CrearProductoDialog(),
+    );
+
+    if (request == null || !context.mounted) return;
+
+    final provider = context.read<ProductosProvider>();
+
+    final creado = await provider.crearProducto(
+      request.id,
+      request.nombre,
+    );
+
+    if (!context.mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        behavior: SnackBarBehavior.floating,
+        content: Text(
+          creado == null
+              ? provider.errorMessage ??
+                  'No se pudo crear el producto'
+              : 'Producto "${creado.nombre}" creado exitosamente',
+        ),
+      ),
+    );
+  }
+}
+
+class _WelcomeCard extends StatelessWidget {
+  const _WelcomeCard({required this.onOpen});
+
+  final VoidCallback onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(25),
+      child: Container(
+        width: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: InvenTrackStyle.heroGradient,
+        ),
+        child: Stack(
           children: [
-            Text(
-              'Resumen de inventario',
-              style: theme.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.w700,
+            Positioned(
+              right: -55,
+              top: -60,
+              child: Container(
+                width: 190,
+                height: 190,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: const Color(0x25FFFFFF),
+                    width: 32,
+                  ),
+                ),
               ),
             ),
-            const SizedBox(height: 4),
-            Text(
-              'Administra tus productos de forma simple y rápida.',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+            Padding(
+              padding: const EdgeInsets.all(23),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 11,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0x28FFFFFF),
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                    child: const Text(
+                      'CENTRO DE CONTROL',
+                      style: TextStyle(
+                        fontSize: 10,
+                        letterSpacing: 1.3,
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 22),
+                  const Text(
+                    'Tu inventario,\nbajo control.',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 27,
+                      height: 1.18,
+                      letterSpacing: -0.8,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 9),
+                  const Text(
+                    'Organiza tus productos y registra cada movimiento fácilmente.',
+                    style: TextStyle(
+                      color: Color(0xFFD0E9E0),
+                      fontSize: 12.5,
+                      height: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 19),
+                  FilledButton.icon(
+                    onPressed: onOpen,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: InvenTrackStyle.ink,
+                    ),
+                    icon: const Icon(
+                      Icons.arrow_forward_rounded,
+                      size: 18,
+                    ),
+                    label: const Text('Abrir inventario'),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 20),
-            _ConnectionCard(health: health),
-            const SizedBox(height: 16),
-            GridView.count(
-              crossAxisCount: 2,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 1.45,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ConnectionPanel extends StatelessWidget {
+  const _ConnectionPanel({required this.health});
+
+  final HealthProvider health;
+
+  @override
+  Widget build(BuildContext context) {
+    final conectado = health.isHealthy;
+    final comprobando = health.isChecking;
+
+    final color = comprobando
+        ? InvenTrackStyle.muted
+        : conectado
+            ? InvenTrackStyle.emerald
+            : InvenTrackStyle.orange;
+
+    return SurfacePanel(
+      padding: const EdgeInsets.all(14),
+      child: Row(
+        children: [
+          SoftIcon(
+            conectado
+                ? Icons.cloud_done_outlined
+                : Icons.cloud_off_outlined,
+            color: color,
+            size: 45,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _SummaryCard(
-                  label: 'Productos activos',
-                  value: '$activos',
-                  icon: Icons.inventory_2_outlined,
-                  color: theme.colorScheme.primary,
+                Text(
+                  comprobando
+                      ? 'Verificando conexión'
+                      : conectado
+                          ? 'Servicio conectado'
+                          : 'Servicio no disponible',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    color: InvenTrackStyle.ink,
+                    fontSize: 13,
+                  ),
                 ),
-                _SummaryCard(
-                  label: 'Stock consultado',
-                  value: '$totalStock',
-                  icon: Icons.warehouse_outlined,
-                  color: Colors.deepOrange,
-                ),
-                _SummaryCard(
-                  label: 'Movimientos',
-                  value: '${inventario.movimientosRecientes.length}',
-                  icon: Icons.swap_vert,
-                  color: Colors.indigo,
-                ),
-                _SummaryCard(
-                  label: 'Productos registrados',
-                  value: '${productos.productos.length}',
-                  icon: Icons.category_outlined,
-                  color: Colors.teal,
+                const SizedBox(height: 3),
+                const Text(
+                  'Estado de conexión con la API',
+                  style: TextStyle(
+                    color: InvenTrackStyle.muted,
+                    fontSize: 11,
+                  ),
                 ),
               ],
             ),
-            const SizedBox(height: 24),
-            Text(
-              'Acciones rápidas',
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 12),
-            _QuickAction(
-              icon: Icons.add_box_outlined,
-              title: 'Nuevo Producto',
-              subtitle: 'Agrega un producto al catálogo',
-              onTap: () => _showCreateProductDialog(context),
-            ),
-            const SizedBox(height: 10),
-            _QuickAction(
-              icon: Icons.warehouse_outlined,
-              title: 'Gestionar inventario',
-              subtitle: 'Consulta stock y registra movimientos',
-              onTap: () => onNavigate(2),
-            ),
-            if (productos.productos.isNotEmpty) ...[
-              const SizedBox(height: 24),
-              Text(
-                'Productos recientes',
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 8),
-              ...productos.productos.take(3).map(
-                    (producto) => Card(
-                      child: ListTile(
-                        leading: const CircleAvatar(
-                          child: Icon(Icons.inventory_2_outlined),
-                        ),
-                        title: Text(producto.nombre),
-                        subtitle: Text('ID: ${producto.id}'),
-                        trailing: Icon(
-                          producto.activo
-                              ? Icons.check_circle_outline
-                              : Icons.block_outlined,
-                          color: producto.activo ? Colors.green : Colors.grey,
-                        ),
-                      ),
-                    ),
-                  ),
-            ],
-            if (productos.productos.isEmpty) ...[
-              const SizedBox(height: 24),
-              Card(
-                color: theme.colorScheme.primaryContainer,
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.lightbulb_outline,
-                        color: theme.colorScheme.onPrimaryContainer,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'No hay productos registrados',
-                              style: TextStyle(
-                                color: theme.colorScheme.onPrimaryContainer,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            Text(
-                              'Crea el primero para comenzar.',
-                              style: TextStyle(
-                                color: theme.colorScheme.onPrimaryContainer,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ],
-        ),
-      );
-    }
-
-    Future<void> _showCreateProductDialog(BuildContext context) async {
-      final request = await showDialog<CrearProductoRequest>(
-        context: context,
-        builder: (_) => const CrearProductoDialog(),
-      );
-      if (request == null || !context.mounted) return;
-
-      final provider = context.read<ProductosProvider>();
-      final created = await provider.crearProducto(request.id, request.nombre);
-      if (!context.mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            created == null
-                ? provider.errorMessage ?? 'No se pudo crear el producto'
-                : 'Producto "${created.nombre}" creado exitosamente',
           ),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    }
+          Icon(
+            conectado
+                ? Icons.check_circle_rounded
+                : Icons.info_outline_rounded,
+            color: color,
+          ),
+        ],
+      ),
+    );
   }
+}
 
-  class _ConnectionCard extends StatelessWidget {
-    const _ConnectionCard({required this.health});
+class _ActionTile extends StatelessWidget {
+  const _ActionTile({
+    required this.icon,
+    required this.color,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
 
-    final HealthProvider health;
+  final IconData icon;
+  final Color color;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
 
-    @override
-    Widget build(BuildContext context) {
-      final connected = health.isHealthy;
-      final color = connected ? Colors.green : Colors.orange;
-      return Card(
-        child: ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          leading: CircleAvatar(
-            backgroundColor: color.withAlpha(28),
-            child: Icon(
-              connected ? Icons.cloud_done_outlined : Icons.cloud_off_outlined,
-              color: color,
-            ),
-          ),
-          title: Text(connected ? 'Servicio conectado' : 'Servicio no verificado'),
-          subtitle: Text(
-            connected
-                ? 'La API de InvenTrack está disponible'
-                : 'Toca el indicador superior para comprobar la conexión',
-          ),
-        ),
-      );
-    }
-  }
-
-  class _SummaryCard extends StatelessWidget {
-    const _SummaryCard({
-      required this.label,
-      required this.value,
-      required this.icon,
-      required this.color,
-    });
-
-    final String label;
-    final String value;
-    final IconData icon;
-    final Color color;
-
-    @override
-    Widget build(BuildContext context) {
-      return Card(
-        child: Padding(
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      child: GestureDetector(
+        onTap: onTap,
+        child: SurfacePanel(
           padding: const EdgeInsets.all(14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          child: Row(
             children: [
-              Icon(icon, color: color),
-              Text(
-                value,
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
+              SoftIcon(
+                icon,
+                color: color,
+                size: 49,
               ),
-              Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.bodySmall,
+              const SizedBox(width: 13),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        color: InvenTrackStyle.ink,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(
+                        color: InvenTrackStyle.muted,
+                        fontSize: 11.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: InvenTrackStyle.muted,
               ),
             ],
           ),
         ),
-      );
-    }
+      ),
+    );
   }
-
-  class _QuickAction extends StatelessWidget {
-    const _QuickAction({
-      required this.icon,
-      required this.title,
-      required this.subtitle,
-      required this.onTap,
-    });
-
-    final IconData icon;
-    final String title;
-    final String subtitle;
-    final VoidCallback onTap;
-
-    @override
-    Widget build(BuildContext context) {
-      return Card(
-        child: ListTile(
-          onTap: onTap,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          leading: CircleAvatar(
-            child: Icon(icon),
-          ),
-          title: Text(title),
-          subtitle: Text(subtitle),
-          trailing: const Icon(Icons.chevron_right),
-        ),
-      );
-    }
-  }
+}
