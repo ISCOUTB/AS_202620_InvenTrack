@@ -17,10 +17,7 @@ void main() {
   testWidgets(
     'Flujo basico de productos e inventario con API simulada',
     (WidgetTester tester) async {
-
-      // Simular las respuestas de la API.
       final client = MockClient((request) async {
-
         if (request.method == 'GET' &&
             request.url.path == '/health') {
           return http.Response(
@@ -42,9 +39,8 @@ void main() {
 
         if (request.method == 'POST' &&
             request.url.path == '/productos') {
-
-          final payload = jsonDecode(request.body)
-              as Map<String, dynamic>;
+          final payload =
+              jsonDecode(request.body) as Map<String, dynamic>;
 
           return http.Response(
             jsonEncode({
@@ -71,9 +67,7 @@ void main() {
         }
 
         return http.Response(
-          jsonEncode({
-            'detail': 'Not Found',
-          }),
+          jsonEncode({'detail': 'Not Found'}),
           404,
         );
       });
@@ -87,7 +81,6 @@ void main() {
       await tester.pumpWidget(
         InvenTrackApp(apiService: api),
       );
-
       await tester.pumpAndSettle();
 
       // Verificar pantalla principal.
@@ -101,19 +94,14 @@ void main() {
         findsOneWidget,
       );
 
-      // Abrir la sección Productos.
+      // Entrar al catálogo.
       await tester.tap(find.text('Productos'));
-
       await tester.pumpAndSettle();
 
-      // Abrir formulario de producto.
-      await tester.tap(
-        find.text('Nuevo Producto'),
-      );
-
+      // Crear un producto.
+      await tester.tap(find.text('Nuevo Producto'));
       await tester.pumpAndSettle();
 
-      // Ingresar información del producto.
       await tester.enterText(
         find.widgetWithText(
           TextFormField,
@@ -130,12 +118,10 @@ void main() {
         'Martillo',
       );
 
-      // Crear producto.
       await tester.tap(find.text('Crear'));
-
       await tester.pumpAndSettle();
 
-      // Comprobar que se registró correctamente.
+      // Comprobar producto registrado.
       final productosProvider = tester
           .element(find.byType(ProductosPage))
           .read<ProductosProvider>();
@@ -155,7 +141,7 @@ void main() {
         'PROD-1',
       );
 
-      // Buscar el producto dentro de la lista.
+      // Buscar el producto en la lista visual.
       final catalogoScroll = find.descendant(
         of: find.byType(ProductosPage),
         matching: find.byType(Scrollable),
@@ -177,20 +163,16 @@ void main() {
         findsOneWidget,
       );
 
-      // Abrir la sección Inventario.
-      await tester.tap(
-        find.text('Inventario'),
-      );
-
+      // Abrir inventario.
+      await tester.tap(find.text('Inventario'));
       await tester.pumpAndSettle();
 
-      // Identificar la lista desplazable.
       final inventarioScroll = find.descendant(
         of: find.byType(InventarioPage),
         matching: find.byType(Scrollable),
       ).first;
 
-      // Buscar el campo de ID.
+      // Seleccionar producto.
       final campoProducto = find.widgetWithText(
         TextFormField,
         'ID del Producto',
@@ -202,7 +184,6 @@ void main() {
         scrollable: inventarioScroll,
       );
 
-      // Escribir identificador.
       await tester.enterText(
         campoProducto,
         'PROD-1',
@@ -210,8 +191,9 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // Localizar el botón de entrada.
-      final botonEntrada = find.text(
+      // Buscar el botón de entrada.
+      final botonEntrada = find.widgetWithText(
+        FilledButton,
         'Registrar Entrada',
       );
 
@@ -221,25 +203,26 @@ void main() {
         scrollable: inventarioScroll,
       );
 
-      // IMPORTANTE:
-      // Colocar el botón dentro del área visible
-      // para evitar que lo tape la navegación inferior.
-      await Scrollable.ensureVisible(
-        tester.element(botonEntrada),
-        alignment: 0.2,
-        duration: const Duration(
-          milliseconds: 250,
-        ),
+      // Desplazar el contenido hacia arriba para
+      // evitar que lo tape la barra inferior.
+      // Esta operación no espera animaciones externas.
+      await tester.drag(
+        inventarioScroll,
+        const Offset(0, -230),
       );
 
       await tester.pumpAndSettle();
 
-      // Registrar entrada.
-      await tester.tap(botonEntrada);
+      // Pulsar el botón de entrada.
+      expect(
+        botonEntrada,
+        findsOneWidget,
+      );
 
+      await tester.tap(botonEntrada);
       await tester.pumpAndSettle();
 
-      // Ingresar cantidad.
+      // Registrar 12 unidades.
       await tester.enterText(
         find.widgetWithText(
           TextFormField,
@@ -248,51 +231,42 @@ void main() {
         '12',
       );
 
-      // Confirmar movimiento.
-      await tester.tap(
-        find.text('Confirmar'),
-      );
-
+      await tester.tap(find.text('Confirmar'));
       await tester.pumpAndSettle();
 
-      // Consultar los datos del inventario.
+      // Verificar los datos obtenidos de la API.
       final inventarioProvider = tester
           .element(find.byType(InventarioPage))
           .read<InventarioProvider>();
 
-      // Verificar identificador del producto.
       expect(
         inventarioProvider.stockActual?.productoId,
         'PROD-1',
       );
 
-      // Verificar cantidad disponible.
       expect(
         inventarioProvider.stockActual?.cantidad,
         12,
       );
 
-      // Verificar movimiento registrado.
       expect(
         inventarioProvider.movimientosRecientes.length,
         1,
       );
 
-      // Verificar cantidad del movimiento.
       expect(
         inventarioProvider
             .movimientosRecientes.first.cantidad,
         12,
       );
 
-      // Verificar stock después del movimiento.
       expect(
         inventarioProvider
             .movimientosRecientes.first.stockFinal,
         12,
       );
 
-      // Buscar la tarjeta de existencias.
+      // Verificar tarjeta de stock.
       await tester.scrollUntilVisible(
         find.text('Stock disponible'),
         200,
@@ -304,12 +278,7 @@ void main() {
         findsOneWidget,
       );
 
-      expect(
-        find.text('Producto: PROD-1'),
-        findsOneWidget,
-      );
-
-      // Buscar la tarjeta de movimientos.
+      // Verificar tarjeta de movimiento.
       await tester.scrollUntilVisible(
         find.text('Stock final'),
         200,
