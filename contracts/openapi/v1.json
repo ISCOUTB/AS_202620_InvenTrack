@@ -207,6 +207,9 @@
           "503": {
             "description": "Service Unavailable"
           },
+          "409": {
+            "description": "Conflict"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -267,6 +270,9 @@
           },
           "503": {
             "description": "Service Unavailable"
+          },
+          "409": {
+            "description": "Conflict"
           },
           "422": {
             "description": "Validation Error",
@@ -338,6 +344,9 @@
           "503": {
             "description": "Service Unavailable"
           },
+          "409": {
+            "description": "Conflict"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -386,6 +395,9 @@
           },
           "503": {
             "description": "Service Unavailable"
+          },
+          "409": {
+            "description": "Conflict"
           },
           "422": {
             "description": "Validation Error",

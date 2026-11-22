@@ -7,6 +7,7 @@ from app.shared.infrastructure.sqlite import actor, conexion
 from app.usuarios.infrastructure.credenciales import emitir
 
 Usuario_Inexistente = HTTPException(404, "Usuario inexistente")
+CONFLICT_RESPONSE = {"description": "Conflict"}
 
 class Permisos(BaseModel):
     rol: Literal["admin", "operador", "lector"]
@@ -38,7 +39,7 @@ def usuarios() -> list[dict[str, str]]:
     return [{"id": i, "rol": r} for i, r in conexion.get().execute("SELECT id,rol FROM usuarios ORDER BY id")]
 
 
-@router.post("/usuarios", status_code=201)
+@router.post("/usuarios", status_code=201, responses={409: CONFLICT_RESPONSE})
 def crear_usuario(datos: Usuario, response: Response) -> Credencial:
     db = conexion.get()
     if db.execute("SELECT 1 FROM usuarios WHERE id=?", (datos.id,)).fetchone():
@@ -47,7 +48,7 @@ def crear_usuario(datos: Usuario, response: Response) -> Credencial:
     return Credencial(token=emitir(db, datos.id, datos.rol))
 
 
-@router.post("/usuarios/{id}/rotar")
+@router.post("/usuarios/{id}/rotar", responses={409: CONFLICT_RESPONSE})
 def rotar(id: str, response: Response) -> Credencial:
     db = conexion.get()
     usuario = db.execute("SELECT rol FROM usuarios WHERE id=?", (id,)).fetchone()
@@ -59,7 +60,7 @@ def rotar(id: str, response: Response) -> Credencial:
     return Credencial(token=emitir(db, id, usuario[0]))
 
 
-@router.put("/usuarios/{id}/rol")
+@router.put("/usuarios/{id}/rol", responses={409: CONFLICT_RESPONSE})
 def cambiar_rol(id: str, datos: Permisos) -> dict[str, str]:
     if id == actor.get() and datos.rol != "admin":
         raise HTTPException(409, "Usa otra cuenta administradora para cambiar tu rol")
@@ -68,7 +69,7 @@ def cambiar_rol(id: str, datos: Permisos) -> dict[str, str]:
     return {"id": id, "rol": datos.rol}
 
 
-@router.delete("/usuarios/{id}", status_code=204)
+@router.delete("/usuarios/{id}", status_code=204, responses={409: CONFLICT_RESPONSE})
 def revocar(id: str) -> Response:
     if id == actor.get():
         raise HTTPException(409, "Usa otra cuenta administradora para revocar tu credencial")
