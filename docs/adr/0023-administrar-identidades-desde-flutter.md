@@ -3,7 +3,7 @@
 - **Estado:** Propuesto
 - **Fecha:** 2026-11-22
 - **Decisores:** Equipo InvenTrack
-- **Modifica:** [ADR-0019](0019-autenticar-usuarios-y-autorizar-por-rol.md) en el canal autorizado para administrar identidades
+- **Reemplaza:** La restricción de [ADR-0019](0019-autenticar-usuarios-y-autorizar-por-rol.md) que excluye la administración de identidades por HTTP. Se conservan las credenciales individuales, los roles y la validación de permisos en cada petición.
 
 ## Contexto y alternativas
 

@@ -4,7 +4,11 @@ Este directorio y los archivos raíz asociados agrupan los componentes de infrae
 
 ---
 
-## 1. Estrategia de Despliegue Actual (Render PaaS)
+## 1. Despliegue institucional y entorno secundario
+
+Dokploy aloja la API institucional en `https://inventrack.iscoutb.dev`. El servicio monta el volumen SQLite en `/app/data`. La primera credencial administrativa debe emitirse en el contenedor que usa ese volumen. La nueva sección **Gestión** requiere redesplegar el backend y actualizar el cliente Flutter. Para entregar correo se configuran el servidor SMTP, el remitente y el destinatario en Dokploy. [Compose institucional](../deploy/compose.lab.yaml) · [variables y procedimiento de publicación](../README.md#despliegue-en-iscoutbdev).
+
+### Render como entorno secundario
 
 InvenTrack utiliza un enfoque **PaaS (*Platform as a Service*)** basado en contenedores Docker gestionados mediante despliegue continuo desde GitHub. 
 

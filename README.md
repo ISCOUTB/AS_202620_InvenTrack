@@ -13,6 +13,8 @@
 
 Reto propuesto: contrastar el conteo físico por SKU con una copia del inventario tomada al cierre de turno. [Ensayo de conciliación y antecedentes](docs/preparacion-s16.md) · [Sistema institucional](https://inventrack.iscoutb.dev).
 
+En Flutter, **Gestión → Cierre de turno** permite tomar el corte y comparar un CSV con cabecera `sku,cantidad`. La verificación local incluyó 48 pruebas de Python y 10 de Flutter. En la última comprobación pública, Dokploy respondió 200 en `/health` y 404 en `/sesion`. Las nuevas pantallas requieren desplegar la API actualizada y ejecutar la versión correspondiente del cliente. [Evidencia de S16](docs/preparacion-s16.md).
+
 ## Ejecutar el perfil durable
 
 Requiere Python 3.11 y las dependencias de `python -m pip install --require-hashes --only-binary :all: -r requirements.txt`. Desde la raíz, `python -m uvicorn app.main:app` inicia la API. Sin configuración se obtiene la demostración local en memoria. Para el perfil autenticado en PowerShell, preparar el entorno y emitir una credencial individual en una terminal privada:
@@ -21,7 +23,7 @@ Requiere Python 3.11 y las dependencias de `python -m pip install --require-hash
 $env:INVENTRACK_DB_PATH = 'inventrack.sqlite3'
 $env:INVENTRACK_ENV = 'production'
 $env:INVENTRACK_ALLOW_BUSINESS_DATA = 'true'
-python -m app.usuarios.infrastructure.credenciales emitir operador-01 operador
+python -m app.usuarios.infrastructure.credenciales emitir admin-inicial admin
 python -m uvicorn app.main:app
 ```
 
@@ -266,6 +268,13 @@ Las decisiones arquitectónicas se documentan como archivos individuales en [`do
 - **[ADR-0012](docs/adr/0012-mantener-repositorios-en-memoria-en-el-mvp.md):** Mantener los repositorios en memoria durante el MVP y conservar los puertos para una futura persistencia durable.
 - **[ADR-0014](docs/adr/0014-estrategia-de-almacenamiento-y-costo-de-reversion.md):** Precisar la inmutabilidad de movimientos y cuantificar el costo de migrar el almacenamiento a una base durable.
 - **[ADR-0015](docs/adr/0015-completar-decision-de-almacenamiento-y-reversion.md):** Completar la trazabilidad, consecuencias y comparación de costos sin editar ADR-0014, que permanece inmutable.
+
+**Decisiones del perfil durable y de Gestión**
+
+- La autenticación individual y los permisos por rol siguen la decisión aceptada en [ADR-0019](docs/adr/0019-autenticar-usuarios-y-autorizar-por-rol.md).
+- La persistencia transaccional en SQLite está aceptada. La serialización de escrituras tiene estado propuesto. [ADR-0020](docs/adr/0020-persistir-inventario-y-auditoria-en-sqlite.md) · [ADR-0021](docs/adr/0021-serializar-escrituras-sqlite.md).
+- El envío de avisos de stock desde una cola SQLite tiene estado propuesto. [ADR-0022](docs/adr/0022-entregar-alertas-de-stock-desde-sqlite.md).
+- ADR-0023 propone reemplazar la restricción de ADR-0019 que reservaba la administración de identidades a la consola. La primera credencial administrativa se emite por CLI. Con ella, el administrador puede gestionar otras cuentas desde Flutter. [ADR-0023](docs/adr/0023-administrar-identidades-desde-flutter.md).
 
 ## Despliegue en iscoutb.dev
 

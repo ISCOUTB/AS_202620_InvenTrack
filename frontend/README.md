@@ -86,6 +86,17 @@ flutter test
 
 ### Catálogo y acceso
 
+Al abrir **Gestión**, Flutter consulta `GET /sesion` para mostrar las acciones del rol actual.
+
+| Sección | Operaciones del cliente |
+|---|---|
+| Proveedores | `GET /proveedores` lista el directorio. El administrador crea con `POST /proveedores` y edita o elimina con `PUT` o `DELETE /proveedores/{id}`. |
+| Historial por producto | `GET /inventario/{producto_id}/movimientos` muestra las entradas y salidas más recientes primero, con cantidad, fecha y actor en el perfil durable. |
+| Cierre de turno | `GET /cierres` lista los cortes. El operador o administrador toma uno con `POST /cierres` y compara su CSV mediante `POST /cierres/{id}/conciliar`. |
+| Usuarios | El administrador lista y crea cuentas en `/usuarios`, cambia roles, rota credenciales y revoca accesos. La credencial nueva se muestra al emitirla. |
+
+La tarjeta de existencias indica **Stock bajo** entre 1 y 10 unidades. El backend encola un correo cuando una salida cruza de más de 10 unidades a 10 o menos. Su entrega requiere SMTP en el perfil SQLite. [Configuración del correo](../README.md#despliegue-en-iscoutbdev).
+
 La pestaña Productos sincroniza el catálogo mediante `GET /productos`. Para el perfil durable se activa `--dart-define=INVENTRACK_AUTH=true` y se introduce la credencial en la pantalla inicial. El cliente admite credenciales por HTTPS o por HTTP en loopback. Los permisos los valida la API.
 
 ---
