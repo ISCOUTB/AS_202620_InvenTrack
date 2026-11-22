@@ -9,6 +9,10 @@
 
 ---
 
+## Semana 16 · En preparación
+
+Reto propuesto: contrastar el conteo físico por SKU con una copia del inventario tomada al cierre de turno. [Ensayo de conciliación y antecedentes](docs/preparacion-s16.md) · [Sistema institucional](https://inventrack.iscoutb.dev).
+
 ## Ejecutar el perfil durable
 
 Requiere Python 3.11 y las dependencias de `python -m pip install --require-hashes --only-binary :all: -r requirements.txt`. Desde la raíz, `python -m uvicorn app.main:app` inicia la API. Sin configuración se obtiene la demostración local en memoria. Para el perfil autenticado en PowerShell, preparar el entorno y emitir una credencial individual en una terminal privada:
@@ -70,8 +74,8 @@ Para el cliente autenticado, desde `frontend/` ejecutar `flutter run --dart-defi
 - [Diagramas C4](#diagramas-c4)
 - [Mapa de contextos y propiedad de datos](#mapa-de-contextos-y-propiedad-de-datos)
 - [Decisiones de arquitectura (ADR)](#decisiones-de-arquitectura-adr)
-- [Evidencia de prueba contractual](#evidencia-de-prueba-contrato)
-- [Despliegue y costos](#despliegue-y-costos)
+- [Evidencia de prueba contractual](docs/evidencia-prueba-contrato.md)
+- [Despliegue y costos](docs/despliegue-y-costos.md)
 - [Mensajería asíncrona y auditoría](#mensajería-asíncrona-y-auditoría)
 - [Despliegue en iscoutb.dev](#despliegue-en-iscoutbdev)
 - [Stack tecnológico](#stack-tecnológico)
@@ -128,7 +132,7 @@ Para el cliente autenticado, desde `frontend/` ejecutar `flutter run --dart-defi
 
 ## Descripción
 
-Sistema de gestión de inventarios dirigido a pequeñas y medianas empresas que hoy gestionan su stock mediante Excel o registros manuales. Centraliza productos, proveedores, entradas, salidas, usuarios y movimientos, con alertas automáticas de stock bajo.
+Sistema de gestión de inventarios dirigido a pequeñas y medianas empresas que hoy gestionan su stock mediante Excel o registros manuales. La entrega permite gestionar el catálogo, registrar entradas y salidas y consultar existencias. El perfil SQLite conserva el historial con actor. La gestión de proveedores y las alertas automáticas siguen pendientes.
 
 Resuelve problemas concretos de las PYMEs objetivo: descuadres de stock, quiebres no detectados a tiempo, compras mal planificadas por falta de datos históricos, ausencia de trazabilidad, y dependencia de una sola persona como punto único de fallo operativo. Ver el planteamiento completo en [`docs/ficha_problema.md`](docs/ficha_problema.md).
 
@@ -242,8 +246,7 @@ Todos los diagramas están escritos en Mermaid y se renderizan directamente en G
 
 El sistema separa los contextos `productos` e `inventario`. Cada uno es dueño
 de sus entidades y las integraciones cruzadas se realizan mediante puertos de
-aplicación y adaptadores. Los contextos `usuarios`, `proveedores` y `alertas`
-están definidos como extensiones futuras y todavía no tienen implementación.
+aplicación y adaptadores. `usuarios` administra credenciales y roles en el perfil durable. Los contextos `proveedores` y `alertas` siguen pendientes.
 La matriz detallada está en [`docs/propiedad-datos.md`](docs/propiedad-datos.md).
 
 ## Decisiones de arquitectura (ADR)
@@ -271,9 +274,7 @@ El proyecto está desplegado en el servidor institucional Dokploy descrito en
 La definición reproducible está en [`deploy/compose.lab.yaml`](deploy/compose.lab.yaml).
 Este MVP publica únicamente la API y no necesita una base de datos externa. El
 token interno se configura como secreto en el entorno del proyecto Dokploy y se
-referencia desde el servicio; nunca se versiona. Los datos viven en repositorios en memoria y se pierden al
-reiniciar o redeplegar el proceso; este límite y la ruta de migración están
-documentados en [ADR-0012](docs/adr/0012-mantener-repositorios-en-memoria-en-el-mvp.md).
+referencia desde el servicio; nunca se versiona. Dokploy monta el volumen SQLite definido en Compose. El perfil local sin `INVENTRACK_DB_PATH` usa memoria. [ADR-0020](docs/adr/0020-persistir-inventario-y-auditoria-en-sqlite.md).
 Dokploy se incorporó después del cierre de la semana 8 y se mantiene en paralelo
 con el despliegue existente en Render.
 
@@ -469,7 +470,7 @@ flutter test
 ## Flujo de trabajo del equipo
 
 - Los cambios se integran en `main` manteniendo trazabilidad en cada commit.
-- Cada hito o entrega de corte se identifica mediante su respectiva etiqueta en Git (ej. `corte-1`).
+- El contrato del curso evalúa el último commit de `main` anterior o igual al cierre publicado en Moodle.
 - Los enlaces internos en la documentación utilizan rutas relativas validadas.
 
 ## Progreso por semana
@@ -487,6 +488,7 @@ flutter test
 | S9 | Observabilidad de latencia, p95 HTTP y evidencia de defecto/medición con apoyo de IA (ADR-0007) | Completo |
 | S10 | Experimento operativo, hipótesis y validación de alta concurrencia de inventario (S10) | Completo |
 | S12 | Mensajería asíncrona para auditoría: contrato, integración real, duplicados, reintentos, DLQ y trazabilidad (ADR-0016) | Completo; 13 pruebas focalizadas en verde |
+| S16 | [Reto de conciliación, matrices y pendientes externos](docs/preparacion-s16.md) | Borrador en revisión |
 
 ## Uso de IA
 

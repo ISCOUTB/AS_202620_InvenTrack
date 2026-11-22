@@ -18,9 +18,9 @@ flowchart TB
     Dueno(("👤 Dueño de la PYME
     Rol: Administrador"))
     Vendedor(("👤 Vendedor
-    Rol: Operador de Ventas"))
+    Rol: operador"))
     Empleado(("👤 Empleado de bodega
-    Rol: Operador de Inventario"))
+    Rol: operador"))
     InvenTrack[["🖥️ InvenTrack
     Gestión de inventario"]]
     Notif(["✉️ Servicio de notificaciones
@@ -68,20 +68,13 @@ flowchart TB
 
 | Actor | Tipo | Rol en el sistema | Qué hace | Por qué está en el diagrama |
 |---|---|---|---|---|
-| Dueño de la PYME | Persona | **Administrador** | Gestiona usuarios, proveedores y catálogo de productos; consulta reportes e historial completo de movimientos. | Es el interesado principal (ver Stakeholders en el arc42): sin su rol, no habría razón de negocio para el sistema. |
-| Vendedor | Persona | **Operador de Ventas** | Registra salidas de inventario por venta; consulta stock actual. | Dispara el escenario de mayor prioridad del proyecto (ESC-01): dos operadores registrando salidas al mismo tiempo es la situación que pone a prueba la Consistencia de datos. |
-| Empleado de bodega | Persona | **Operador de Inventario** | Registra entradas de mercancía y ajustes de inventario. | Junto con Vendedor, es el segundo actor que puede generar concurrencia sobre el mismo producto (ESC-01), y es quien opera físicamente el almacén. |
-| InvenTrack | Sistema (este proyecto) | — | Centraliza productos, proveedores, movimientos de inventario, usuarios y alertas de stock bajo. | Es el sistema que se está documentando; en este nivel se trata como caja cerrada a propósito. |
+| Dueño de la PYME | Persona | **Administrador** | Gestiona el catálogo, consulta stock y registra movimientos. | Es el interesado principal (ver Stakeholders en el arc42): sin su rol, no habría razón de negocio para el sistema. |
+| Vendedor | Persona | `operador` | Registra salidas de inventario por venta; consulta stock actual. | Dispara el escenario de mayor prioridad del proyecto (ESC-01): dos operadores registrando salidas al mismo tiempo es la situación que pone a prueba la Consistencia de datos. |
+| Empleado de bodega | Persona | `operador` | Registra entradas de mercancía y ajustes de inventario. | Junto con Vendedor, es el segundo actor que puede generar concurrencia sobre el mismo producto (ESC-01), y es quien opera físicamente el almacén. |
+| InvenTrack | Sistema (este proyecto) | — | Mantiene catálogo y stock, valida permisos y conserva movimientos y auditoría en el perfil durable. | Es el sistema que se está documentando; en este nivel se trata como caja cerrada a propósito. |
 | Servicio de notificaciones | Sistema externo objetivo | — | Recibirá solicitudes de alerta cuando un producto baje del umbral crítico. | Está en el alcance futuro, pero el módulo `alertas` y su adaptador todavía no están implementados. |
 
-**Por qué tres roles y no solo "Dueño" y "Empleado":** el escenario ESC-05
-(control de acceso por rol, en la sección Quality Requirements del arc42)
-exige verificar permisos sobre roles específicos. Con solo dos actores
-genéricos, "Dueño" y "Administrador" terminaban confundiéndose como si
-fueran roles distintos sin serlo realmente. Separar Vendedor y Empleado
-de bodega, y nombrar el rol de cada uno explícitamente (Administrador,
-Operador de Ventas, Operador de Inventario), elimina esa ambigüedad y
-deja los tres roles de ESC-05 con un actor real detrás de cada uno.
+Vendedor y empleado de bodega usan el rol `operador`. El rol `lector` permite consultar catálogo y stock. El administrador puede además crear, desactivar y eliminar productos. Operaciones emite y revoca credenciales desde la consola del servicio. [Política de roles](../../app/usuarios/infrastructure/credenciales.py).
 
 ## Por qué se eligieron esos protocolos en las flechas
 

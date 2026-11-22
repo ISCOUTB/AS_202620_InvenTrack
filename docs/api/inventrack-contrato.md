@@ -29,7 +29,7 @@ InvenTrack es un sistema inteligente de gestión de inventarios para PYMEs local
 - **Estilo de integración:** REST síncrono sobre HTTP.
 - **Formato de intercambio:** JSON.
 - **Servidor local:** `http://localhost:8000`.
-- **Autenticación:** No implementada en el MVP actual.
+- **Autenticación.** El perfil SQLite utiliza `Authorization: Bearer <credencial individual>`. El perfil local en memoria admite la demostración anónima. En producción, métricas y documentación requieren `X-Internal-Token`.
 - **Versionado:** `0.1.0` (Contrato OpenAPI versionado).
 - **Mecanismo de Concurrencia:** Cerrojo en memoria (`asyncio.Lock` por SKU) con tiempo límite de espera ($2\text{ s}$) para prevenir *race conditions* en ráfagas concurrentes (Reto Corte 1).
 - **Estrategia de Borrado:** Borrado físico si el producto no tiene movimientos; borrado lógico (desactivación) si cuenta con historial en inventario (Escenario ESC-02).
@@ -53,7 +53,7 @@ En el perfil durable todas las operaciones de negocio verifican la credencial in
 | `GET` | `/productos` | `200 OK` | Acceso según perfil | Listar el catálogo. |
 | `POST` | `/productos` | `201 Created` | `409`, `422` | Registrar un producto en el sistema. |
 | `DELETE` | `/productos/{producto_id}` | `200 OK` | `404` | Eliminar físicamente o desactivar lógicamente un producto. |
-| `POST` | `/inventario/{producto_id}/entradas` | `200 OK` | `404`, `409`, `422`, `503` | Registrar incremento de stock sobre un SKU. La cantidad debe ser positiva. |
+| `POST` | `/inventario/{producto_id}/entradas` | `200 OK` | `400`, `404`, `409`, `422`, `503` | Registrar incremento de stock sobre un SKU. La cantidad debe ser positiva. |
 | `POST` | `/inventario/{producto_id}/salidas` | `200 OK` | `404`, `409`, `422`, `503` | Registrar decremento de stock validando disponibilidad. La cantidad debe ser positiva. |
 | `GET` | `/inventario/{producto_id}` | `200 OK` | `404` | Consultar la cantidad actual en stock. |
 
@@ -95,9 +95,9 @@ y [evidencia-mensajeria-s12.md](../evidencia-mensajeria-s12.md).
 | Consulta de stock por producto | Sí | Sí, mediante `GET /inventario/{producto_id}` |
 | Cliente gráfico (Frontend Flutter) | Consume este contrato | Sí, implementado en [`frontend/`](../../frontend/) sin rutas fuera de `contracts/openapi/v1.json` |
 | Aislamiento de concurrencia por SKU | Sí | Sí, mediante `asyncio.Lock` en memoria |
-| Trazabilidad e historial de movimientos | Sí | Sí, en repositorio en memoria; los datos son volátiles según [ADR-0012](../adr/0012-mantener-repositorios-en-memoria-en-el-mvp.md) |
+| Trazabilidad e historial de movimientos | Sí | SQLite guarda el movimiento y su actor en la transacción del comando. La demostración en memoria pierde los datos al reiniciarse. |
 | Predicción de demanda con IA | No | No (declarado fuera de alcance en el MVP) |
-| Autenticación y roles de usuario | No | No (planificado para entregas futuras) |
+| Autenticación y roles de usuario | Sí | Credencial individual con roles `admin`, `operador` y `lector` en SQLite. |
 
 ---
 
@@ -105,10 +105,7 @@ y [evidencia-mensajeria-s12.md](../evidencia-mensajeria-s12.md).
 
 El sistema está estructurado mediante un Monolito Modular con Arquitectura Hexagonal por módulo (`productos` e `inventario`). Los módulos no se acoplan directamente a nivel de infraestructura ni base de datos, sino a través de **Puertos de Aplicación y Adaptadores Cruzados (ADR-0003)**.
 
-La persistencia actual es volátil y vive en adaptadores en memoria; no forma
-parte del contrato una base de datos externa ni se garantiza conservación de
-datos entre reinicios. La decisión y la ruta de evolución durable están
-documentadas en [ADR-0012](../adr/0012-mantener-repositorios-en-memoria-en-el-mvp.md).
+El perfil durable comparte una transacción SQLite por petición. El perfil de demostración mantiene los adaptadores en memoria. [Decisión de almacenamiento](../adr/0020-persistir-inventario-y-auditoria-en-sqlite.md).
 
 ```text
 Cliente HTTP / Frontend

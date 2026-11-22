@@ -14,6 +14,7 @@ import sqlite3
 import time
 from collections import defaultdict, deque
 from collections.abc import Awaitable, Callable
+from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, Request, Response
 from fastapi.responses import JSONResponse
@@ -40,7 +41,9 @@ from app.productos.infrastructure.in_memory_repository import InMemoryProductoRe
 from app.productos.infrastructure.router import crear_router as crear_router_productos
 from app.productos.infrastructure.sqlite_repository import ProductosSQLite
 from app.inventario.infrastructure.sqlite_repository import IdempotenciaSQLite, MovimientosSQLite, StockSQLite, guardar_evento
-from app.shared.infrastructure.sqlite import actor, inicializar, transaccion
+from app.shared.infrastructure.sqlite import (
+    EsperaEscrituraAgotada, actor, escritor_del_servicio, inicializar, transaccion,
+)
 from app.usuarios.infrastructure.credenciales import autenticar, permitido
 
 
@@ -125,10 +128,12 @@ class AccessPolicyMiddleware(BaseHTTPMiddleware):
                 if respuesta.status_code < 400:
                     db.commit()
                 return respuesta
-        except sqlite3.OperationalError as exc:
-            if getattr(exc, "sqlite_errorcode", None) in (sqlite3.SQLITE_BUSY, sqlite3.SQLITE_LOCKED):
-                return Response(status_code=503, headers={"Retry-After": "1"})
-            raise
+        except (EsperaEscrituraAgotada, sqlite3.OperationalError) as exc:
+            if isinstance(exc, sqlite3.OperationalError) and getattr(exc, "sqlite_errorcode", None) not in (
+                sqlite3.SQLITE_BUSY, sqlite3.SQLITE_LOCKED
+            ):
+                raise
+            return Response(status_code=503, headers={"Retry-After": "1"})
 
 
 class ObservabilityMiddleware(BaseHTTPMiddleware):
@@ -211,10 +216,22 @@ def _consumir_auditoria_movimiento(message: dict) -> None:
     )
 
 _production_without_internal_token = _is_production() and not os.getenv("INVENTRACK_INTERNAL_TOKEN")
+
+
+@asynccontextmanager
+async def _vida_api(_app):
+    if not _db_path:
+        yield
+        return
+    with escritor_del_servicio(_db_path):
+        yield
+
+
 app = FastAPI(
     title="InvenTrack",
     description="Sistema de gestión de inventarios para pequeñas empresas.",
     version="0.1.0",
+    lifespan=_vida_api,
     docs_url=None if _production_without_internal_token else "/docs",
     redoc_url=None if _production_without_internal_token else "/redoc",
     openapi_url=None if _production_without_internal_token else "/openapi.json",

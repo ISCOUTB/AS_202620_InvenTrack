@@ -34,6 +34,9 @@ jobs:
       with:
         python-version: '3.11'
 
+    - name: Verificar enlaces y trazabilidad de los aspectos
+      run: python scripts/verificar_trazabilidad.py
+
     - name: Install dependencies
       run: |
         pip install --require-hashes --only-binary :all: -r requirements.txt

@@ -11,13 +11,13 @@ flowchart TB
     Dueno(("👤 Dueño de la PYME
     Rol: Administrador"))
     Vendedor(("👤 Vendedor
-    Rol: Operador de Ventas"))
+    Rol: operador"))
     Empleado(("👤 Empleado de bodega
-    Rol: Operador de Inventario"))
+    Rol: operador"))
 
     subgraph InvenTrack["InvenTrack — Monolito Modular (ADR-0001)"]
         Web[["🖥️ Frontend
-        Flutter (Android / iOS)"]]
+        Flutter (Android / iOS / Windows)"]]
         
         subgraph ApiContainer ["⚙️ API Backend (Contenedor Único FastAPI + Uvicorn)"]
             Api[["FastAPI App"]]
@@ -56,16 +56,14 @@ flowchart TB
 |---|---|---|---|
 | 👤 | Círculo doble | Azul medio `#1168bd` | **Persona** — igual que en el Nivel 1 |
 | 🖥️ / ⚙️ | Rectángulo de doble borde | Azul contenedor `#1a6fc4` | **Contenedor de aplicación** — algo que se ejecuta (web o API) |
-| 🗄️ | Cilindro (persistencia) | Azul base de datos `#2e86c1` | **Almacenamiento Interno** — Repositorios *In-Memory* que residen estrictamente **dentro del espacio de proceso del contenedor API Backend** (no es un contenedor ni servidor de base de datos externo separado); una base relacional compartida es la evolución preferida según [ADR-0012](../adr/0012-mantener-repositorios-en-memoria-en-el-mvp.md). |
+| 🗄️ | Cilindro (persistencia) | Azul base de datos `#2e86c1` | El perfil durable almacena los datos en un archivo SQLite del volumen montado. El perfil de demostración los guarda en RAM dentro del proceso FastAPI. [ADR-0020](../adr/0020-persistir-inventario-y-auditoria-en-sqlite.md). |
 | ✉️ | Óvalo (estadio) | Gris `#999999` | **Externo** — igual que en el Nivel 1 |
 
 ---
 
-## Por qué solo 3 contenedores (y no 5, uno por módulo)
+## Fronteras de ejecución
 
-El [ADR-0001](../adr/0001-usar-monolito-modular-con-hexagonal-por-modulo.md) decide explícitamente un **Monolito Modular**: un único proceso desplegado, no servicios separados. Por eso los cinco módulos funcionales (`productos`, `proveedores`, `inventario`, `usuarios`, `alertas`) **no aparecen como contenedores independientes** — todos viven *dentro* del mismo contenedor "API Backend". Esa separación por módulo se documentará en el **Nivel 3 (Componentes)**, que abre la caja de "API Backend" y sí muestra cada módulo como una unidad propia.
-
-Si en el futuro el equipo decide extraer algún módulo a su propio servicio (por ejemplo, si `inventario` creciera mucho en tráfico), ahí sí aparecería como un cuarto contenedor — pero hoy, con el ADR-0001 vigente, no es el caso.
+Flutter se ejecuta en el dispositivo del usuario. FastAPI sirve a los clientes desde un único proceso. SQLite es un archivo del volumen de la API en el perfil durable. El diagrama de [componentes](components.md) muestra cómo se conectan los módulos dentro del proceso.
 
 ---
 
@@ -129,7 +127,7 @@ flowchart LR
 - **Nivel 3 (Componentes):** Está documentado en [components.md](components.md) y refleja los componentes implementados de `productos` e `inventario`.
 - **Frontend cliente:** Implementado en Flutter dentro de [`frontend/`](../../frontend/) consumiendo estrictamente `contracts/openapi/v1.json` (ver [`frontend/README.md`](../../frontend/README.md)). No añade lógica de dominio ni endpoints fuera del contrato.
 - **Persistencia:** el mismo proceso accede al volumen SQLite en el perfil durable y a los adaptadores en memoria en desarrollo.
-- **Notificaciones y módulos restantes:** `alertas`, `usuarios` y `proveedores` están definidos como extensiones futuras.
+- **Notificaciones y módulos restantes:** `alertas` y `proveedores` siguen pendientes. `usuarios` implementa las credenciales individuales y los roles.
 
 ### Delimitación de Fronteras de Almacenamiento (C4 Nivel 2)
 

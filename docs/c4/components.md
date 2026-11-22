@@ -13,7 +13,7 @@ flowchart TB
             Crear["CrearProducto"]
             Consultar["ConsultarProducto"]
             Eliminar["EliminarProducto"]
-            ProductoRepo["ProductoRepository\nInMemoryProductoRepository"]
+            ProductoRepo["ProductoRepository · memoria / ProductosSQLite"]
             Historial["HistorialMovimientosAdapter"]
         end
 
@@ -21,33 +21,38 @@ flowchart TB
             InvRouter["inventario.infrastructure.router\ncrear_router"]
             Registrar["RegistrarMovimientoInventario"]
             ConsultarHistorial["ConsultarHistorialMovimientos"]
-            StockRepo["StockRepository\nInMemoryStockRepository"]
-            MovimientoRepo["MovimientoRepository\nInMemoryMovimientoRepository"]
+            StockRepo["StockRepository · memoria / StockSQLite"]
+            MovimientoRepo["MovimientoRepository · memoria / MovimientosSQLite"]
             Validador["ValidadorDeProductoAdapter"]
             Lock["asyncio.Lock por producto_id"]
         end
 
         Root["app/main.py\nComposition root"]
-    end
 
-    Acceso["Política HTTP · credencial individual y rol"]
-    Tx["Transacción SQLite por petición"]
-    Usuarios["Identidades y digest de credencial"]
-    Auditoria["Evento durable con actor"]
-    Broker["Broker y consumidor de demostración"]
+        Acceso["Política HTTP · credencial individual y rol"]
+        Tx["Transacción SQLite por petición · turno y conexión para el escritor"]
+        Usuarios["Identidades y digest de credencial"]
+        Auditoria["Evento durable con actor"]
+        Broker["Broker y consumidor de demostración"]
+    end
     Client --> Acceso
-    Acceso --> Usuarios
-    Acceso --> Tx
+    Acceso -->|Perfil memoria| ProdRouter
+    Acceso -->|Perfil memoria| InvRouter
+    Acceso -->|Perfil durable| Tx
+    Tx --> Usuarios
     Tx --> ProdRouter
     Tx --> InvRouter
-    InvRouter --> Auditoria
+    InvRouter -->|Perfil durable| Auditoria
     InvRouter --> Broker
+    ProdRouter --> Consultar
+    Consultar --> ProductoRepo
     ProdRouter --> Crear
     ProdRouter --> Eliminar
     Crear --> ProductoRepo
     Eliminar --> ProductoRepo
     Eliminar --> Historial
     Historial --> ConsultarHistorial
+    ConsultarHistorial --> MovimientoRepo
     InvRouter --> Registrar
     InvRouter --> StockRepo
     Registrar --> Validador
@@ -68,11 +73,11 @@ flowchart TB
 |---|---|
 | Router de productos | `app/productos/infrastructure/router.py` |
 | Casos de uso de productos | `CrearProducto`, `ConsultarProducto`, `EliminarProducto` |
-| Repositorio de productos | `InMemoryProductoRepository` |
+| Repositorio de productos | `InMemoryProductoRepository` o `ProductosSQLite` |
 | Router de inventario | `app/inventario/infrastructure/router.py` |
 | Registro de movimientos | `RegistrarMovimientoInventario` |
 | Consulta de historial | `ConsultarHistorialMovimientos` |
-| Repositorios de inventario | `InMemoryStockRepository`, `InMemoryMovimientoRepository` |
+| Repositorios de inventario | En memoria o adaptadores `StockSQLite` y `MovimientosSQLite` |
 | Integración entre contextos | `HistorialMovimientosAdapter`, `ValidadorDeProductoAdapter` |
 | Contrato de API | Interfaz REST formalizada en `docs/api/inventrack-contrato.md` y `contracts/openapi/v1.json` |
 | Cliente Flutter | [`frontend/`](../../frontend/) (`ApiService`, providers y pantallas Material 3 sobre OpenAPI v1) |

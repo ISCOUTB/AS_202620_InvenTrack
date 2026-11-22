@@ -7,10 +7,35 @@ from contextlib import closing
 from pathlib import Path
 
 import pytest
+from httpx import ASGITransport, AsyncClient
 
 from app.shared.infrastructure.respaldo import copiar
 from app.shared.infrastructure.sqlite import inicializar
 from app.usuarios.infrastructure.credenciales import emitir
+
+
+@pytest.mark.asyncio
+async def test_escritor_ocupado_permite_lectura_y_libera_turno(tmp_path, monkeypatch):
+    from app import main
+    from app.shared.infrastructure import sqlite
+
+    ruta = tmp_path / "contencion.sqlite3"
+    inicializar(ruta)
+    with closing(sqlite3.connect(ruta)) as db, db:
+        token = emitir(db, "ensayo", "admin")
+    monkeypatch.setattr(main, "_db_path", str(ruta))
+    monkeypatch.setenv("INVENTRACK_ALLOW_BUSINESS_DATA", "true")
+    monkeypatch.setattr(sqlite, "_ESPERA_SEGUNDOS", 0.2)
+    async with AsyncClient(transport=ASGITransport(app=main.app), base_url="http://test",
+                           headers={"Authorization": f"Bearer {token}"}) as cliente:
+        # Un SKU inválido evita modificar el catálogo del proceso de prueba.
+        ruta_salida = "/inventario/sku-ausente-contencion/salidas"
+        async with sqlite.transaccion(ruta, escritura=True):
+            assert (await cliente.get("/productos")).status_code == 200
+            ocupada = await cliente.post(ruta_salida, json={"cantidad": 1})
+            assert ocupada.status_code == 503
+            assert ocupada.headers["retry-after"] == "1"
+        assert (await cliente.post(ruta_salida, json={"cantidad": 1})).status_code == 404
 
 
 def test_respaldo_restringe_rutas_y_preserva_destino(tmp_path, monkeypatch):

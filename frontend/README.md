@@ -82,10 +82,9 @@ flutter test
 | **Inventario** → Registrar entrada | `POST /inventario/{producto_id}/entradas` | `200 OK`, `400`, `404`, `409`, `422`, `503` | Valida `cantidad > 0` y envía `X-Correlation-ID` y `X-Idempotency-Key` técnicos sin PII (**ADR-0017**). |
 | **Inventario** → Registrar salida | `POST /inventario/{producto_id}/salidas` | `200 OK`, `400`, `404`, `409`, `422`, `503` | Maneja `409 Conflict` ante stock insuficiente o conflicto de idempotencia y `503` ante timeout de lock. |
 
-### Límites conocidos del MVP en el cliente
+### Catálogo y acceso
 
-- El contrato `contracts/openapi/v1.json` no expone `GET /productos`; por ello la pestaña **Productos** conserva en memoria los productos creados durante la sesión actual, mientras que en **Inventario** puede consultarse u operarse cualquier `producto_id` existente en el backend.
-- El módulo `usuarios` no está implementado en el MVP, por lo que el cliente opera sin autenticación.
+La pestaña Productos sincroniza el catálogo mediante `GET /productos`. Para el perfil durable se activa `--dart-define=INVENTRACK_AUTH=true` y se introduce la credencial en la pantalla inicial. El cliente admite credenciales por HTTPS o por HTTP en loopback. Los permisos los valida la API.
 
 ---
 

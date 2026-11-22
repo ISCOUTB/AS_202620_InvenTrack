@@ -35,7 +35,7 @@ productos, proveedores, entradas y salidas de mercancía, con control de
 usuarios y trazabilidad completa de cada movimiento, además de alertas
 automáticas cuando el stock de un producto baja de un umbral crítico.
 
-Alcance del MVP de esta entrega:
+Alcance propuesto al inicio del semestre. La [comparación de alcance en S16](../preparacion-s16.md) detalla los flujos entregados. Proveedores y alertas de stock siguen pendientes.
 
 - Gestión de productos
 - Gestión de proveedores
@@ -158,28 +158,26 @@ y cómo se conecta con él? El diagrama vive en
 texto lo mismo que muestra ese diagrama, para quien prefiera leer antes de
 ver la imagen.
 
-InvenTrack tiene dos actores humanos que interactúan directamente con el
-sistema, y un canal externo de notificación:
+El dueño y los empleados trabajan sobre el catálogo y las existencias. El operador del servicio administra las credenciales y los respaldos del perfil durable.
 
 | Actor / sistema externo | Tipo | Interacción con InvenTrack |
 |---|---|---|
-| Dueño de la PYME | Persona | Consulta inventario, reportes e historial de movimientos; gestiona usuarios y proveedores. |
+| Dueño de la PYME | Persona | Gestiona el catálogo, consulta existencias y registra movimientos. |
 | Empleado / vendedor | Persona | Registra entradas y salidas de mercancía; consulta stock actual. |
-| Servicio de notificaciones (correo electrónico) | Sistema externo | Recibe la solicitud de alerta cuando un producto baja del umbral crítico y la entrega al destinatario. |
-| Proveedor | No interactúa con el sistema | Sus datos (catálogo, órdenes) son ingresados manualmente por el dueño o el empleado; no hay integración directa en el MVP. |
+| Operaciones | Persona | Emite y revoca credenciales, gestiona el volumen y restaura copias. |
+| Servicio de notificaciones | Integración prevista | Envío futuro de alertas de stock. |
+| Proveedor | Interesado indirecto | La gestión de proveedores sigue pendiente. |
 
 ## Technical Context
 
 La implementación actual usa FastAPI y Uvicorn dentro de un contenedor Docker.
 La API se publica mediante Render y Dokploy institucional, decisiones
-documentadas en los ADR-0005 y ADR-0006. Los canales técnicos vigentes son
-los siguientes; la disponibilidad de conectividad en las PYMEs piloto sigue
-siendo una hipótesis pendiente de validar bajo C7:
+documentadas en los ADR-0005 y ADR-0006. El cliente Flutter usa el primer canal de la tabla. El segundo corresponde al objetivo de alertas. La conectividad en PYMEs piloto sigue pendiente de validar bajo C7.
 
 | Canal | Protocolo/formato | Entre |
 |---|---|---|
 | Interfaz de usuario | HTTP/HTTPS · JSON (Flutter) | Aplicación cliente Flutter (`frontend/`) ↔ API InvenTrack |
-| Envío de alertas | SMTP / API de correo | InvenTrack → Servicio de notificaciones (correo electrónico) |
+| Envío de alertas previsto | SMTP / API de correo | InvenTrack → Servicio de notificaciones (correo electrónico) |
 
 # Solution Strategy
 
@@ -267,7 +265,7 @@ flowchart TB
 | ------------- | -------------------------------------------------------------------------------------------------------------------------- |
 | `productos`   | Gestionar la información del catálogo de productos.                                                                        |
 | `proveedores` | Gestionar la información de proveedores asociados al negocio.                                                              |
-| `inventario`  | Coordinar consultas de stock y, posteriormente, los movimientos de inventario y la estrategia de consistencia.             |
+| `inventario`  | Registrar entradas y salidas, consultar stock y preservar el historial de movimientos.             |
 | `usuarios`    | Gestionar usuarios, roles y acceso al sistema.                                                                             |
 | `alertas`     | Gestionar las alertas relacionadas con condiciones como stock bajo.                                                        |
 | `shared`      | Contener elementos realmente compartidos entre módulos, evitando convertirlo en un módulo de dependencias indiscriminadas. |
@@ -303,7 +301,7 @@ No debe depender de:
 
 Contiene los casos de uso y coordina el flujo entre el dominio y los puertos necesarios.
 
-En el incremento actual, el caso de uso mínimo es la consulta de información de un producto.
+El catálogo implementa alta, listado y eliminación o desactivación según el historial del producto.
 
 ### Infrastructure
 
@@ -362,42 +360,25 @@ Este corte no pretende implementar todavía toda la gestión de productos. Su ob
 
 # Runtime View
 
-En el perfil durable el middleware abre una transacción, resuelve la credencial individual y verifica el rol antes de ejecutar el caso de uso. El registro de movimiento guarda saldo, historial, evento y resultado idempotente. Tras una respuesta exitosa se confirma la transacción. Si el registro del evento falla, todo el comando se revierte. [Prueba con un fallo de auditoría inducido](../../tests/test_perfil_durable.py).
+En el perfil durable las escrituras esperan turno y usan una transacción por petición en la conexión escritora de la instancia. Las lecturas abren conexiones independientes. [ADR-0021](../adr/0021-serializar-escrituras-sqlite.md). El middleware abre la transacción, resuelve la credencial individual y verifica el rol antes de ejecutar el caso de uso. El registro de movimiento guarda saldo, historial, evento y resultado idempotente. Tras una respuesta exitosa se confirma la transacción. Si el registro del evento falla, todo el comando se revierte. [Prueba con un fallo de auditoría inducido](../../tests/test_perfil_durable.py).
 
-## Consulta de producto
-
-El primer escenario de ejecución implementado corresponde a una consulta mínima de productos.
+## Consulta del catálogo
 
 ```mermaid
 sequenceDiagram
-
-    actor U as Usuario
-    participant API as Infrastructure/API
-    participant APP as Application
-    participant DOM as Domain
-
-    U->>API: GET /productos/{id}
-
-    API->>APP: Consultar productos
-
-    APP->>DOM: Ejecutar caso de uso
-
-    DOM-->>APP: Producto
-
-    APP-->>API: Producto
-
-    API-->>U: HTTP Response
+    actor U as Usuario Flutter
+    participant API as Router de productos
+    participant APP as ConsultarProducto
+    participant Repo as Repositorio de catálogo
+    U->>API: GET /productos
+    API->>APP: listar()
+    APP->>Repo: listar()
+    Repo-->>APP: Productos
+    APP-->>API: Lista
+    API-->>U: 200 con id, nombre y activo
 ```
-### Secuencia
 
-1. El usuario realiza una solicitud HTTP para consultar un producto.
-2. El adaptador HTTP recibe la solicitud.
-3. El adaptador delega la operación al caso de uso de la capa `application`.
-4. El caso de uso utiliza el modelo o servicio correspondiente del dominio.
-5. Se obtiene información del producto.
-6. La infraestructura transforma el resultado en una respuesta HTTP.
-
-Este escenario demuestra el flujo de dependencias definido en el ADR-0001 sin incorporar todavía lógica relacionada con movimientos concurrentes.
+En SQLite el middleware autentica al usuario antes de que la petición alcance el router. [Router del catálogo](../../app/productos/infrastructure/router.py).
 
 ## Movimiento concurrente de inventario
 
@@ -431,11 +412,11 @@ flowchart TD
     subgraph DEPLOY["4. Destinos operativos"]
       DOKPLOY["Dokploy Compose Service<br/>(iscoutb.dev)"]
       RENDER["Render Web Service<br/>(onrender.com)"]
-      MEM["5. In-Memory Store<br/>(Repositorio en memoria RAM - 512MB)"]
+      VOL["5. Volumen SQLite de Dokploy"]
     end
 
     subgraph EXTERNAL["Servicios Externos"]
-        NOTIF["6. Servicio Notificaciones<br/>(SMTP / Provider Email API)"]
+        NOTIF["6. Notificaciones por correo (objetivo futuro)"]
     end
 
     USER -->|"HTTPS / REST"| DOKPLOY
@@ -443,10 +424,8 @@ flowchart TD
     GH -->|"Trigger de Tests & Pipeline"| SONAR
     GH -->|"Auto-Deploy via Dokploy"| DOKPLOY
     GH -->|"Auto-Deploy via Render"| RENDER
-    DOKPLOY --- MEM
-    RENDER --- MEM
-    DOKPLOY -->|"SMTP / HTTP"| NOTIF
-    RENDER -->|"SMTP / HTTP"| NOTIF
+    DOKPLOY --- VOL
+    DOKPLOY -. integración futura .-> NOTIF
 ```
 
 La aplicación se inicia localmente mediante:
@@ -476,8 +455,8 @@ en `render.yaml`. La evidencia de operación de ambos destinos se mantiene en
 | 2 | **GitHub CI/CD** | GitHub Actions Workflow | Ejecuta las pruebas automatizadas (`pytest`) y orquesta el flujo de integración. |
 | 3 | **SonarCloud** | Scanner SAST SaaS | Evalúa la calidad del código, cobertura y vulnerabilidades antes del despliegue. |
 | 4 | **Destinos operativos** | Dokploy `iscoutb.dev` y Render `onrender.com` | Ejecutan la misma API FastAPI/Uvicorn mediante `deploy/compose.lab.yaml` y `render.yaml`, respectivamente. |
-| 5 | **In-Memory Store** | Volatile RAM Store (512 MB) | Contiene las colecciones y el diccionario de cerrojos (`asyncio.Lock`) en la memoria del contenedor. |
-| 6 | **Servicio Notificaciones** | Provider SMTP / API Externa | Encargado del envío de alertas por stock bajo fuera del proceso de la API. |
+| 5 | **Volumen de Dokploy** | SQLite | Conserva catálogo, stock, credenciales y auditoría entre reinicios del proceso. |
+| 6 | **Notificaciones previstas** | SMTP | Integración futura para alertas por stock bajo. |
 
 ---
 
@@ -491,7 +470,7 @@ flowchart LR
     subgraph DEPLOYMENT_NODES["Dokploy y Render Container Nodes"]
         UVI["Uvicorn ASGI Server"]
         FAST["FastAPI Main App"]
-        MIDDLEWARE["Metrics & Latency Middleware<br/>(Cálculo p95 / Ventana 100 req)"]
+        MIDDLEWARE["Metrics & Latency Middleware<br/>(Cálculo p95 / Ventana 1000 req por método y ruta)"]
         MODS["Módulos Hexagonales<br/>(productos, inventario, etc.)"]
         MUTEX["Mutex Manager<br/>(asyncio.Lock per SKU)"]
 
@@ -510,9 +489,7 @@ Comunicación distribuida.
 A cambio, la aplicación comparte el mismo ciclo de despliegue y recuperación.
 
 La aplicación emite logs JSON a stdout y expone la métrica Prometheus
-`GET /metrics`. El servicio actual usa repositorios en memoria, por lo que la
-métrica es operativa para una instancia y no sustituye una solución persistente
-cuando se habilite escalamiento horizontal.
+`GET /metrics`. Las métricas se conservan en la memoria del proceso con independencia del perfil de almacenamiento del inventario.
 
 ## 7.3 Estimación Financiera y Punto de Quiebre
 
@@ -910,7 +887,7 @@ como corregidas, asumidas o pendientes sin evidencia.
 
 La prueba del perfil durable cubre autorización, actor y restauración en un proceso nuevo. Continúan como riesgos la pérdida del volumen sin copia externa, la cola de notificaciones volátil, la rotación manual de secretos y la contención del escritor SQLite. El responsable de despliegue debe verificar TLS, retención y restauración fuera del host. El responsable de backend debe evaluar otro motor antes de habilitar varias réplicas. [Evidencia y límites](../verificacion-final.md).
 
-### Deudas y riesgos del perfil inicial
+### Deudas y riesgos del perfil inicial (registro histórico de S15)
 
 | Deuda o riesgo | Estado actual |
 |---|---|
@@ -926,7 +903,7 @@ La prueba del perfil durable cubre autorización, actor y restauración en un pr
   - *Riesgo:* Ante reinicios del contenedor o despliegue en múltiples réplicas horizontales, el estado del inventario no es persistente ni compartido.
   - *Mitigación:* La prueba vigente ejecuta 20 peticiones concurrentes sobre salidas reales, comprueba el stock final y exige $p95 \le 400\text{ ms}$ en una instancia. La evolución prioritaria post-MVP es evaluar una base relacional compartida mediante los puertos existentes, incluyendo migración, respaldos y restauración.
 - **Inmutabilidad de ADRs Previos:** Los ADRs 0002, 0004 y 0005 sufrieron ediciones posteriores en iteraciones anteriores. Esto se zanja formalmente mediante el **ADR-0009**, decretando la inmutabilidad estricta de cualquier ADR aceptado a partir de la fecha.
-- **Límites del Frontend MVP (`frontend/`):** El cliente Flutter implementa exclusivamente los endpoints declarados en `contracts/openapi/v1.json` (`GET /health`, `POST /productos`, `DELETE /productos/{producto_id}`, `GET /inventario/{producto_id}`, `POST /inventario/{producto_id}/entradas|salidas`). Como `GET /productos` no forma parte de OpenAPI v1, la pestaña de productos mantiene la lista de la sesión en memoria; las plataformas objetivo son Android e iOS y los entornos de producción mantienen `503` en rutas de negocio mientras no exista autenticación (`usuarios`).
+- **Límites del Frontend MVP (`frontend/`):** El cliente Flutter implementa exclusivamente los endpoints declarados en `contracts/openapi/v1.json` (`GET /health`, `POST /productos`, `DELETE /productos/{producto_id}`, `GET /inventario/{producto_id}`, `POST /inventario/{producto_id}/entradas|salidas`). El catálogo se sincroniza mediante `GET /productos`. La demostración usa memoria y el perfil SQLite exige una credencial. Los despliegues con negocio cerrado responden `503`.
 
 ## Tabla histórica de modos de fallo y mitigaciones del perfil en memoria
 

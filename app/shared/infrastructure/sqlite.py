@@ -1,12 +1,52 @@
 ﻿"""Una conexión y una transacción por petición. Los adaptadores comparten su contexto."""
-import asyncio
 import sqlite3
-from contextlib import asynccontextmanager
+import time
+from contextlib import asynccontextmanager, closing, contextmanager, nullcontext
 from contextvars import ContextVar
 from pathlib import Path
 
+import anyio
+from anyio.lowlevel import RunVar
+
 conexion = ContextVar("conexion_sqlite")
 actor = ContextVar("actor", default=None)
+_escritor = RunVar("turno_escritor_sqlite")
+_conexion_escritora = RunVar("conexion_escritora_sqlite")
+_ESPERA_SEGUNDOS = 5
+
+
+class EsperaEscrituraAgotada(Exception):
+    pass
+
+
+@asynccontextmanager
+async def _turno_escritura():
+    # Una cola por bucle de eventos. SQLite sigue arbitrando entre procesos.
+    turno = _escritor.get(None)
+    if turno is None:
+        turno = anyio.Lock()
+        _escritor.set(turno)
+    try:
+        with anyio.fail_after(_ESPERA_SEGUNDOS):
+            await turno.acquire()
+    except TimeoutError as exc:
+        raise EsperaEscrituraAgotada from exc
+    try:
+        yield
+    finally:
+        turno.release()
+
+
+@contextmanager
+def escritor_del_servicio(ruta):
+    """Conservar el WAL y las sentencias preparadas durante la vida de la API."""
+    with closing(sqlite3.connect(ruta, isolation_level=None, check_same_thread=False)) as db:
+        db.execute("PRAGMA foreign_keys=ON")
+        token = _conexion_escritora.set((ruta, db))
+        try:
+            yield
+        finally:
+            _conexion_escritora.reset(token)
 
 ESQUEMA = """
 CREATE TABLE IF NOT EXISTS usuarios (
@@ -47,14 +87,26 @@ def inicializar(ruta):
 
 @asynccontextmanager
 async def transaccion(ruta, escritura):
-    db = sqlite3.connect(ruta, isolation_level=None, check_same_thread=False)
-    contexto = conexion.set(db)
-    identidad = actor.set(None)
-    try:
-        db.execute("PRAGMA foreign_keys=ON")
-        await asyncio.to_thread(db.execute, "BEGIN IMMEDIATE" if escritura else "BEGIN")
-        yield db
-    finally:
-        actor.reset(identidad)
-        conexion.reset(contexto)
-        db.close()  # Revierte cualquier operación sin commit.
+    limite = time.monotonic() + _ESPERA_SEGUNDOS
+    turno = _turno_escritura() if escritura else nullcontext()
+    async with turno:
+        espera = max(0, limite - time.monotonic())
+        compartida = _conexion_escritora.get(None) if escritura else None
+        if compartida and compartida[0] == ruta:
+            recurso = nullcontext(compartida[1])
+        else:
+            recurso = closing(sqlite3.connect(ruta, isolation_level=None, check_same_thread=False))
+        with recurso as db:
+            contexto = conexion.set(db)
+            identidad = actor.set(None)
+            try:
+                db.execute("PRAGMA foreign_keys=ON")
+                db.execute(f"PRAGMA busy_timeout={int(espera * 1000)}")
+                await anyio.to_thread.run_sync(db.execute, "BEGIN IMMEDIATE" if escritura else "BEGIN")
+                yield db
+            finally:
+                try:
+                    db.rollback()
+                finally:
+                    actor.reset(identidad)
+                    conexion.reset(contexto)
