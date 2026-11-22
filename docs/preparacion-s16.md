@@ -40,7 +40,7 @@ S10 se evaluó en `539840be57f8a0b719bb33e19d05031489a25b86`. Hasta la revisión
 
 | Compromiso o necesidad | Entrega comprobable | Límite |
 |---|---|---|
-| Catálogo, entradas, salidas e integridad | API y cliente Flutter. El historial impide el borrado físico. [Contrato](api/inventrack-contrato.md) | La instancia pública tiene el negocio cerrado. |
+| Catálogo, entradas, salidas e integridad | API y cliente Flutter. El historial impide el borrado físico. [Contrato](api/inventrack-contrato.md) | El equipo comprobó el alta, la entrada y las dos solicitudes de salida desde Flutter contra Dokploy. [Prueba manual](#verificación-pública-y-colaboración). |
 | Concurrencia por SKU y p95 ≤ 400 ms | Misma ráfaga en S10, S16 en memoria y S16 durable. [Muestras del candidato](retos/comparacion-s16-final.json) | Una instancia, proceso caliente y ASGI local. |
 | Historial, idempotencia e identidad | SQLite conserva movimiento, saldo, evento con actor y resultado del reintento. [Restauración verificada](../tests/test_perfil_durable.py) | Gestión de usuarios por CLI. Broker y DLQ en memoria. Falta probar el RTO y la recuperación fuera del host institucional. |
 | Gestión de proveedores y alertas automáticas | Siguen como objetivos del diseño inicial. [Ficha del problema](ficha_problema.md) | Pendientes el flujo de proveedores y la entrega de alertas por correo. La predicción de demanda quedó fuera del MVP. |
@@ -68,6 +68,10 @@ En S16 se repitió ese ensayo sobre Uvicorn en loopback, con la conexión escrit
 
 El 22/11/2026 a las 04:29 UTC−5 se consultó Dokploy sin credenciales. `GET /health` devolvió 200 y el identificador InvenTrack (1,641 s). `GET /inventario/S16-CONSULTA` devolvió 503 con el mensaje de negocio deshabilitado (0,339 s). `GET /s16-ruta-inexistente` devolvió 404 (0,314 s). La sonda solo acredita ese instante. [Salud](https://inventrack.iscoutb.dev/health) · [Compose](../deploy/compose.lab.yaml).
 
+Tras la activación comunicada por el equipo, se repitieron las lecturas públicas en Dokploy. `GET /health` devolvió **200**. Tanto `GET /productos` como `GET /inventario/S16-CONSULTA` devolvieron **401** con el detalle `Credencial individual requerida`. El cambio de 503 a 401 confirma que las rutas de negocio ya alcanzan la autenticación.
+
+**Prueba manual autenticada** El equipo reportó que creó un producto desde Flutter contra Dokploy y registró una entrada. La primera salida se aplicó y el saldo mostrado coincidió con el esperado. En la segunda se solicitó una cantidad superior a las existencias disponibles y la operación fue rechazada.
+
 El historial de la revisión publicada contiene los siguientes aportes por mes de autoría, agrupados por persona, incluidos merges. Se usaron `git shortlog -sne 522af50`, `git log --format="%as %an" 522af50`, correos coincidentes y referencias del curso. Dos commits de José fechados en febrero de 2025 quedan fuera de la tabla. Los ejemplos identifican responsabilidades ejercidas. [Listado oficial](https://github.com/ISCOUTB/AS_202620_feedback/blob/master/EQUIPOS.md) · [Planilla de correspondencias](https://github.com/ISCOUTB/AS_202620_feedback/blob/master/revisiones/2026-2/AS_202620_InvenTrack/planilla.md).
 
 | Integrante y firmas | Ago | Sep | Oct | Nov | Aportes comprobables |
@@ -79,42 +83,6 @@ El historial de la revisión publicada contiene los siguientes aportes por mes d
 
 La API pública devolvió ocho PR, siete de Dependabot y el PR 15 del equipo. La consulta de comentarios de revisión en línea devolvió cero. El PR 15 tampoco tenía revisiones ni comentarios de conversación. Una revisión técnica real puede documentarse en el PR de integración antes del cierre. [PR del equipo](https://github.com/ISCOUTB/AS_202620_InvenTrack/pull/15) · [Comentarios de revisión](https://api.github.com/repos/ISCOUTB/AS_202620_InvenTrack/pulls/comments).
 
-## Matriz preliminar de la ficha S16
-
-| Criterio | Estado al preparar la entrega | Evidencia u observación |
-|---|---|---|
-| Estado final anterior al cierre | No verificado | Se conoce rama, hora de cierre y candidato publicado. Falta resolver el hash después de las 23:55. |
-| Sistema desplegado y estable | No verificado | Salud 200 a las 04:29. Una sola sonda y el negocio cerrado limitan la comprobación. |
-| Flujos principales con datos realistas en despliegue | No cumple | Inventario institucional devolvió 503. El ensayo local de arroz sí confirmó catálogo, carga, ventas y saldo. |
-| Caminos de error | Cumple | 404 público. En local se verifican 401, 403, 409, 422 y espera agotada 503 con reintento. [Pruebas](../tests/inventario/) · [Perfil durable](../tests/test_perfil_durable.py). |
-| Desafío propuesto para S16 | En revisión | El ensayo local de conciliación identificó cuatro diferencias con totales iguales. Queda pendiente la revisión del equipo. [Prueba de cierre de turno](../tests/inventario/test_conciliacion_turno.py). |
-| Alcance comprometido y recortes declarados | Cumple | Comparación S10, evidencia y límites en la tabla de alcance de este documento. |
-| Evolución de decisiones | Cumple | [ADR en orden](adr/). 0001–0004 módulos y contrato, 0005–0009 despliegue y observabilidad, 0010–0017 integración y almacenamiento, 0018–0021 acceso y persistencia. |
-| Decisión reemplazada o confirmada | Cumple | [ADR-0020](adr/0020-persistir-inventario-y-auditoria-en-sqlite.md) sucede a 0012/0014/0015 en SQLite. [ADR-0021](adr/0021-serializar-escrituras-sqlite.md) cuantifica el costo del escritor. |
-| Atributos medidos con umbral | Cumple | Tres p95 de escrituras y tres de lecturas. ESC-03 conserva pendiente el RTO operativo. [Escenarios](verificacion-final.md). |
-| Fallos y seguridad | Cumple | Rollback de auditoría, rotación, roles, timeout y restauración en la [suite](../tests/test_perfil_durable.py). El último [CI publicado](https://github.com/ISCOUTB/AS_202620_InvenTrack/actions/runs/45007321733) corresponde al código anterior al ajuste. |
-| arc42 completo con glosario | Cumple | [§1 a §12](arc42/arc42-template-EN.md), incluidos alcance, ejecución, riesgos y glosario específicos del proyecto. |
-| C4 niveles 1–3 | Cumple | [Actores](c4/context.md), [contenedores](c4/containers.md), [componentes](c4/components.md). |
-| Aspectos recorridos | Cumple | 5/5 en [la tabla](aspectos.md). ASP-01 enlaza validación de stock y recuperación. ASP-02 enlaza el escritor, el ensayo y sus muestras. ASP-03 lleva a métricas y p95. ASP-04 llega a eventos y deduplicación. ASP-05 llega a credenciales y pruebas 401/403. |
-| Validación automática de documentación | Cumple | El [workflow](../.github/workflows/test.yml) ejecuta [el verificador](../scripts/verificar_trazabilidad.py) de destinos locales, anclas y eslabones de cada aspecto. Pendiente su primera ejecución remota. |
-| Aportes del equipo | No verificado | Cuatro firmas con aportes de código y documentación. La planilla mantiene provisional la atribución de Javier. |
-| Revisión cruzada con comentarios de fondo | No cumple | PR 15 sin revisiones ni comentarios al consultar GitHub. |
-| Demostración y sustentación | No verificado | Pendiente de la sesión ante el jurado. |
-
-## Matriz preliminar del contrato
-
-| Criterio | Estado | Evidencia u observación |
-|---|---|---|
-| Organización, nombre y visibilidad | Cumple | La [API pública de GitHub](https://api.github.com/repos/ISCOUTB/AS_202620_InvenTrack) devolvió el nombre esperado, `private=false` y rama `main`. |
-| Estructura mínima | Cumple | [README](../README.md), [arc42](arc42/), [ADR](adr/), [C4](c4/), [aspectos](aspectos.md) y [registro IA](ia.md). |
-| Estado calificado identificable | No verificado | Resolución al cierre mediante el comando de la cabecera. |
-| Nombres de ADR | Cumple | La numeración 0001–0021 en [el directorio](adr/) sigue la convención del contrato. |
-| Inmutabilidad de ADR aceptados | No cumple | [ADR-0009](adr/0009-consolidacion-inmutabilidad-adrs-previos.md) registra reescrituras previas. La evolución de S16 se documenta en un sucesor. |
-| IA al día | Cumple | [Registro del 22 de noviembre](ia.md). |
-| Pipeline, SonarCloud y Quality Gate | No cumple | Para el candidato pendiente de integración falta el run y gate públicos. La revisión previa 522af50 sí los acredita. [Configuración](../sonar-project.properties), [paso 7 del job test](https://github.com/ISCOUTB/AS_202620_InvenTrack/actions/runs/45007321733/job/137161676636), [Quality Gate OK](https://sonarcloud.io/api/qualitygates/project_status?analysisId=7fca55f3-b2aa-4ed8-9494-9d0cd33070fb). Falta el run del candidato local. La [rama](https://api.github.com/repos/ISCOUTB/AS_202620_InvenTrack/branches/main) devolvió `protected=false`; queda pendiente exigir checks exitosos para integrar. |
-| Secretos | Cumple | En 726 blobs de los 321 commits alcanzables desde 522af50, cero firmas de clave privada o prefijos AWS/GitHub/Slack/OpenAI buscados y cero rutas `.env`. El patrón amplio señala referencias a variables y credenciales de prueba. `git log -S'BEGIN PRIVATE KEY'` encuentra el patrón escrito en documentación en `0b35348`. |
-| Contribución por integrante | No verificado | Historial agrupado y atribución provisional en la tabla de colaboración. |
-
 ## Para la demostración pública
 
-El operador de Dokploy debe confirmar el montaje y permisos del volumen `/app/data`, una copia restaurable fuera del host y las credenciales de ensayo. Con esos prerrequisitos puede activar `INVENTRACK_ALLOW_BUSINESS_DATA=true` en una instancia destinada a la demostración. El CLI del [README](../README.md) emite identidades individuales. La credencial de negocio se envía por HTTPS como Bearer y es distinta del secreto operativo de métricas. El jurado puede verificar el SKU desde Flutter o desde la API. Quedan a cargo del equipo la integración antes del cierre, el enlace al nuevo gate, la entrega en Moodle y la sustentación.
+El equipo activó `INVENTRACK_ALLOW_BUSINESS_DATA=true` en Dokploy. Para la comprobación autenticada se requiere una credencial de ensayo contra el volumen de esa instancia. La restauración de una copia fuera del host conserva su propia verificación pendiente. El CLI del [README](../README.md) emite identidades individuales. La credencial de negocio se envía por HTTPS como Bearer y es distinta del secreto operativo de métricas. El jurado puede verificar el SKU desde Flutter o desde la API. Quedan a cargo del equipo la integración antes del cierre, el enlace al nuevo gate, la entrega en Moodle y la sustentación.

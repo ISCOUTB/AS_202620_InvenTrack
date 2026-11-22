@@ -58,7 +58,7 @@ Para el cliente autenticado, desde `frontend/` ejecutar `flutter run --dart-defi
 * **URL Pública:** `https://inventrack.iscoutb.dev`
 * **Health Check:** `https://inventrack.iscoutb.dev/health` (verificado `200 OK`: `{"status":"ok","service":"InvenTrack"}`)
 * **Métricas y Swagger:** restringidos en producción; devuelven `404` sin el token interno configurado por plataforma ([ADR-0018](docs/adr/0018-restringir-superficies-internas-en-produccion.md)).
-* **Estado documentado:** Servicio activo y verificado en producción el 22 de noviembre de 2026. Rutas de negocio (`/productos`, `/inventario`) deshabilitadas de forma preventiva con `503` mientras `INVENTRACK_ALLOW_BUSINESS_DATA=false`.
+* **Estado documentado:** Dokploy respondió 200 en `/health` y 401 al consultar catálogo y stock sin credencial. En la prueba manual autenticada, el equipo creó un producto, registró una entrada y comprobó el saldo tras una salida. Una segunda salida que excedía las existencias fue rechazada. [Verificación de S16](docs/preparacion-s16.md#verificación-pública-y-colaboración).
 
 ---
 
@@ -287,8 +287,7 @@ con el despliegue existente en Render.
 3. En **Project Environment**, configura `INVENTRACK_INTERNAL_TOKEN` con un valor
     aleatorio y secreto. En las variables del servicio `api`, referencia ese valor
     con `INVENTRACK_INTERNAL_TOKEN=${{project.INVENTRACK_INTERNAL_TOKEN}}`.
-    Mantén `INVENTRACK_ENV=production` e
-    `INVENTRACK_ALLOW_BUSINESS_DATA=false`.
+    Mantén `INVENTRACK_ENV=production`. El valor predeterminado de `INVENTRACK_ALLOW_BUSINESS_DATA` es `false`. La instancia institucional de ensayo utiliza `true` para habilitar el acceso con credenciales individuales.
 4. En **Domains**, agrega `inventrack.iscoutb.dev` para el servicio `api`, ruta `/`,
     HTTPS activado y puerto del contenedor `10000`.
 5. Pulsa **Deploy**. Con el autodespliegue activo, los siguientes pushes a `main`
