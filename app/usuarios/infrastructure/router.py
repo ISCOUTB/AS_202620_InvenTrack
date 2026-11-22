@@ -6,6 +6,7 @@ from pydantic import BaseModel, StringConstraints
 from app.shared.infrastructure.sqlite import actor, conexion
 from app.usuarios.infrastructure.credenciales import emitir
 
+Usuario_Inexistente = HTTPException(404, "Usuario inexistente")
 
 class Permisos(BaseModel):
     rol: Literal["admin", "operador", "lector"]
@@ -51,7 +52,7 @@ def rotar(id: str, response: Response) -> Credencial:
     db = conexion.get()
     usuario = db.execute("SELECT rol FROM usuarios WHERE id=?", (id,)).fetchone()
     if usuario is None:
-        raise HTTPException(404, "Usuario inexistente")
+        raise Usuario_Inexistente
     if id == actor.get():
         raise HTTPException(409, "Usa otra cuenta administradora para rotar tu credencial")
     response.headers["Cache-Control"] = "no-store"
@@ -63,7 +64,7 @@ def cambiar_rol(id: str, datos: Permisos) -> dict[str, str]:
     if id == actor.get() and datos.rol != "admin":
         raise HTTPException(409, "Usa otra cuenta administradora para cambiar tu rol")
     if not conexion.get().execute("UPDATE usuarios SET rol=? WHERE id=?", (datos.rol, id)).rowcount:
-        raise HTTPException(404, "Usuario inexistente")
+        raise Usuario_Inexistente
     return {"id": id, "rol": datos.rol}
 
 
@@ -72,5 +73,5 @@ def revocar(id: str) -> Response:
     if id == actor.get():
         raise HTTPException(409, "Usa otra cuenta administradora para revocar tu credencial")
     if not conexion.get().execute("DELETE FROM usuarios WHERE id=?", (id,)).rowcount:
-        raise HTTPException(404, "Usuario inexistente")
+        raise Usuario_Inexistente
     return Response(status_code=204)

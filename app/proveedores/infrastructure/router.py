@@ -16,6 +16,17 @@ class Proveedor(DatosProveedor):
     id: str
 
 
+def _actualizar_proveedor(proveedor: Proveedor, durable: bool, memoria: dict[str, Proveedor]) -> bool:
+    if durable:
+        resultado = conexion.get().execute("UPDATE proveedores SET nombre=?,contacto=? WHERE id=?",
+                                           (proveedor.nombre, proveedor.contacto, proveedor.id))
+        return resultado.rowcount > 0
+    if proveedor.id not in memoria:
+        return False
+    memoria[proveedor.id] = proveedor
+    return True
+
+
 def crear_router(durable: bool):
     router = APIRouter(prefix="/proveedores")
     memoria: dict[str, Proveedor] = {}
@@ -37,21 +48,14 @@ def crear_router(durable: bool):
             memoria[proveedor.id] = proveedor
         return proveedor
 
-    @router.put("/{id}")
+    @router.put("/{id}", responses={404: {"description": "Proveedor inexistente"}})
     async def actualizar(id: str, datos: DatosProveedor) -> Proveedor:
         proveedor = Proveedor(id=id, **datos.model_dump())
-        if durable:
-            existe = conexion.get().execute("UPDATE proveedores SET nombre=?,contacto=? WHERE id=?",
-                                            (datos.nombre, datos.contacto, id)).rowcount
-        else:
-            existe = id in memoria
-            if existe:
-                memoria[id] = proveedor
-        if not existe:
+        if not _actualizar_proveedor(proveedor, durable, memoria):
             raise HTTPException(404, "Proveedor inexistente")
         return proveedor
 
-    @router.delete("/{id}", status_code=204)
+    @router.delete("/{id}", status_code=204, responses={404: {"description": "Proveedor inexistente"}})
     async def eliminar(id: str) -> Response:
         if durable:
             existe = conexion.get().execute("DELETE FROM proveedores WHERE id=?", (id,)).rowcount

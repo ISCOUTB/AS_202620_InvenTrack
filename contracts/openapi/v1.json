@@ -545,6 +545,9 @@
           "503": {
             "description": "Service Unavailable"
           },
+          "404": {
+            "description": "Proveedor inexistente"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -591,6 +594,9 @@
           },
           "503": {
             "description": "Service Unavailable"
+          },
+          "404": {
+            "description": "Proveedor inexistente"
           },
           "422": {
             "description": "Validation Error",
@@ -730,15 +736,11 @@
           "503": {
             "description": "Service Unavailable"
           },
+          "404": {
+            "description": "Cierre inexistente"
+          },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "description": "Solicitud inválida o CSV de conteo inválido"
           }
         }
       }

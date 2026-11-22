@@ -35,14 +35,20 @@ def enviar(evento, sku, saldo):
     mensaje["Subject"] = "InvenTrack · stock bajo"
     mensaje["Message-ID"] = f"<{evento}@inventrack>"
     mensaje.set_content(f"El producto {sku} quedó con {saldo} unidades. Umbral de aviso: {UMBRAL_BAJO}.")
-    tls = os.getenv("INVENTRACK_SMTP_STARTTLS", "true").lower() == "true"
+    host = os.environ["INVENTRACK_SMTP_HOST"]
+    tls = os.getenv("INVENTRACK_SMTP_STARTTLS", "true").strip().lower() != "false"
     usuario = os.getenv("INVENTRACK_SMTP_USUARIO")
     if usuario and not tls:
         raise ValueError("La autenticación SMTP requiere STARTTLS")
-    with smtplib.SMTP(os.environ["INVENTRACK_SMTP_HOST"],
+    if not tls and host not in {"127.0.0.1", "::1", "localhost"}:
+        raise ValueError("El servidor SMTP remoto requiere STARTTLS")
+    with smtplib.SMTP(host,
                       int(os.getenv("INVENTRACK_SMTP_PUERTO", "587")), timeout=10) as smtp:
         if tls:
-            smtp.starttls(context=ssl.create_default_context())
+            contexto = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
+            contexto.verify_mode = ssl.CERT_REQUIRED
+            contexto.check_hostname = True
+            smtp.starttls(context=contexto)
         if usuario:
             smtp.login(usuario, os.environ["INVENTRACK_SMTP_CLAVE"])
         smtp.send_message(mensaje)

@@ -34,6 +34,13 @@ class Informe(BaseModel):
     diferencias: list[Diferencia]
 
 
+def _leer_saldos(id: str, durable: bool, memoria) -> dict[str, int] | None:
+    if durable:
+        fila = conexion.get().execute("SELECT saldos FROM cierres WHERE id=?", (id,)).fetchone()
+        return json.loads(fila[0]) if fila else None
+    return memoria[id][1] if id in memoria else None
+
+
 def crear_router(productos, stocks, durable: bool):
     router = APIRouter(prefix="/cierres")
     memoria: dict[str, tuple[Cierre, dict[str, int]]] = {}
@@ -58,13 +65,12 @@ def crear_router(productos, stocks, durable: bool):
             return [Cierre(id=i, fecha=f) for i, f in filas]
         return [c for c, _ in reversed(memoria.values())]
 
-    @router.post("/{id}/conciliar")
+    @router.post("/{id}/conciliar", responses={
+        404: {"description": "Cierre inexistente"},
+        422: {"description": "Solicitud inválida o CSV de conteo inválido"},
+    })
     async def conciliar_cierre(id: str, conteo: Conteo) -> Informe:
-        if durable:
-            fila = conexion.get().execute("SELECT saldos FROM cierres WHERE id=?", (id,)).fetchone()
-            saldos = json.loads(fila[0]) if fila else None
-        else:
-            saldos = memoria[id][1] if id in memoria else None
+        saldos = _leer_saldos(id, durable, memoria)
         if saldos is None:
             raise HTTPException(404, "Cierre inexistente")
         try:

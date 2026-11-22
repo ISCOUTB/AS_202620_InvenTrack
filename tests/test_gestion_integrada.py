@@ -1,11 +1,15 @@
 """Recorrido por la API pública en dos procesos y entrega a SMTP de loopback."""
 import os
 import socketserver
+import ssl
 import sqlite3
 import subprocess
 import sys
 import threading
 import time
+from unittest.mock import MagicMock
+
+import pytest
 from contextlib import closing
 from email import message_from_bytes, policy
 
@@ -51,6 +55,24 @@ def test_reintento_de_correo_conserva_el_evento(tmp_path, monkeypatch):
     assert correo.despachar_uno(ruta)
     assert not correo.despachar_uno(ruta)
     assert envios == [("venta", "CAFE", 5)] * 2
+
+
+def test_smtp_remoto_exige_certificado_y_nombre_del_servidor(monkeypatch):
+    for clave, valor in {"HOST": "smtp.example.test", "DE": "a@example.test",
+                         "PARA": "b@example.test", "USUARIO": "", "STARTTLS": "true",
+                         "PUERTO": "587"}.items():
+        monkeypatch.setenv("INVENTRACK_SMTP_" + clave, valor)
+    transporte = MagicMock()
+    monkeypatch.setattr(correo.smtplib, "SMTP", transporte)
+    correo.enviar("prueba", "CAFE", 5)
+    smtp = transporte.return_value.__enter__.return_value
+    contexto = smtp.starttls.call_args.kwargs["context"]
+    assert contexto.verify_mode == ssl.CERT_REQUIRED
+    assert contexto.check_hostname
+    monkeypatch.setenv("INVENTRACK_SMTP_STARTTLS", "false")
+    with pytest.raises(ValueError, match="requiere STARTTLS"):
+        correo.enviar("otra", "CAFE", 4)
+    transporte.assert_called_once()
 
 
 def test_gestion_durable_y_correo(tmp_path):

@@ -124,6 +124,11 @@ class AccessPolicyMiddleware(BaseHTTPMiddleware):
             if recurso == "usuarios":
                 return JSONResponse({"detail": "La administración requiere el perfil autenticado"}, status_code=403)
             return await call_next(request)
+        return await self._atender_autenticado(request, call_next)
+
+    async def _atender_autenticado(
+        self, request: Request, call_next: Callable[[Request], Awaitable[Response]],
+    ) -> Response:
         try:
             async with transaccion(_db_path, request.method != "GET") as db:
                 usuario = autenticar(db, request.headers.get("Authorization", ""))
@@ -131,7 +136,7 @@ class AccessPolicyMiddleware(BaseHTTPMiddleware):
                     return JSONResponse({"detail": "Credencial individual requerida"}, status_code=401,
                                         headers={"WWW-Authenticate": "Bearer"})
                 identidad, rol = usuario
-                if not permitido(rol, request.method, ruta):
+                if not permitido(rol, request.method, request.url.path):
                     return JSONResponse({"detail": "Permiso insuficiente"}, status_code=403)
                 actor.set(identidad)
                 respuesta = await call_next(request)
