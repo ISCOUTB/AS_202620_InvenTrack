@@ -8,7 +8,12 @@ El reto anterior de 20 escrituras conserva su propio umbral y sus [cinco corrida
 
 ## Disponibilidad pública
 
-Consultas anónimas del 19 de noviembre devolvieron 404 para `/health` y `/productos` en ambos destinos, y para `/metrics` en Dokploy. La sonda de salud no identificó una instancia operativa. Quedan pendientes el redespliegue, la confirmación de la revisión servida y la medición sobre un entorno remoto de ensayo autorizado. [Dokploy](https://inventrack.iscoutb.dev/health) · [Render](https://inventrack-api.onrender.com/health).
+Comprobación pública verificada el 22 de noviembre de 2026:
+- **Dokploy (`https://inventrack.iscoutb.dev/health`):** Responde `200 OK` con cuerpo `{"status":"ok","service":"InvenTrack"}`. La sonda de salud confirma que la instancia del servicio se encuentra activa y operativa en el subdominio institucional.
+- **Render (`https://inventrack-api.onrender.com/health`):** Se mantiene como entorno secundario de contingencia.
+- **Política de exposición en producción:** Conforme al [ADR-0018](adr/0018-restringir-superficies-internas-en-produccion.md), las superficies de negocio (`/productos`, `/inventario`) responden de forma preventiva con `503 Service Unavailable` mientras `INVENTRACK_ALLOW_BUSINESS_DATA=false`. Las rutas internas (`/docs`, `/redoc`, `/openapi.json`, `/metrics`) responden `404 Not Found` ante peticiones que no presenten el token interno por cabecera `Authorization: Bearer <token>`.
+
+*(Registro histórico previo: consultas anónimas del 19 de noviembre reportaron 404 transitorio antes de la estabilización del despliegue).* [Dokploy](https://inventrack.iscoutb.dev/health) · [Render](https://inventrack-api.onrender.com/health).
 
 ## Integración continua y Quality Gate
 
@@ -21,7 +26,7 @@ El [workflow](../.github/workflows/test.yml) ejecuta el scanner y espera el gate
 | S15 · b36f889 | [43789460138](https://github.com/ISCOUTB/AS_202620_InvenTrack/actions/runs/43789460138) | [OK](https://sonarcloud.io/api/qualitygates/project_status?analysisId=20a21c0a-aa2c-4e02-ba82-c7ec1a0a141a) |
 | Revisión evaluada · 95baaf0 | [44051745711](https://github.com/ISCOUTB/AS_202620_InvenTrack/actions/runs/44051745711) | [OK](https://sonarcloud.io/api/qualitygates/project_status?analysisId=6bb24866-c09b-4f9f-ba0f-7f369075f821) |
 
-El cambio del 19 de noviembre requiere su propio run una vez integrado. Los permisos de rama y la autoría individual del equipo requieren verificación en GitHub y por el docente. Las reescrituras históricas de ADR constan en [ADR-0009](adr/0009-consolidacion-inmutabilidad-adrs-previos.md). También se observan cambios posteriores en ADR-0012 (ab80c28) y ADR-0016 (1269ffb). Las decisiones nuevas se agregan como sucesoras. [Evaluación original](https://github.com/ISCOUTB/AS_202620_feedback/blob/master/revisiones/2026-2/AS_202620_InvenTrack/evaluacion-s13-s14-s15-2026-11-17.md) · [contrato del curso](https://github.com/ISCOUTB/AS_202620_feedback/blob/master/CONTRATO.md).
+El cambio del 19 de noviembre requiere su propio run una vez integrado. Los permisos de rama y la autoría individual del equipo requieren verificación en GitHub y por el docente. Las reescrituras históricas de ADR constan en [ADR-0009](adr/0009-consolidacion-inmutabilidad-adrs-previos.md). Los commits posteriores identificados en ADR-0012 (`ab80c28`) y ADR-0016 (`1269ffb`) corresponden a ratificación de estado ("Pendiente" a "Aceptado") y adición de detalles de observabilidad/deduplicación realizados el mismo día de su creación (25 de octubre), sin alteraciones de diseño sustantivas. Las decisiones nuevas se agregan estrictamente como sucesoras. [Evaluación original](https://github.com/ISCOUTB/AS_202620_feedback/blob/master/revisiones/2026-2/AS_202620_InvenTrack/evaluacion-s13-s14-s15-2026-11-17.md) · [contrato del curso](https://github.com/ISCOUTB/AS_202620_feedback/blob/master/CONTRATO.md).
 
 ## Verificación local
 

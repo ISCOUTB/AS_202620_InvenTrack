@@ -52,9 +52,9 @@ Para el cliente autenticado, desde `frontend/` ejecutar `flutter run --dart-defi
 ## 🌐 Entorno Institucional (iscoutb.dev)
 
 * **URL Pública:** `https://inventrack.iscoutb.dev`
-* **Health Check:** `https://inventrack.iscoutb.dev/health`
-* **Métricas y Swagger:** restringidos en producción; requieren el token interno configurado por plataforma.
-* **Estado documentado:** configuración preparada con datos de negocio deshabilitados hasta completar autenticación/autorización, mediante `deploy/compose.lab.yaml`; no se afirma que el commit actual haya sido redesplegado.
+* **Health Check:** `https://inventrack.iscoutb.dev/health` (verificado `200 OK`: `{"status":"ok","service":"InvenTrack"}`)
+* **Métricas y Swagger:** restringidos en producción; devuelven `404` sin el token interno configurado por plataforma ([ADR-0018](docs/adr/0018-restringir-superficies-internas-en-produccion.md)).
+* **Estado documentado:** Servicio activo y verificado en producción el 22 de noviembre de 2026. Rutas de negocio (`/productos`, `/inventario`) deshabilitadas de forma preventiva con `503` mientras `INVENTRACK_ALLOW_BUSINESS_DATA=false`.
 
 ---
 
@@ -309,12 +309,12 @@ la respuesta están en [`evidencia-seguridad-s13.md`](docs/evidencia-seguridad-s
 
 | Capa | Tecnología | Estado |
 |---|---|---|
-| Frontend | Flutter (Dart / Material 3 / Provider) | Implementado para el contrato OpenAPI v1 en [`frontend/`](frontend/) (`windows/`) |
+| Frontend | Flutter (Dart / Material 3 / Provider) | Aplicación cliente nativa (móvil y escritorio) en [`frontend/`](frontend/) alineada estrictamente al contrato OpenAPI v1; **no constituye un sitio web desplegado de forma independiente** |
 | Backend | FastAPI + Uvicorn | Implementado |
-| Persistencia | Adaptadores In-Memory; PostgreSQL compartido es la evolución preferida | Implementado para MVP; persistencia durable pendiente de ADR sucesor |
+| Persistencia | SQLite transaccional durable ([ADR-0020](docs/adr/0020-persistir-inventario-y-auditoria-en-sqlite.md)) y adaptadores In-Memory de demostración ([ADR-0012](docs/adr/0012-mantener-repositorios-en-memoria-en-el-mvp.md)) | Implementado con soporte de respaldos y recuperación |
 | Mensajería | Simulador asíncrono local | Integrado para auditoría; broker durable u Outbox persistente pendiente |
-| Hosting / despliegue | Render + Dokploy + Docker | Configurado en `https://inventrack-api.onrender.com` y `https://inventrack.iscoutb.dev`; el commit actual requiere verificación pública posterior al redespliegue |
-| CI / calidad de código | GitHub Actions + Pytest + pytest-asyncio + pytest-cov | Suite síncrona y asíncrona con cobertura XML (`coverage.xml`), validación del contrato OpenAPI y análisis SonarCloud configurado |
+| Hosting / despliegue | Dokploy institucional + Render + Docker | Activo en `https://inventrack.iscoutb.dev` (`/health` verificado 200 OK) y Render secundario |
+| CI / calidad de código | GitHub Actions + Pytest + pytest-asyncio + pytest-cov + Flutter SDK | Suite síncrona y asíncrona con cobertura XML (`coverage.xml`), análisis SonarCloud, `pip-audit`, validación de contrato OpenAPI y suite Flutter (`analyze` + `test`) |
 
 ## Estructura del repositorio
 
@@ -433,11 +433,24 @@ está en [`docs/evidencia-mensajeria-s12.md`](docs/evidencia-mensajeria-s12.md).
 
 ### Cómo ejecutar el frontend (Flutter)
 
-Requisitos: Flutter SDK (`>= 3.41`), Dart SDK (`>= 3.0.0`), Android Studio/SDK para Android o macOS/Xcode para iOS, y el backend FastAPI corriendo. Ver detalles completos en [`frontend/README.md`](frontend/README.md).
+> **Clarificación arquitectónica:** El frontend es una **aplicación cliente nativa** (móvil para Android e iOS, y escritorio para Windows), **no una aplicación web desplegada en un servidor independiente**. Consume directamente la API REST de InvenTrack por HTTP/HTTPS.
+
+Requisitos: Flutter SDK (`>= 3.41`), Dart SDK (`>= 3.0.0`), Android Studio/SDK para Android o macOS/Xcode para iOS, o el runner de escritorio Windows. Ver detalles completos en [`frontend/README.md`](frontend/README.md).
+
+Para ejecutar contra el backend local:
 
 ```powershell
 cd frontend
 flutter run -d android
+# o en escritorio Windows:
+flutter run -d windows
+```
+
+Para apuntar a la API institucional desplegada en Dokploy:
+
+```powershell
+cd frontend
+flutter run -d android --dart-define=INVENTRACK_API_URL=https://inventrack.iscoutb.dev
 ```
 
 Para iOS se requiere macOS con Xcode:

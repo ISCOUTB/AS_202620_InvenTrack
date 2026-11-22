@@ -1,6 +1,8 @@
 # InvenTrack — Frontend (Flutter)
 
-Aplicación móvil multiplataforma para **Android e iOS**, desarrollada en **Flutter** para **InvenTrack**. Consume estrictamente la API HTTP definida en el contrato versionado [`contracts/openapi/v1.json`](../contracts/openapi/v1.json) sin añadir ni modificar endpoints del backend.
+InvenTrack Frontend es una **aplicación cliente nativa multiplataforma** (móvil para Android e iOS, y escritorio para Windows), desarrollada en **Flutter** para interactuar con la API backend de **InvenTrack**.
+
+> **Aclaración arquitectónica:** Este frontend es un **cliente nativo que se compila y ejecuta en el dispositivo del usuario**; **no es una aplicación web desplegada en servidor** ni un sitio web alojado independientemente. Toda su comunicación se realiza vía HTTP/HTTPS contra los endpoints expuestos por la API de InvenTrack, cumpliendo de forma estricta el contrato OpenAPI versionado [`contracts/openapi/v1.json`](../contracts/openapi/v1.json) sin extender ni alterar los endpoints del backend.
 
 ---
 
@@ -35,6 +37,14 @@ Por defecto (`lib/config/api_config.dart`), el cliente se conecta a `http://loca
 
 ```powershell
 flutter run -d android --dart-define=INVENTRACK_API_URL=http://10.0.2.2:8000
+```
+
+Para apuntar directamente al backend institucional en Dokploy:
+
+```powershell
+flutter run -d android --dart-define=INVENTRACK_API_URL=https://inventrack.iscoutb.dev
+# o en Windows:
+flutter run -d windows --dart-define=INVENTRACK_API_URL=https://inventrack.iscoutb.dev
 ```
 
 > **Nota sobre entornos desplegados:** En Dokploy (`https://inventrack.iscoutb.dev`) y Render (`https://inventrack-api.onrender.com`), las rutas de negocio (`/productos`, `/inventario`) devuelven `503` mientras `INVENTRACK_ALLOW_BUSINESS_DATA=false` por política preventiva (únicamente `/health` responde `200`). Para probar los flujos completos de catálogo e inventario, ejecuta contra el backend local.
