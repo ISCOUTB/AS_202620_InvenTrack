@@ -9,11 +9,11 @@
 
 ---
 
-## Semana 16 · En preparación
+## Semana 16 · Implementación documentada
 
 Reto propuesto: contrastar el conteo físico por SKU con una copia del inventario tomada al cierre de turno. [Ensayo de conciliación y antecedentes](docs/preparacion-s16.md) · [Sistema institucional](https://inventrack.iscoutb.dev).
 
-En Flutter, **Gestión → Cierre de turno** permite tomar el corte y comparar un CSV con cabecera `sku,cantidad`. La verificación local incluyó 48 pruebas de Python y 10 de Flutter. En la última comprobación pública, Dokploy respondió 200 en `/health` y 404 en `/sesion`. Las nuevas pantallas requieren desplegar la API actualizada y ejecutar la versión correspondiente del cliente. [Evidencia de S16](docs/preparacion-s16.md).
+En Flutter, **Gestión → Cierre de turno** permite tomar el corte y comparar un CSV con cabecera `sku,cantidad`. La verificación local actual pasó las 49 pruebas Python recopiladas y las 10 pruebas Flutter; el análisis de Flutter terminó sin hallazgos. En la última comprobación pública, Dokploy respondió 200 en `/health` y 404 en `/sesion`; por ello, el despliegue público todavía requiere integrar el backend actualizado de Gestión y ejecutar el cliente correspondiente. [Evidencia de S16](docs/preparacion-s16.md).
 
 ## Ejecutar el perfil durable
 
@@ -33,7 +33,7 @@ El Compose de Dokploy monta un volumen en `/app/data` y mantiene negocio cerrado
 
 Para el cliente autenticado, desde `frontend/` ejecutar `flutter run --dart-define=INVENTRACK_AUTH=true --dart-define=INVENTRACK_API_URL=https://dominio-del-ensayo` y escribir el token individual en la pantalla de acceso. Para verificar el backend ejecutar `python -m pytest -q`. [Resultados y estado de los despliegues](docs/verificacion-final.md) · [decisión de identidad](docs/adr/0019-autenticar-usuarios-y-autorizar-por-rol.md) · [decisión de almacenamiento](docs/adr/0020-persistir-inventario-y-auditoria-en-sqlite.md).
 
-## 🚀 Estado del Proyecto — Segundo Corte (AS_202620)
+## 🚀 Estado actual del proyecto
 
 * **Estilo Arquitectónico:** Monolito Modular con Arquitectura Hexagonal por Módulo ([ADR-0001](docs/adr/0001-usar-monolito-modular-con-hexagonal-por-modulo.md)).
 * **Mecanismo de Concurrencia:** Exclusión mutua asíncrona por SKU (`asyncio.Lock()`) ([ADR-0002](docs/adr/0002-control-concurrencia-memoria-inventario.md)).
@@ -42,7 +42,7 @@ Para el cliente autenticado, desde `frontend/` ejecutar `flutter run --dart-defi
 * **Contrato de API:** OpenAPI v1 versionado y validado automáticamente contra la implementación FastAPI ([ADR-0004](docs/adr/0004-contrato-api-versionado-openapi.md)).
 * **Mensajería asíncrona:** Las entradas y salidas publican el evento `MovimientoDeInventarioRegistrado` para auditoría en segundo plano, con trazabilidad, deduplicación, reintentos, backoff exponencial y DLQ en memoria ([ADR-0013](docs/adr/0013-evaluacion-mensajeria-asincrona-vs-sincrona.md), [ADR-0016](docs/adr/0016-integrar-eventos-de-auditoria-en-movimientos.md)).
 * **Despliegue Productivo:** Configurado para Render (PaaS) y Dokploy mediante infraestructura como código (`render.yaml` y `deploy/compose.lab.yaml`); el redespliegue y funcionamiento público del commit actual requieren verificación externa.
-* **CI y cobertura:** GitHub Actions ejecuta la suite completa con `pytest-cov`, genera `coverage.xml`, ejecuta el análisis SonarCloud y valida explícitamente el contrato OpenAPI.
+* **CI y cobertura:** GitHub Actions ejecuta la suite completa con `pytest-cov`, genera `coverage.xml`, ejecuta el análisis SonarCloud y valida explícitamente el contrato OpenAPI. A fecha actual existen 49 pruebas Python recopiladas y 10 pruebas Flutter.
 * **Transparencia en Uso de IA:** Prompts, decisiones aceptadas, correcciones y rechazos por criterio técnico ([Registro de IA](docs/ia.md)).
 
 ---
@@ -60,7 +60,7 @@ Para el cliente autenticado, desde `frontend/` ejecutar `flutter run --dart-defi
 * **URL Pública:** `https://inventrack.iscoutb.dev`
 * **Health Check:** `https://inventrack.iscoutb.dev/health` (verificado `200 OK`: `{"status":"ok","service":"InvenTrack"}`)
 * **Métricas y Swagger:** restringidos en producción; devuelven `404` sin el token interno configurado por plataforma ([ADR-0018](docs/adr/0018-restringir-superficies-internas-en-produccion.md)).
-* **Estado documentado:** Dokploy respondió 200 en `/health` y 401 al consultar catálogo y stock sin credencial. En la prueba manual autenticada, el equipo creó un producto, registró una entrada y comprobó el saldo tras una salida. Una segunda salida que excedía las existencias fue rechazada. [Verificación de S16](docs/preparacion-s16.md#verificación-pública-y-colaboración).
+* **Estado documentado:** El cambio 503 a 401 confirmó que las rutas de negocio alcanzan la autenticación. Dokploy respondió 200 en `/health` y 404 en `/sesion` al comprobar el despliegue posterior a los cambios locales de Gestión. La prueba manual autenticada reportó alta de producto, entrada, salida válida y rechazo por stock insuficiente. El despliegue público de las nuevas rutas de usuarios, proveedores y cierres requiere una integración posterior. [Verificación de S16](docs/preparacion-s16.md#verificación-pública-y-colaboración).
 
 ---
 
@@ -123,8 +123,16 @@ Para el cliente autenticado, desde `frontend/` ejecutar `flutter run --dart-defi
 | [ADR-0015](docs/adr/0015-completar-decision-de-almacenamiento-y-reversion.md) | Completar decisión de almacenamiento, consecuencias y costo de reversión (Aceptado) |
 | [ADR-0016](docs/adr/0016-integrar-eventos-de-auditoria-en-movimientos.md) | Integrar eventos de auditoría en movimientos de inventario (Aceptado) |
 | [ADR-0017](docs/adr/0017-idempotencia-http-en-comandos-de-inventario.md) | Idempotencia HTTP en comandos de inventario (Aceptado) |
+| [ADR-0018](docs/adr/0018-restringir-superficies-internas-en-produccion.md) | Restricción de documentación, métricas y datos en producción (Aceptado) |
+| [ADR-0019](docs/adr/0019-autenticar-usuarios-y-autorizar-por-rol.md) | Identidad individual y autorización por rol (Aceptado) |
+| [ADR-0020](docs/adr/0020-persistir-inventario-y-auditoria-en-sqlite.md) | Persistencia transaccional en SQLite (Aceptado) |
+| [ADR-0021](docs/adr/0021-serializar-escrituras-sqlite.md) | Serialización de escrituras SQLite (Aceptado) |
+| [ADR-0022](docs/adr/0022-entregar-alertas-de-stock-desde-sqlite.md) | Entrega de alertas de stock desde SQLite (Propuesto) |
+| [ADR-0023](docs/adr/0023-administrar-identidades-desde-flutter.md) | Administración de identidades desde Flutter (Propuesto) |
 | [Evidencia S12 de CI y despliegue](docs/evidencia-despliegue-s12.md) | Run público, Quality Gate y estado verificable de los despliegues |
 | [Evidencia de prueba contractual](docs/evidencia-prueba-contrato.md) | Reproducción del fallo ante un cambio incompatible y recuperación de la prueba |
+| [Verificación posterior a S15](docs/verificacion-final.md) | Escenarios 2026-11-19, restauración, CI y disponibilidad pública |
+| [Preparación y evidencia S16](docs/preparacion-s16.md) | Conciliación de cierre, concurrencia, despliegue y estado pendiente |
 | [Despliegue y costos](docs/despliegue-y-costos.md) | URL pública, IaC (`render.yaml`), observabilidad, secretos y estimación mensual |
 | [Medición Reto Corte 1](docs/retos/corte-1-medicion.md) | Diagnóstico, pruebas de concurrencia, degradación controlada y comando de reproducción |
 | [Reporte Experimento Corte 2](docs/retos/corte-2-experimento.md) | Hipótesis, montaje, variables y resultados del experimento de concurrencia de inventario (S10) |
@@ -353,13 +361,21 @@ docs/
 ├── propiedad-datos.md           # Dueño único y canales de consulta
 ├── auditoria-modularidad.md     # Revisión de desacoplamiento y plan de corrección
 ├── adr/
-│   ├── 0001–0016                  # Decisiones arquitectónicas versionadas
-│   ├── 0013-evaluacion-mensajeria-asincrona-vs-sincrona.md
-│   └── 0016-integrar-eventos-de-auditoria-en-movimientos.md
+│   ├── 0001–0017                  # Decisiones base e idempotencia
+│   ├── 0018-restringir-superficies-internas-en-produccion.md
+│   ├── 0019-autenticar-usuarios-y-autorizar-por-rol.md
+│   ├── 0020-persistir-inventario-y-auditoria-en-sqlite.md
+│   ├── 0021-serializar-escrituras-sqlite.md
+│   ├── 0022-entregar-alertas-de-stock-desde-sqlite.md
+│   └── 0023-administrar-identidades-desde-flutter.md
 ├── evidencia-prueba-contrato.md  # Reproducción del fallo de compatibilidad OpenAPI
 ├── evidencia-mensajeria-s12.md   # Evidencia reproducible del taller de mensajería
+├── evidencia-seguridad-s13.md    # Amenazas, controles y exposición en producción
+├── verificacion-final.md         # Verificación posterior a S15
+├── preparacion-s16.md            # Evidencia y alcance de conciliación S16
 ├── retos/
-│   └── corte-1-medicion.md      # Diagnóstico y medición del Reto de Concurrencia
+│   ├── corte-1-medicion.md      # Diagnóstico y medición del Reto de Concurrencia
+│   └── corte-2-experimento.md   # Experimento de concurrencia de inventario
 ├── ficha_problema.md            # Planteamiento del problema
 ├── aspectos.md                  # Matriz de trazabilidad navegable de 8 columnas
 ├── matriz-comparativa-estilos.md # Comparativa de estilos arquitectónicos
@@ -370,6 +386,10 @@ contracts/
 ├── openapi/v1.json              # Contrato versionado de la API HTTP
 └── events/
     └── movimiento_registrado_v1.json # Contrato JSON Schema del evento
+scripts/
+├── comparar_concurrencia.py     # Repite y compara mediciones S10/S16
+├── conciliar_conteo.py          # Compara una copia SQLite con un CSV físico
+└── verificar_trazabilidad.py    # Valida enlaces y matriz de arquitectura
 app/                             # Aplicación FastAPI Monolito Modular
 ├── main.py                      # Composición, métricas p95 y rutas principales
 ├── shared/                      # Dominio compartido y utilidades
@@ -377,7 +397,8 @@ app/                             # Aplicación FastAPI Monolito Modular
 ├── inventario/                  # Módulo de inventario (Concurrencia por SKU)
 ├── proveedores/                 # Módulo de proveedores
 ├── usuarios/                    # Módulo de usuarios
-└── alertas/                     # Módulo de alertas
+├── alertas/                     # Cola y entrega de alertas de stock
+└── messaging/                   # Broker simulador y auditoría de movimientos
 frontend/                        # Cliente Flutter (Material 3 + Provider)
 ├── README.md                    # Guía de ejecución, pruebas y límites del cliente
 ├── pubspec.yaml                 # Dependencias Flutter (http, provider, google_fonts, intl)
@@ -386,15 +407,17 @@ frontend/                        # Cliente Flutter (Material 3 + Provider)
 │   ├── config/                  # Configuración de URL base y timeout
 │   ├── models/                  # Modelos alineados con OpenAPI v1
 │   ├── services/                # Cliente HTTP REST y mapeo de excepciones
-│   ├── providers/               # Gestión de estado (salud, productos, inventario)
-│   ├── screens/                 # Pantallas Home, Productos e Inventario
-│   └── widgets/                 # Diálogos y tarjetas de stock/movimientos
+│   ├── providers/               # Gestión de estado (salud, productos, inventario, gestión)
+│   ├── screens/                 # Home, Productos, Inventario y Gestión
+│   └── widgets/                 # Diálogos, tarjetas y conciliación de cierres
 ├── test/                        # Pruebas unitarias y de widgets con MockClient
 ├── android/                     # Runner nativo Android
 ├── ios/                         # Runner nativo iOS
 └── windows/                     # Runner nativo Windows conservado
 tests/                           # Batería de pruebas automatizadas
 ├── test_health.py
+├── test_gestion_integrada.py     # Gestión, usuarios, proveedores y SMTP
+├── test_perfil_durable.py        # Respaldo, restauración y permisos
 ├── productos/
 ├── inventario/
 │   └── test_concurrencia.py     # Pruebas de simulación concurrente
@@ -422,6 +445,9 @@ La prueba automatizada se ejecuta con:
 ```powershell
 python -m pytest -v
 ```
+
+Estado local actual: las 49 pruebas Python pasan y las 10 pruebas Flutter pasan;
+`flutter analyze --no-pub` termina sin hallazgos.
 
 La prueba contractual aislada se ejecuta con:
 
@@ -497,8 +523,9 @@ flutter test
 | S8 | Despliegue público, IaC (`render.yaml`), observabilidad y costos (ADR-0005) | Completo (Desplegado en Render) |
 | S9 | Observabilidad de latencia, p95 HTTP y evidencia de defecto/medición con apoyo de IA (ADR-0007) | Completo |
 | S10 | Experimento operativo, hipótesis y validación de alta concurrencia de inventario (S10) | Completo |
-| S12 | Mensajería asíncrona para auditoría: contrato, integración real, duplicados, reintentos, DLQ y trazabilidad (ADR-0016) | Completo; 13 pruebas focalizadas en verde |
-| S16 | [Reto de conciliación, matrices y pendientes externos](docs/preparacion-s16.md) | Borrador en revisión |
+| S12 | Mensajería asíncrona para auditoría: contrato, integración real, duplicados, reintentos, DLQ y trazabilidad (ADR-0016) | Completo; suite de mensajería documentada |
+| S15 | Persistencia SQLite, identidad por usuario, restauración y serialización de escrituras | Implementado y verificado localmente |
+| S16 | [Reto de conciliación, matrices y pendientes externos](docs/preparacion-s16.md) | Implementado localmente; despliegue público de Gestión pendiente de integración |
 
 ## Uso de IA
 
