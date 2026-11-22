@@ -101,6 +101,21 @@ y [evidencia-mensajeria-s12.md](../evidencia-mensajeria-s12.md).
 
 ---
 
+### Operaciones disponibles desde Gestión
+
+| Operación | Ruta | Acceso en SQLite |
+|---|---|---|
+| Consultar rol actual | `GET /sesion` | Cualquier usuario autenticado |
+| Directorio de proveedores | `GET /proveedores` | Todos los roles |
+| Crear, editar o eliminar proveedor | `POST /proveedores`, `PUT` o `DELETE /proveedores/{id}` | Administrador |
+| Historial con fecha, tipo, cantidad y actor, del más reciente al más antiguo | `GET /inventario/{producto_id}/movimientos` | Todos los roles |
+| Tomar un corte de saldos o listar los cortes | `POST /cierres`, `GET /cierres` | Administrador u operador para tomarlo. Todos pueden listar |
+| Comparar el conteo físico con un corte guardado | `POST /cierres/{id}/conciliar` | Administrador u operador |
+| Listar o crear usuarios | `GET /usuarios`, `POST /usuarios` | Administrador |
+| Rotar la credencial, cambiar el rol o revocar el acceso | `POST /usuarios/{id}/rotar`, `PUT /usuarios/{id}/rol`, `DELETE /usuarios/{id}` | Administrador |
+
+El conteo recibe un campo `csv` con cabecera `sku,cantidad`. Devuelve totales y diferencias por SKU. Un corte inexistente devuelve 404 y un conteo inválido devuelve 422. En demostración, proveedores, movimientos y cortes viven en memoria. Las cuentas y el correo requieren el perfil SQLite. [Contrato ejecutable](../../contracts/openapi/v1.json).
+
 ## 7. Relación con la Arquitectura Hexagonal
 
 El sistema está estructurado mediante un Monolito Modular con Arquitectura Hexagonal por módulo (`productos` e `inventario`). Los módulos no se acoplan directamente a nivel de infraestructura ni base de datos, sino a través de **Puertos de Aplicación y Adaptadores Cruzados (ADR-0003)**.
@@ -126,6 +141,8 @@ Módulo Productos              Módulo Inventario
         VerificadorDeMovimientos
 ```
 ## 8. Versionado e Historial
+
+La administración por HTTP desde Flutter amplía el canal de consola de ADR-0019. [ADR-0023](../adr/0023-administrar-identidades-desde-flutter.md).
 
 La versión actual del contrato ejecutable es **`0.1.0`** y se ubica en `contracts/openapi/v1.json`.
 

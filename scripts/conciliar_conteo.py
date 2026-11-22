@@ -8,22 +8,16 @@ from contextlib import closing
 from pathlib import Path
 
 
+if __package__ in (None, ""):
+    import sys
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from app.inventario.application.conciliacion import comparar, interpretar_csv
+
+
 def leer_conteo(archivo):
-    cantidades = {}
     with archivo.open(encoding="utf-8-sig", newline="") as fuente:
-        lector = csv.reader(fuente, strict=True)
-        if next(lector, None) != ["sku", "cantidad"]:
-            raise ValueError("Se esperaba la cabecera sku,cantidad")
-        for fila in lector:
-            if len(fila) != 2:
-                raise ValueError(f"Fila {lector.line_num}: se esperaban dos columnas")
-            sku, cantidad = fila
-            if not sku.strip() or not cantidad.isascii() or not cantidad.isdecimal():
-                raise ValueError(f"Fila {lector.line_num}: se requiere SKU y cantidad entera no negativa")
-            if sku in cantidades:
-                raise ValueError(f"Fila {lector.line_num}: SKU duplicado: {sku}")
-            cantidades[sku] = int(cantidad)
-    return cantidades
+        return interpretar_csv(fuente)
 
 
 def conciliar(copia, conteo):
@@ -33,24 +27,7 @@ def conciliar(copia, conteo):
             FROM productos AS p LEFT JOIN stocks AS s ON p.id = s.producto_id
             WHERE p.activo = 1 OR s.cantidad > 0
         """))
-    diferencias = []
-    for sku in sorted(saldos.keys() | conteo.keys()):
-        esperado = saldos.get(sku)
-        contado = conteo.get(sku)
-        if esperado == contado:
-            continue
-        diferencia = None
-        if contado is None:
-            motivo = "sin_conteo"
-        elif esperado is None:
-            motivo = "fuera_del_corte"
-        else:
-            motivo = "diferencia_de_unidades"
-            diferencia = contado - esperado
-        diferencias.append({"sku": sku, "motivo": motivo, "esperado": esperado,
-                            "contado": contado, "diferencia": diferencia})
-    return {"total_esperado": sum(saldos.values()), "total_contado": sum(conteo.values()),
-            "diferencias": diferencias}
+    return comparar(saldos, conteo)
 
 
 def main():

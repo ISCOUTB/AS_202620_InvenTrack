@@ -5,6 +5,7 @@ repositorios, casos de uso y adaptadores de cada módulo, resuelve las
 dependencias cruzadas entre módulos (ADR-0003) y ensambla los routers.
 """
 
+import asyncio
 import json
 import logging
 import math
@@ -14,7 +15,7 @@ import sqlite3
 import time
 from collections import defaultdict, deque
 from collections.abc import Awaitable, Callable
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 
 from fastapi import Depends, FastAPI, Request, Response
 from fastapi.responses import JSONResponse
@@ -45,6 +46,12 @@ from app.shared.infrastructure.sqlite import (
     EsperaEscrituraAgotada, actor, escritor_del_servicio, inicializar, transaccion,
 )
 from app.usuarios.infrastructure.credenciales import autenticar, permitido
+from app.usuarios.infrastructure.router import router as router_usuarios
+from app.proveedores.infrastructure.router import crear_router as crear_router_proveedores
+from app.inventario.infrastructure.cierres import crear_router as crear_router_cierres
+from app.inventario.domain.movimiento import Movimiento
+from app.alertas.infrastructure.correo import correo_configurado, procesar_cola, registrar_cruce
+from app.shared.infrastructure.sqlite import conexion
 
 
 class JsonFormatter(logging.Formatter):
@@ -107,12 +114,15 @@ class AccessPolicyMiddleware(BaseHTTPMiddleware):
             return Response(status_code=404)
 
         ruta = request.url.path
-        if not ruta.startswith(("/productos", "/inventario")):
+        recurso = ruta.split("/")[1]
+        if recurso not in {"productos", "inventario", "usuarios", "sesion", "proveedores", "cierres"}:
             return await call_next(request)
         habilitado = os.getenv("INVENTRACK_ALLOW_BUSINESS_DATA", "false").lower() == "true"
         if _is_production() and not (_db_path and habilitado):
             return Response("Business data endpoints are disabled.", status_code=503)
         if not _db_path:
+            if recurso == "usuarios":
+                return JSONResponse({"detail": "La administración requiere el perfil autenticado"}, status_code=403)
             return await call_next(request)
         try:
             async with transaccion(_db_path, request.method != "GET") as db:
@@ -224,7 +234,14 @@ async def _vida_api(_app):
         yield
         return
     with escritor_del_servicio(_db_path):
-        yield
+        tarea = asyncio.create_task(procesar_cola(_db_path)) if correo_configurado() else None
+        try:
+            yield
+        finally:
+            if tarea is not None:
+                tarea.cancel()
+                with suppress(asyncio.CancelledError):
+                    await tarea
 
 
 app = FastAPI(
@@ -282,6 +299,24 @@ def metrics():
 _seguridad = [Depends(HTTPBearer(auto_error=False, description="Token individual del perfil durable"))]
 _errores_acceso = {401: {"description": "Credencial ausente o inválida"},
                    403: {"description": "Rol insuficiente"}, 503: {"description": "Service Unavailable"}}
+
+
+def _guardar_evento_y_alerta(evento):
+    guardar_evento(evento)
+    registrar_cruce(conexion.get(), evento)
+
+
+@app.get("/inventario/{producto_id}/movimientos", tags=["inventario"],
+         dependencies=_seguridad, responses=_errores_acceso)
+def historial(producto_id: str) -> list[Movimiento]:
+    return list(reversed(_movimientos_repo.listar_por_producto(producto_id)))
+
+
+app.include_router(router_usuarios, tags=["usuarios"], dependencies=_seguridad, responses=_errores_acceso)
+app.include_router(crear_router_proveedores(bool(_db_path)), tags=["proveedores"],
+                   dependencies=_seguridad, responses=_errores_acceso)
+app.include_router(crear_router_cierres(_productos_repo, _stock_repo, bool(_db_path)), tags=["inventario"],
+                   dependencies=_seguridad, responses=_errores_acceso)
 app.include_router(
     crear_router_productos(_crear_producto, _eliminar_producto, _consultar_producto),
     tags=["productos"],
@@ -294,7 +329,7 @@ app.include_router(
         _broker_mensajeria,
         _consumir_auditoria_movimiento,
         _idempotency_store,
-        guardar_evento if _db_path else None,
+        _guardar_evento_y_alerta if _db_path else None,
     ),
     tags=["inventario"],
     dependencies=_seguridad, responses=_errores_acceso,

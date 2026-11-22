@@ -39,9 +39,9 @@ class MovimientosSQLite(MovimientoRepository):
 
     def listar_por_producto(self, producto_id):
         filas = conexion.get().execute(
-            "SELECT producto_id,tipo,cantidad,registrado_en FROM movimientos WHERE producto_id=? ORDER BY rowid", (producto_id,)
+            "SELECT producto_id,tipo,cantidad,registrado_en,actor_id FROM movimientos WHERE producto_id=? ORDER BY rowid", (producto_id,)
         )
-        return [Movimiento(i, t, c, datetime.fromisoformat(f)) for i, t, c, f in filas]
+        return [Movimiento(i, t, c, datetime.fromisoformat(f), a) for i, t, c, f, a in filas]
 
 
 class IdempotenciaSQLite:

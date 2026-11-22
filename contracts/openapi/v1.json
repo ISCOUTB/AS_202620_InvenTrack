@@ -31,6 +31,718 @@
         }
       }
     },
+    "/inventario/{producto_id}/movimientos": {
+      "get": {
+        "tags": [
+          "inventario"
+        ],
+        "summary": "Historial",
+        "operationId": "historial_inventario__producto_id__movimientos_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "producto_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Producto Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Movimiento"
+                  },
+                  "title": "Response Historial Inventario  Producto Id  Movimientos Get"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Credencial ausente o inválida"
+          },
+          "403": {
+            "description": "Rol insuficiente"
+          },
+          "503": {
+            "description": "Service Unavailable"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sesion": {
+      "get": {
+        "tags": [
+          "usuarios"
+        ],
+        "summary": "Sesion",
+        "operationId": "sesion_sesion_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response Sesion Sesion Get"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Credencial ausente o inválida"
+          },
+          "403": {
+            "description": "Rol insuficiente"
+          },
+          "503": {
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/usuarios": {
+      "get": {
+        "tags": [
+          "usuarios"
+        ],
+        "summary": "Usuarios",
+        "operationId": "usuarios_usuarios_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "additionalProperties": {
+                      "type": "string"
+                    },
+                    "type": "object"
+                  },
+                  "type": "array",
+                  "title": "Response Usuarios Usuarios Get"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Credencial ausente o inválida"
+          },
+          "403": {
+            "description": "Rol insuficiente"
+          },
+          "503": {
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "usuarios"
+        ],
+        "summary": "Crear Usuario",
+        "operationId": "crear_usuario_usuarios_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Usuario"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Credencial"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Credencial ausente o inválida"
+          },
+          "403": {
+            "description": "Rol insuficiente"
+          },
+          "503": {
+            "description": "Service Unavailable"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/usuarios/{id}/rotar": {
+      "post": {
+        "tags": [
+          "usuarios"
+        ],
+        "summary": "Rotar",
+        "operationId": "rotar_usuarios__id__rotar_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Credencial"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Credencial ausente o inválida"
+          },
+          "403": {
+            "description": "Rol insuficiente"
+          },
+          "503": {
+            "description": "Service Unavailable"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/usuarios/{id}/rol": {
+      "put": {
+        "tags": [
+          "usuarios"
+        ],
+        "summary": "Cambiar Rol",
+        "operationId": "cambiar_rol_usuarios__id__rol_put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Permisos"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Cambiar Rol Usuarios  Id  Rol Put"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Credencial ausente o inválida"
+          },
+          "403": {
+            "description": "Rol insuficiente"
+          },
+          "503": {
+            "description": "Service Unavailable"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/usuarios/{id}": {
+      "delete": {
+        "tags": [
+          "usuarios"
+        ],
+        "summary": "Revocar",
+        "operationId": "revocar_usuarios__id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Credencial ausente o inválida"
+          },
+          "403": {
+            "description": "Rol insuficiente"
+          },
+          "503": {
+            "description": "Service Unavailable"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/proveedores": {
+      "get": {
+        "tags": [
+          "proveedores"
+        ],
+        "summary": "Listar",
+        "operationId": "listar_proveedores_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Proveedor"
+                  },
+                  "type": "array",
+                  "title": "Response Listar Proveedores Get"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Credencial ausente o inválida"
+          },
+          "403": {
+            "description": "Rol insuficiente"
+          },
+          "503": {
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "proveedores"
+        ],
+        "summary": "Crear",
+        "operationId": "crear_proveedores_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DatosProveedor"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Proveedor"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Credencial ausente o inválida"
+          },
+          "403": {
+            "description": "Rol insuficiente"
+          },
+          "503": {
+            "description": "Service Unavailable"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/proveedores/{id}": {
+      "put": {
+        "tags": [
+          "proveedores"
+        ],
+        "summary": "Actualizar",
+        "operationId": "actualizar_proveedores__id__put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DatosProveedor"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Proveedor"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Credencial ausente o inválida"
+          },
+          "403": {
+            "description": "Rol insuficiente"
+          },
+          "503": {
+            "description": "Service Unavailable"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "proveedores"
+        ],
+        "summary": "Eliminar",
+        "operationId": "eliminar_proveedores__id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Credencial ausente o inválida"
+          },
+          "403": {
+            "description": "Rol insuficiente"
+          },
+          "503": {
+            "description": "Service Unavailable"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cierres": {
+      "get": {
+        "tags": [
+          "inventario"
+        ],
+        "summary": "Listar",
+        "operationId": "listar_cierres_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Cierre"
+                  },
+                  "type": "array",
+                  "title": "Response Listar Cierres Get"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Credencial ausente o inválida"
+          },
+          "403": {
+            "description": "Rol insuficiente"
+          },
+          "503": {
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "inventario"
+        ],
+        "summary": "Crear",
+        "operationId": "crear_cierres_post",
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Cierre"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Credencial ausente o inválida"
+          },
+          "403": {
+            "description": "Rol insuficiente"
+          },
+          "503": {
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/cierres/{id}/conciliar": {
+      "post": {
+        "tags": [
+          "inventario"
+        ],
+        "summary": "Conciliar Cierre",
+        "operationId": "conciliar_cierre_cierres__id__conciliar_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Conteo"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Informe"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Credencial ausente o inválida"
+          },
+          "403": {
+            "description": "Rol insuficiente"
+          },
+          "503": {
+            "description": "Service Unavailable"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/productos": {
       "get": {
         "tags": [
@@ -463,6 +1175,39 @@
   },
   "components": {
     "schemas": {
+      "Cierre": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "fecha": {
+            "type": "string",
+            "title": "Fecha"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "fecha"
+        ],
+        "title": "Cierre"
+      },
+      "Conteo": {
+        "properties": {
+          "csv": {
+            "type": "string",
+            "maxLength": 1000000,
+            "minLength": 1,
+            "title": "Csv"
+          }
+        },
+        "type": "object",
+        "required": [
+          "csv"
+        ],
+        "title": "Conteo"
+      },
       "CrearProductoRequest": {
         "properties": {
           "id": {
@@ -480,6 +1225,94 @@
           "nombre"
         ],
         "title": "CrearProductoRequest"
+      },
+      "Credencial": {
+        "properties": {
+          "token": {
+            "type": "string",
+            "title": "Token"
+          }
+        },
+        "type": "object",
+        "required": [
+          "token"
+        ],
+        "title": "Credencial"
+      },
+      "DatosProveedor": {
+        "properties": {
+          "nombre": {
+            "type": "string",
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Nombre"
+          },
+          "contacto": {
+            "type": "string",
+            "maxLength": 250,
+            "title": "Contacto",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "nombre"
+        ],
+        "title": "DatosProveedor"
+      },
+      "Diferencia": {
+        "properties": {
+          "sku": {
+            "type": "string",
+            "title": "Sku"
+          },
+          "motivo": {
+            "type": "string",
+            "title": "Motivo"
+          },
+          "esperado": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Esperado"
+          },
+          "contado": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contado"
+          },
+          "diferencia": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Diferencia"
+          }
+        },
+        "type": "object",
+        "required": [
+          "sku",
+          "motivo",
+          "esperado",
+          "contado",
+          "diferencia"
+        ],
+        "title": "Diferencia"
       },
       "EliminarProductoResponse": {
         "properties": {
@@ -516,6 +1349,71 @@
         },
         "type": "object",
         "title": "HTTPValidationError"
+      },
+      "Informe": {
+        "properties": {
+          "total_esperado": {
+            "type": "integer",
+            "title": "Total Esperado"
+          },
+          "total_contado": {
+            "type": "integer",
+            "title": "Total Contado"
+          },
+          "diferencias": {
+            "items": {
+              "$ref": "#/components/schemas/Diferencia"
+            },
+            "type": "array",
+            "title": "Diferencias"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total_esperado",
+          "total_contado",
+          "diferencias"
+        ],
+        "title": "Informe"
+      },
+      "Movimiento": {
+        "properties": {
+          "producto_id": {
+            "type": "string",
+            "title": "Producto Id"
+          },
+          "tipo": {
+            "type": "string",
+            "title": "Tipo"
+          },
+          "cantidad": {
+            "type": "integer",
+            "title": "Cantidad"
+          },
+          "registrado_en": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Registrado En"
+          },
+          "actor_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actor Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "producto_id",
+          "tipo",
+          "cantidad"
+        ],
+        "title": "Movimiento"
       },
       "MovimientoRequest": {
         "properties": {
@@ -559,6 +1457,24 @@
         ],
         "title": "MovimientoResponse"
       },
+      "Permisos": {
+        "properties": {
+          "rol": {
+            "type": "string",
+            "enum": [
+              "admin",
+              "operador",
+              "lector"
+            ],
+            "title": "Rol"
+          }
+        },
+        "type": "object",
+        "required": [
+          "rol"
+        ],
+        "title": "Permisos"
+      },
       "ProductoResponse": {
         "properties": {
           "id": {
@@ -581,6 +1497,58 @@
           "activo"
         ],
         "title": "ProductoResponse"
+      },
+      "Proveedor": {
+        "properties": {
+          "nombre": {
+            "type": "string",
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Nombre"
+          },
+          "contacto": {
+            "type": "string",
+            "maxLength": 250,
+            "title": "Contacto",
+            "default": ""
+          },
+          "id": {
+            "type": "string",
+            "title": "Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "nombre",
+          "id"
+        ],
+        "title": "Proveedor"
+      },
+      "Usuario": {
+        "properties": {
+          "rol": {
+            "type": "string",
+            "enum": [
+              "admin",
+              "operador",
+              "lector"
+            ],
+            "title": "Rol"
+          },
+          "id": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "pattern": "^[\\w.-]+$",
+            "title": "Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "rol",
+          "id"
+        ],
+        "title": "Usuario"
       },
       "ValidationError": {
         "properties": {

@@ -24,13 +24,13 @@ flowchart TB
     InvenTrack[["🖥️ InvenTrack
     Gestión de inventario"]]
     Notif(["✉️ Servicio de notificaciones
-    Objetivo del MVP"])
+    Servidor SMTP configurado"])
 
     Operaciones((Operaciones)) -->|Credenciales individuales y respaldos| InvenTrack
     Dueno -- HTTPS --> InvenTrack
     Vendedor -- HTTPS --> InvenTrack
     Empleado -- HTTPS --> InvenTrack
-    InvenTrack -. SMTP previsto .-> Notif
+    InvenTrack -. SMTP .-> Notif
 
     classDef person fill:#1168bd,stroke:#0b4884,color:#ffffff,font-weight:bold
     classDef system fill:#08427b,stroke:#052e56,color:#ffffff,font-weight:bold
@@ -47,7 +47,7 @@ flowchart TB
 |---|---|---|---|
 | 👤 | Círculo doble | Azul medio `#1168bd` | **Persona** — actor humano que usa el sistema |
 | 🖥️ | Rectángulo de doble borde | Azul oscuro `#08427b` | **Sistema** — InvenTrack, el proyecto que estamos documentando |
-| ✉️ | Óvalo (estadio) | Gris `#999999` | **Externo objetivo** — servicio fuera de nuestro control, aún no integrado |
+| ✉️ | Óvalo (estadio) | Gris `#999999` | Servicio externo de correo configurado por el equipo de despliegue |
 
 > **Nota sobre la convención de color:** el estándar original del modelo
 > C4 (Simon Brown / Structurizr) usa persona en azul oscuro y sistema en
@@ -72,9 +72,9 @@ flowchart TB
 | Vendedor | Persona | `operador` | Registra salidas de inventario por venta; consulta stock actual. | Dispara el escenario de mayor prioridad del proyecto (ESC-01): dos operadores registrando salidas al mismo tiempo es la situación que pone a prueba la Consistencia de datos. |
 | Empleado de bodega | Persona | `operador` | Registra entradas de mercancía y ajustes de inventario. | Junto con Vendedor, es el segundo actor que puede generar concurrencia sobre el mismo producto (ESC-01), y es quien opera físicamente el almacén. |
 | InvenTrack | Sistema (este proyecto) | — | Mantiene catálogo y stock, valida permisos y conserva movimientos y auditoría en el perfil durable. | Es el sistema que se está documentando; en este nivel se trata como caja cerrada a propósito. |
-| Servicio de notificaciones | Sistema externo objetivo | — | Recibirá solicitudes de alerta cuando un producto baje del umbral crítico. | Está en el alcance futuro, pero el módulo `alertas` y su adaptador todavía no están implementados. |
+| Servicio de notificaciones | Sistema externo | — | Recibe un aviso cuando una salida cruza el umbral. | La entrega requiere un servidor SMTP configurado. |
 
-Vendedor y empleado de bodega usan el rol `operador`. El rol `lector` permite consultar catálogo y stock. El administrador puede además crear, desactivar y eliminar productos. Operaciones emite y revoca credenciales desde la consola del servicio. [Política de roles](../../app/usuarios/infrastructure/credenciales.py).
+Vendedor y empleado de bodega usan el rol `operador`. El rol `lector` permite consultar catálogo y stock. El administrador puede además crear, desactivar y eliminar productos. El administrador puede gestionar credenciales desde Flutter. La consola permite emitir la primera. [Política de roles](../../app/usuarios/infrastructure/credenciales.py).
 
 ## Por qué se eligieron esos protocolos en las flechas
 
@@ -84,6 +84,4 @@ Vendedor y empleado de bodega usan el rol `operador`. El rol `lector` permite co
   infraestructura adicional. También conecta con la restricción C1 (Ley
   1581 de 2012): HTTPS cifra los datos en tránsito, protegiendo
   credenciales y datos personales.
-- **SMTP** hacia el servicio de notificaciones: protocolo objetivo para el
-  envío de correo. La integración todavía está pendiente y se documentará
-  mediante un ADR cuando se seleccione el proveedor.
+- **SMTP** entrega los avisos guardados en SQLite al servidor de correo configurado. [Adaptador](../../app/alertas/infrastructure/correo.py).

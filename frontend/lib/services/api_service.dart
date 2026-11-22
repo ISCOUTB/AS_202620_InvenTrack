@@ -219,4 +219,71 @@ class ApiService {
   void dispose() {
     _client.close();
   }
+
+  Future<Object?> _solicitar(String metodo, String ruta,
+      [Map<String, dynamic>? datos]) async {
+    final mensaje = http.Request(metodo, Uri.parse('$_baseUrl$ruta'));
+    mensaje.headers.addAll(_jsonHeaders);
+    if (datos != null) mensaje.body = jsonEncode(datos);
+    final respuesta = await _client
+        .send(mensaje)
+        .then(http.Response.fromStream)
+        .timeout(ApiConfig.timeout);
+    _ensureSuccess(respuesta);
+    return respuesta.bodyBytes.isEmpty
+        ? null
+        : jsonDecode(utf8.decode(respuesta.bodyBytes));
+  }
+
+  Future<List<Map<String, dynamic>>> _listar(String ruta) async {
+    return (await _solicitar('GET', ruta) as List).cast<Map<String, dynamic>>();
+  }
+
+  Future<String> rolActual() async =>
+      (await _solicitar('GET', '/sesion') as Map)['rol'] as String;
+
+  Future<List<Map<String, dynamic>>> proveedores() => _listar('/proveedores');
+
+  Future<void> guardarProveedor(String nombre, String contacto,
+      {String? id}) async {
+    final ruta =
+        id == null ? '/proveedores' : '/proveedores/${Uri.encodeComponent(id)}';
+    await _solicitar(id == null ? 'POST' : 'PUT', ruta,
+        {'nombre': nombre, 'contacto': contacto});
+  }
+
+  Future<void> eliminarProveedor(String id) async {
+    await _solicitar('DELETE', '/proveedores/${Uri.encodeComponent(id)}');
+  }
+
+  Future<List<Map<String, dynamic>>> historial(String sku) =>
+      _listar('/inventario/${Uri.encodeComponent(sku)}/movimientos');
+
+  Future<List<Map<String, dynamic>>> cierres() => _listar('/cierres');
+
+  Future<Map<String, dynamic>> abrirCierre() async =>
+      await _solicitar('POST', '/cierres') as Map<String, dynamic>;
+
+  Future<Map<String, dynamic>> conciliar(String id, String csv) async =>
+      await _solicitar('POST', '/cierres/${Uri.encodeComponent(id)}/conciliar',
+          {'csv': csv}) as Map<String, dynamic>;
+
+  Future<List<Map<String, dynamic>>> usuarios() => _listar('/usuarios');
+
+  Future<String> crearUsuario(String id, String rol) async =>
+      (await _solicitar('POST', '/usuarios', {'id': id, 'rol': rol})
+          as Map)['token'] as String;
+
+  Future<String> rotarUsuario(String id) async =>
+      (await _solicitar('POST', '/usuarios/${Uri.encodeComponent(id)}/rotar')
+          as Map)['token'] as String;
+
+  Future<void> cambiarRol(String id, String rol) async {
+    await _solicitar(
+        'PUT', '/usuarios/${Uri.encodeComponent(id)}/rol', {'rol': rol});
+  }
+
+  Future<void> revocarUsuario(String id) async {
+    await _solicitar('DELETE', '/usuarios/${Uri.encodeComponent(id)}');
+  }
 }

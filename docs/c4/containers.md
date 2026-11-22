@@ -37,7 +37,7 @@ flowchart TB
     Empleado -- "UI Material 3 (Flutter)" --> Web
     Web -- "HTTP/HTTPS · JSON (REST API)" --> Api
     Api -- "Perfil local en memoria" --> Db
-    Api -. SMTP previsto .-> Notif
+    Api -. SMTP .-> Notif
 
     classDef person fill:#1168bd,stroke:#0b4884,color:#ffffff,font-weight:bold
     classDef container fill:#1a6fc4,stroke:#0e4d8a,color:#ffffff,font-weight:bold
@@ -127,7 +127,7 @@ flowchart LR
 - **Nivel 3 (Componentes):** Está documentado en [components.md](components.md) y refleja los componentes implementados de `productos` e `inventario`.
 - **Frontend cliente:** Implementado en Flutter dentro de [`frontend/`](../../frontend/) consumiendo estrictamente `contracts/openapi/v1.json` (ver [`frontend/README.md`](../../frontend/README.md)). No añade lógica de dominio ni endpoints fuera del contrato.
 - **Persistencia:** el mismo proceso accede al volumen SQLite en el perfil durable y a los adaptadores en memoria en desarrollo.
-- **Notificaciones y módulos restantes:** `alertas` y `proveedores` siguen pendientes. `usuarios` implementa las credenciales individuales y los roles.
+- **Notificaciones y directorio.** El backend mantiene proveedores en SQLite y procesa la cola de alertas cuando hay un servidor SMTP configurado. `usuarios` gestiona credenciales individuales y roles.
 
 ### Delimitación de Fronteras de Almacenamiento (C4 Nivel 2)
 

@@ -279,6 +279,7 @@ class InvenTrackApp extends StatelessWidget {
 
     return MultiProvider(
       providers: [
+        Provider<ApiService>.value(value: service),
         ChangeNotifierProvider(
           create: (_) => HealthProvider(service),
         ),

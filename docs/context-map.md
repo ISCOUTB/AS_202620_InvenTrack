@@ -15,19 +15,18 @@ flowchart LR
         Usuarios["usuarios
         Credenciales individuales y roles"]
         Proveedores["proveedores
-        vacío — sin código"]
+        Directorio de proveedores"]
         Alertas["alertas
-        vacío — sin código"]
+        Cola SQLite y adaptador SMTP"]
     end
 
     Productos -- "Cliente-proveedor · HistorialMovimientosAdapter" --> Inventario
     Inventario -- "Cliente-proveedor · ValidadorDeProductoAdapter" --> Productos
 
     classDef implementado fill:#1a6fc4,stroke:#0e4d8a,color:#ffffff,font-weight:bold
-    classDef vacio fill:#999999,stroke:#6b6b6b,color:#ffffff,font-weight:bold,stroke-dasharray: 4 3
+    Inventario -- "Salida que cruza el umbral" --> Alertas
 
-    class Productos,Inventario,Usuarios implementado
-    class Proveedores,Alertas vacio
+    class Productos,Inventario,Usuarios,Proveedores,Alertas implementado
 ```
 
 ## Qué muestra
@@ -44,7 +43,7 @@ flowchart LR
     `inventario/infrastructure/`) invoca `ConsultarProducto` de `productos`,
     para rechazar movimientos sobre productos inexistentes o inactivos.
 - **`usuarios`** administra las credenciales y verifica los permisos del perfil SQLite. [Implementación](../app/usuarios/infrastructure/credenciales.py).
-- **`proveedores` y `alertas`** son extensiones previstas.
+- **`proveedores`** gestiona el directorio. **`alertas`** encola el correo en la transacción del movimiento y lo entrega por SMTP después de la confirmación.
 
 ## Relaciones tipificadas
 
@@ -62,8 +61,8 @@ flowchart LR
 | `productos` | `Producto` (id, nombre, activo) | Sí |
 | `inventario` | `StockProducto` (producto_id, cantidad), `Movimiento` (historial) | Sí — y desde ADR-0003 valida el `producto_id` contra `productos` antes de escribir |
 | `usuarios` | Usuario, rol y digest de credencial (ESC-05) | Sí, en el perfil SQLite |
-| `proveedores` | Proveedor | No implementado |
-| `alertas` | Alerta | No implementado |
+| `proveedores` | Proveedor (id, nombre, contacto) | Sí |
+| `alertas` | Correo de stock bajo y estado de entrega | Sí, en SQLite |
 
 Regla de propiedad: cada contexto escribe únicamente sus propios datos. Una
 referencia como `producto_id` no transfiere la propiedad de `Producto`; las

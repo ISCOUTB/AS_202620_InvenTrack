@@ -132,7 +132,7 @@ Para el cliente autenticado, desde `frontend/` ejecutar `flutter run --dart-defi
 
 ## Descripción
 
-Sistema de gestión de inventarios dirigido a pequeñas y medianas empresas que hoy gestionan su stock mediante Excel o registros manuales. La entrega permite gestionar el catálogo, registrar entradas y salidas y consultar existencias. El perfil SQLite conserva el historial con actor. La gestión de proveedores y las alertas automáticas siguen pendientes.
+Sistema de gestión de inventarios dirigido a pequeñas y medianas empresas que hoy gestionan su stock mediante Excel o registros manuales. La entrega permite gestionar el catálogo, registrar entradas y salidas y consultar existencias. El perfil SQLite conserva el historial con actor. Desde **Gestión** en Flutter se administran proveedores y usuarios, se consulta el historial por SKU y se concilia el conteo físico contra un corte de turno.
 
 Resuelve problemas concretos de las PYMEs objetivo: descuadres de stock, quiebres no detectados a tiempo, compras mal planificadas por falta de datos históricos, ausencia de trazabilidad, y dependencia de una sola persona como punto único de fallo operativo. Ver el planteamiento completo en [`docs/ficha_problema.md`](docs/ficha_problema.md).
 
@@ -246,7 +246,7 @@ Todos los diagramas están escritos en Mermaid y se renderizan directamente en G
 
 El sistema separa los contextos `productos` e `inventario`. Cada uno es dueño
 de sus entidades y las integraciones cruzadas se realizan mediante puertos de
-aplicación y adaptadores. `usuarios` administra credenciales y roles en el perfil durable. Los contextos `proveedores` y `alertas` siguen pendientes.
+aplicación y adaptadores. `usuarios` administra credenciales y roles en el perfil durable. `proveedores` gestiona el directorio y `alertas` envía avisos de stock bajo por SMTP desde una cola SQLite.
 La matriz detallada está en [`docs/propiedad-datos.md`](docs/propiedad-datos.md).
 
 ## Decisiones de arquitectura (ADR)
@@ -288,6 +288,8 @@ con el despliegue existente en Render.
     aleatorio y secreto. En las variables del servicio `api`, referencia ese valor
     con `INVENTRACK_INTERNAL_TOKEN=${{project.INVENTRACK_INTERNAL_TOKEN}}`.
     Mantén `INVENTRACK_ENV=production`. El valor predeterminado de `INVENTRACK_ALLOW_BUSINESS_DATA` es `false`. La instancia institucional de ensayo utiliza `true` para habilitar el acceso con credenciales individuales.
+
+    Para entregar alertas por correo, configura `INVENTRACK_SMTP_HOST`, `INVENTRACK_SMTP_DE` (remitente) e `INVENTRACK_SMTP_PARA` (destinatario) en el entorno de Dokploy. El adaptador usa STARTTLS y puerto 587 por defecto. Si el proveedor lo requiere, indica `INVENTRACK_SMTP_PUERTO`, `INVENTRACK_SMTP_USUARIO` e `INVENTRACK_SMTP_CLAVE`. Al redesplegar con esos valores se despachan también los avisos pendientes en SQLite. El correo se genera una vez por salida que cruce de más de 10 unidades a 10 o menos. [Verificación con SMTP local](tests/test_gestion_integrada.py).
 4. En **Domains**, agrega `inventrack.iscoutb.dev` para el servicio `api`, ruta `/`,
     HTTPS activado y puerto del contenedor `10000`.
 5. Pulsa **Deploy**. Con el autodespliegue activo, los siguientes pushes a `main`
@@ -312,7 +314,7 @@ la respuesta están en [`evidencia-seguridad-s13.md`](docs/evidencia-seguridad-s
 | Frontend | Flutter (Dart / Material 3 / Provider) | Aplicación cliente nativa (móvil y escritorio) en [`frontend/`](frontend/) alineada estrictamente al contrato OpenAPI v1; **no constituye un sitio web desplegado de forma independiente** |
 | Backend | FastAPI + Uvicorn | Implementado |
 | Persistencia | SQLite transaccional durable ([ADR-0020](docs/adr/0020-persistir-inventario-y-auditoria-en-sqlite.md)) y adaptadores In-Memory de demostración ([ADR-0012](docs/adr/0012-mantener-repositorios-en-memoria-en-el-mvp.md)) | Implementado con soporte de respaldos y recuperación |
-| Mensajería | Simulador asíncrono local | Integrado para auditoría; broker durable u Outbox persistente pendiente |
+| Mensajería | Simulador asíncrono local | Broker de auditoría en memoria y cola SQLite persistente para el correo de stock bajo |
 | Hosting / despliegue | Dokploy institucional + Render + Docker | Activo en `https://inventrack.iscoutb.dev` (`/health` verificado 200 OK) y Render secundario |
 | CI / calidad de código | GitHub Actions + Pytest + pytest-asyncio + pytest-cov + Flutter SDK | Suite síncrona y asíncrona con cobertura XML (`coverage.xml`), análisis SonarCloud, `pip-audit`, validación de contrato OpenAPI y suite Flutter (`analyze` + `test`) |
 

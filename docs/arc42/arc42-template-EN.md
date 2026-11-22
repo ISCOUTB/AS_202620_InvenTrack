@@ -35,7 +35,7 @@ productos, proveedores, entradas y salidas de mercancía, con control de
 usuarios y trazabilidad completa de cada movimiento, además de alertas
 automáticas cuando el stock de un producto baja de un umbral crítico.
 
-Alcance propuesto al inicio del semestre. La [comparación de alcance en S16](../preparacion-s16.md) detalla los flujos entregados. Proveedores y alertas de stock siguen pendientes.
+Alcance propuesto al inicio del semestre. La [comparación de alcance en S16](../preparacion-s16.md) detalla los flujos entregados. El directorio de proveedores se gestiona desde Flutter y las alertas por correo requieren un servidor SMTP configurado.
 
 - Gestión de productos
 - Gestión de proveedores
@@ -165,19 +165,19 @@ El dueño y los empleados trabajan sobre el catálogo y las existencias. El oper
 | Dueño de la PYME | Persona | Gestiona el catálogo, consulta existencias y registra movimientos. |
 | Empleado / vendedor | Persona | Registra entradas y salidas de mercancía; consulta stock actual. |
 | Operaciones | Persona | Emite y revoca credenciales, gestiona el volumen y restaura copias. |
-| Servicio de notificaciones | Integración prevista | Envío futuro de alertas de stock. |
-| Proveedor | Interesado indirecto | La gestión de proveedores sigue pendiente. |
+| Servicio de notificaciones | SMTP externo | Recibe alertas de stock bajo desde la cola durable. |
+| Proveedor | Interesado indirecto | El administrador mantiene el directorio de nombres y contactos. |
 
 ## Technical Context
 
 La implementación actual usa FastAPI y Uvicorn dentro de un contenedor Docker.
 La API se publica mediante Render y Dokploy institucional, decisiones
-documentadas en los ADR-0005 y ADR-0006. El cliente Flutter usa el primer canal de la tabla. El segundo corresponde al objetivo de alertas. La conectividad en PYMEs piloto sigue pendiente de validar bajo C7.
+documentadas en los ADR-0005 y ADR-0006. El cliente Flutter usa el primer canal de la tabla. El segundo entrega alertas al servidor de correo configurado. La conectividad en PYMEs piloto sigue pendiente de validar bajo C7.
 
 | Canal | Protocolo/formato | Entre |
 |---|---|---|
 | Interfaz de usuario | HTTP/HTTPS · JSON (Flutter) | Aplicación cliente Flutter (`frontend/`) ↔ API InvenTrack |
-| Envío de alertas previsto | SMTP / API de correo | InvenTrack → Servicio de notificaciones (correo electrónico) |
+| Envío de alertas de stock | SMTP | InvenTrack → Servicio de notificaciones (correo electrónico) |
 
 # Solution Strategy
 
@@ -416,7 +416,7 @@ flowchart TD
     end
 
     subgraph EXTERNAL["Servicios Externos"]
-        NOTIF["6. Notificaciones por correo (objetivo futuro)"]
+        NOTIF["6. Notificaciones por SMTP"]
     end
 
     USER -->|"HTTPS / REST"| DOKPLOY
@@ -456,7 +456,7 @@ en `render.yaml`. La evidencia de operación de ambos destinos se mantiene en
 | 3 | **SonarCloud** | Scanner SAST SaaS | Evalúa la calidad del código, cobertura y vulnerabilidades antes del despliegue. |
 | 4 | **Destinos operativos** | Dokploy `iscoutb.dev` y Render `onrender.com` | Ejecutan la misma API FastAPI/Uvicorn mediante `deploy/compose.lab.yaml` y `render.yaml`, respectivamente. |
 | 5 | **Volumen de Dokploy** | SQLite | Conserva catálogo, stock, credenciales y auditoría entre reinicios del proceso. |
-| 6 | **Notificaciones previstas** | SMTP | Integración futura para alertas por stock bajo. |
+| 6 | **Notificaciones por correo** | SMTP | La API procesa los cruces del umbral desde una cola SQLite. |
 
 ---
 
@@ -885,7 +885,7 @@ como corregidas, asumidas o pendientes sin evidencia.
 
 ### Riesgos después de S15
 
-La prueba del perfil durable cubre autorización, actor y restauración en un proceso nuevo. Continúan como riesgos la pérdida del volumen sin copia externa, la cola de notificaciones volátil, la rotación manual de secretos y la contención del escritor SQLite. El responsable de despliegue debe verificar TLS, retención y restauración fuera del host. El responsable de backend debe evaluar otro motor antes de habilitar varias réplicas. [Evidencia y límites](../verificacion-final.md).
+La prueba del perfil durable cubre autorización, actor y restauración en un proceso nuevo. Continúan como riesgos la pérdida del volumen sin copia externa, la disponibilidad del servidor SMTP, la rotación manual de secretos y la contención del escritor SQLite. El responsable de despliegue debe verificar TLS, retención y restauración fuera del host. El responsable de backend debe evaluar otro motor antes de habilitar varias réplicas. [Evidencia y límites](../verificacion-final.md).
 
 ### Deudas y riesgos del perfil inicial (registro histórico de S15)
 

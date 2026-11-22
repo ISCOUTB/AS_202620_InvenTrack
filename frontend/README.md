@@ -6,6 +6,8 @@ InvenTrack Frontend es una **aplicación cliente nativa multiplataforma** (móvi
 
 ---
 
+La acción **Gestión** de la pantalla principal abre el directorio de proveedores, el historial por SKU y los cierres de turno. Un administrador puede editar proveedores y administrar usuarios del perfil SQLite. Un operador puede tomar un corte y comparar el conteo físico en formato `sku,cantidad`. El lector puede consultar proveedores, movimientos y la lista de cortes. La primera credencial administrativa se emite desde la consola del servicio. [Configuración de la API](../README.md).
+
 ## Requisitos previos
 
 - **Flutter SDK** `>= 3.41` y **Dart SDK** `>= 3.0.0 <4.0.0` (verificado con Flutter `3.41.6` / Dart `3.11.4`).

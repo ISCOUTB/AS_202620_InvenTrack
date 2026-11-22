@@ -1,7 +1,7 @@
 # C4 Nivel 3: Diagrama de Componentes — API Backend InvenTrack
 
 Este nivel abre el contenedor `API Backend` del [C4 Nivel 2](containers.md) y
-muestra los componentes implementados actualmente. Los módulos `proveedores` y `alertas` todavía no tienen componentes de código.
+muestra los componentes del backend que atienden al cliente Flutter y al servidor SMTP.
 
 ```mermaid
 flowchart TB
@@ -33,12 +33,18 @@ flowchart TB
         Tx["Transacción SQLite por petición · turno y conexión para el escritor"]
         Usuarios["Identidades y digest de credencial"]
         Auditoria["Evento durable con actor"]
+        Directorio["Directorio de proveedores"]
+        Corte["Cortes y conciliación por SKU"]
+        Correo["Cola de correo en SQLite y envío SMTP"]
         Broker["Broker y consumidor de demostración"]
     end
     Client --> Acceso
     Acceso -->|Perfil memoria| ProdRouter
     Acceso -->|Perfil memoria| InvRouter
     Acceso -->|Perfil durable| Tx
+    Tx --> Directorio
+    Tx --> Corte
+    Auditoria --> Correo
     Tx --> Usuarios
     Tx --> ProdRouter
     Tx --> InvRouter
@@ -95,4 +101,4 @@ flowchart TB
 
 ## Alcance actual y objetivo
 
-El diagrama representa el estado implementado del backend (`app/`), consumido por el cliente Flutter ([`frontend/`](../../frontend/)) sin salir de `contracts/openapi/v1.json`. El perfil durable sustituye los repositorios en memoria por ProductosSQLite, StockSQLite y MovimientosSQLite. El componente de usuarios valida credenciales individuales. Alertas y proveedores siguen como objetivos.
+El diagrama representa el estado implementado del backend (`app/`), consumido por el cliente Flutter ([`frontend/`](../../frontend/)) sin salir de `contracts/openapi/v1.json`. El perfil durable sustituye los repositorios en memoria por ProductosSQLite, StockSQLite y MovimientosSQLite. El componente de usuarios valida credenciales individuales. El router de proveedores mantiene el directorio. Al confirmar una salida que cruza el umbral, se guarda una alerta de correo en la misma transacción.

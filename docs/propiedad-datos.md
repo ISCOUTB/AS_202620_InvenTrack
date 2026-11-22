@@ -14,7 +14,9 @@
 | **`StockProducto`** <br>*(producto_id, cantidad)* | `app/inventario` | `app/alertas`, Frontend | Modificar saldo disponible aplicando control de concurrencia (`ADR-0002`). | API / Caso de uso de consulta de stock |
 | **`Movimiento`** <br>*(historial de entradas y salidas)* | `app/inventario` | `app/productos`, Auditoría | Registrar movimientos de stock (Inmutable: solo escrituras `INSERT`). | Puerto `ConsultarHistorialMovimientos` <br>*(vía `HistorialMovimientosAdapter`)* |
 | **`Usuario / Rol`** <br>*(id, rol, permisos)* | `app/usuarios` <br>*(declarado en ESC-05)* | Todos los módulos | Registrar usuario, modificar rol o estado de acceso. | Middleware / Token de Autenticación |
-| **`AlertaStock`** <br>*(id, producto_id, resuelta)* | `app/alertas` <br>*(por implementar)* | Dashboard, Frontend | Generar alerta por umbral bajo, marcar como resuelta. | API / Endpoint de alertas activas |
+| **Correo de stock bajo** (evento, SKU, saldo, estado de envío) | `app/alertas` | Despachador SMTP | Encolar en la transacción de salida y registrar la entrega o el reintento. | Adaptador SMTP |
+| **Proveedor** (id, nombre, contacto) | `app/proveedores` | Flutter | Crear, editar y eliminar proveedores. | `/proveedores` |
+| **Corte de turno** (id, fecha, saldos) | `app/inventario` | Flutter | Guardar una instantánea de existencias para conciliación. | `/cierres` |
 
 ---
 
@@ -31,12 +33,4 @@
 
 ## Persistencia y evolución
 
-La implementación vigente usa adaptadores `InMemory` para `Producto`,
-`StockProducto` y `Movimiento`. Esto permite operar el MVP sin un servicio de
-datos externo, pero implica pérdida de información ante reinicio o redeploy y
-no permite coordinar varias réplicas. Según el
-[ADR-0012](adr/0012-mantener-repositorios-en-memoria-en-el-mvp.md), la
-evolución preferida es evaluar una base relacional compartida mediante
-adaptadores separados por módulo. La migración no debe transferir la escritura
-de `StockProducto` o `Movimiento` a `productos`, ni permitir consultas directas
-entre infraestructuras.
+El perfil de demostración conserva el catálogo, existencias, movimientos, proveedores y cortes en memoria durante la vida del proceso. En SQLite estos datos se guardan en el volumen junto con identidades, registros idempotentes, auditoría y la cola de correo. El corte contiene los saldos obtenidos mediante los repositorios de productos e inventario. [Persistencia SQLite](adr/0020-persistir-inventario-y-auditoria-en-sqlite.md) · [cola de correo](adr/0022-entregar-alertas-de-stock-desde-sqlite.md).

@@ -9,3 +9,4 @@ class Movimiento:
     tipo: str  # "entrada" | "salida"
     cantidad: int
     registrado_en: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    actor_id: str | None = None

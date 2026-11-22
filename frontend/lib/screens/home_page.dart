@@ -6,6 +6,7 @@ import 'package:inventrack/providers/health_provider.dart';
 import 'package:inventrack/providers/inventario_provider.dart';
 import 'package:inventrack/providers/productos_provider.dart';
 import 'package:inventrack/screens/inventario_page.dart';
+import 'package:inventrack/screens/gestion_page.dart';
 import 'package:inventrack/screens/productos_page.dart';
 import 'package:inventrack/ui/inventrack_style.dart';
 import 'package:inventrack/widgets/crear_producto_dialog.dart';
@@ -64,6 +65,13 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
         actions: [
+          IconButton(
+            tooltip: 'Gestión',
+            icon: const Icon(Icons.business_center_outlined),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const GestionPage()),
+            ),
+          ),
           IconButton(
             tooltip: health.isHealthy
                 ? 'Servicio disponible'

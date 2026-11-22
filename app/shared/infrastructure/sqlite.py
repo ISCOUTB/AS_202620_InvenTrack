@@ -67,6 +67,14 @@ CREATE TABLE IF NOT EXISTS comandos (
     PRIMARY KEY(actor_id, clave)
 );
 CREATE TABLE IF NOT EXISTS auditoria (evento_id TEXT PRIMARY KEY, evento TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS proveedores (id TEXT PRIMARY KEY, nombre TEXT NOT NULL, contacto TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS cierres (id TEXT PRIMARY KEY, fecha TEXT NOT NULL, saldos TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS correos_stock (
+    evento TEXT PRIMARY KEY, sku TEXT NOT NULL, saldo INTEGER NOT NULL,
+    enviado INTEGER NOT NULL DEFAULT 0, intentos INTEGER NOT NULL DEFAULT 0,
+    disponible INTEGER NOT NULL DEFAULT 0, turno TEXT
+);
+CREATE INDEX IF NOT EXISTS correos_pendientes ON correos_stock(enviado, disponible);
 """
 
 

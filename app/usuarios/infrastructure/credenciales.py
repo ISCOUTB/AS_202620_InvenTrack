@@ -28,9 +28,11 @@ def autenticar(db, cabecera):
 
 
 def permitido(rol, metodo, ruta):
+    if ruta.split("/")[1] == "usuarios":
+        return rol == "admin"
     if metodo == "GET" or rol == "admin":
         return True
-    return rol == "operador" and metodo == "POST" and ruta.startswith("/inventario/")
+    return rol == "operador" and metodo == "POST" and ruta.split("/")[1] in {"inventario", "cierres"}
 
 
 def main():
