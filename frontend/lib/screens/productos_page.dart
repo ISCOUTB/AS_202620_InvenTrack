@@ -1,91 +1,288 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'package:inventrack/providers/productos_provider.dart';
 import 'package:inventrack/models/producto.dart';
+import 'package:inventrack/providers/productos_provider.dart';
+import 'package:inventrack/ui/inventrack_style.dart';
 import 'package:inventrack/widgets/crear_producto_dialog.dart';
 
-class ProductosPage extends StatelessWidget {
+class ProductosPage extends StatefulWidget {
   const ProductosPage({super.key});
+
+  @override
+  State<ProductosPage> createState() => _ProductosPageState();
+}
+
+class _ProductosPageState extends State<ProductosPage> {
+  final TextEditingController _busquedaController =
+      TextEditingController();
+
+  String _filtro = 'Todos';
+
+  @override
+  void initState() {
+    super.initState();
+
+    _busquedaController.addListener(_actualizarBusqueda);
+  }
+
+  void _actualizarBusqueda() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  @override
+  void dispose() {
+    _busquedaController.removeListener(_actualizarBusqueda);
+    _busquedaController.dispose();
+    super.dispose();
+  }
+
+  List<Producto> _filtrarProductos(
+    List<Producto> productos,
+  ) {
+    final busqueda =
+        _busquedaController.text.trim().toLowerCase();
+
+    return productos.where((producto) {
+      final coincideBusqueda =
+          producto.nombre.toLowerCase().contains(busqueda) ||
+          producto.id.toLowerCase().contains(busqueda);
+
+      final coincideEstado = _filtro == 'Todos' ||
+          (_filtro == 'Activos' && producto.activo) ||
+          (_filtro == 'Inactivos' && !producto.activo);
+
+      return coincideBusqueda && coincideEstado;
+    }).toList();
+  }
 
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<ProductosProvider>();
     final productos = provider.productos;
-    final theme = Theme.of(context);
+    final filtrados = _filtrarProductos(productos);
+
+    final activos =
+        productos.where((producto) => producto.activo).length;
+
+    final inactivos = productos.length - activos;
 
     return Scaffold(
-      body: _buildBody(context, provider, productos, theme),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showCrearProductoDialog(context),
-        icon: const Icon(Icons.add),
-        label: const Text('Nuevo Producto'),
-      ),
-    );
-  }
-
-  Widget _buildBody(
-    BuildContext context,
-    ProductosProvider provider,
-    List<Producto> productos,
-    ThemeData theme,
-  ) {
-    if (provider.isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (productos.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+      backgroundColor: InvenTrackStyle.canvas,
+      body: RefreshIndicator(
+        onRefresh: () => provider.cargarProductos(),
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(18, 20, 18, 105),
           children: [
-            Icon(
-              Icons.inventory_2_outlined,
-              size: 80,
-              color: theme.colorScheme.outline,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'No hay productos registrados',
-              style: theme.textTheme.titleMedium?.copyWith(
-                color: theme.colorScheme.outline,
+            const Text(
+              'Mis productos',
+              style: TextStyle(
+                fontSize: 25,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.7,
+                color: InvenTrackStyle.ink,
               ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              'Presiona el botón + para agregar uno',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.outline,
+            const SizedBox(height: 5),
+            const Text(
+              'Organiza y administra tu catálogo fácilmente.',
+              style: TextStyle(
+                color: InvenTrackStyle.muted,
+                fontSize: 13,
               ),
             ),
+
+            const SizedBox(height: 22),
+
+            // Resumen del catálogo.
+            SurfacePanel(
+              child: Row(
+                children: [
+                  const SoftIcon(
+                    Icons.inventory_2_rounded,
+                    size: 52,
+                  ),
+                  const SizedBox(width: 15),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Total de productos',
+                          style: TextStyle(
+                            color: InvenTrackStyle.muted,
+                            fontSize: 12,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          '${productos.length}',
+                          style: const TextStyle(
+                            color: InvenTrackStyle.ink,
+                            fontSize: 30,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  StatusTag(
+                    '$activos activos',
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 22),
+
+            const SectionHeading(
+              'Explorar catálogo',
+              subtitle: 'Busca por nombre o identificador',
+            ),
+
+            const SizedBox(height: 13),
+
+            // Buscador local.
+            TextField(
+              controller: _busquedaController,
+              decoration: InputDecoration(
+                hintText: 'Buscar producto...',
+                prefixIcon: const Icon(
+                  Icons.search_rounded,
+                  color: InvenTrackStyle.muted,
+                ),
+                suffixIcon: _busquedaController.text.isNotEmpty
+                    ? IconButton(
+                        tooltip: 'Limpiar búsqueda',
+                        icon: const Icon(Icons.close_rounded),
+                        onPressed: _busquedaController.clear,
+                      )
+                    : null,
+              ),
+            ),
+
+            const SizedBox(height: 15),
+
+            // Filtros.
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _FiltroChip(
+                    titulo: 'Todos (${productos.length})',
+                    seleccionado: _filtro == 'Todos',
+                    onTap: () {
+                      setState(() => _filtro = 'Todos');
+                    },
+                  ),
+                  const SizedBox(width: 8),
+                  _FiltroChip(
+                    titulo: 'Activos ($activos)',
+                    seleccionado: _filtro == 'Activos',
+                    onTap: () {
+                      setState(() => _filtro = 'Activos');
+                    },
+                  ),
+                  const SizedBox(width: 8),
+                  _FiltroChip(
+                    titulo: 'Inactivos ($inactivos)',
+                    seleccionado: _filtro == 'Inactivos',
+                    onTap: () {
+                      setState(() => _filtro = 'Inactivos');
+                    },
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 23),
+
+            SectionHeading(
+              'Listado de productos',
+              subtitle:
+                  '${filtrados.length} productos encontrados',
+            ),
+
+            const SizedBox(height: 14),
+
+            if (provider.isLoading)
+              const Padding(
+                padding: EdgeInsets.all(18),
+                child: Center(
+                  child: CircularProgressIndicator(),
+                ),
+              ),
+
+            if (provider.hasError)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: SurfacePanel(
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.error_outline_rounded,
+                        color: InvenTrackStyle.orange,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          provider.errorMessage ??
+                              'Ocurrió un error.',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+            if (!provider.isLoading && filtrados.isEmpty)
+              EmptyPanel(
+                icon: Icons.search_off_rounded,
+                title: productos.isEmpty
+                    ? 'No hay productos registrados'
+                    : 'No encontramos resultados',
+                subtitle: productos.isEmpty
+                    ? 'Agrega tu primer producto para comenzar.'
+                    : 'Prueba otra búsqueda o cambia el filtro.',
+              ),
+
+            if (!provider.isLoading)
+              ...filtrados.map(
+                (producto) => Padding(
+                  padding: const EdgeInsets.only(bottom: 11),
+                  child: _ProductoCard(
+                    producto: producto,
+                    onDelete: () =>
+                        _confirmarEliminar(context, producto),
+                  ),
+                ),
+              ),
           ],
         ),
-      );
-    }
+      ),
 
-    return RefreshIndicator(
-      onRefresh: () async {
-        await provider.cargarProductos();
-      },
-      child: ListView.builder(
-        padding: const EdgeInsets.only(bottom: 88),
-        itemCount: productos.length,
-        itemBuilder: (context, index) {
-          final producto = productos[index];
-          return _ProductoTile(
-            producto: producto,
-            onDelete: () => _confirmarEliminar(context, producto),
-          );
-        },
+      // Botón principal.
+      floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'nuevo_producto',
+        backgroundColor: InvenTrackStyle.emerald,
+        foregroundColor: Colors.white,
+        elevation: 3,
+        onPressed: () => _crearProducto(context),
+        icon: const Icon(Icons.add_rounded),
+        label: const Text(
+          'Nuevo Producto',
+          style: TextStyle(
+            fontWeight: FontWeight.w800,
+          ),
+        ),
       ),
     );
   }
 
-  Future<void> _showCrearProductoDialog(BuildContext context) async {
-    final messenger = ScaffoldMessenger.of(context);
-    final errorColor = Theme.of(context).colorScheme.error;
-    final provider = context.read<ProductosProvider>();
-
+  Future<void> _crearProducto(BuildContext context) async {
     final request = await showDialog<CrearProductoRequest>(
       context: context,
       builder: (_) => const CrearProductoDialog(),
@@ -93,44 +290,44 @@ class ProductosPage extends StatelessWidget {
 
     if (request == null || !context.mounted) return;
 
-    final creado = await provider.crearProducto(request.id, request.nombre);
+    final provider = context.read<ProductosProvider>();
+
+    final creado = await provider.crearProducto(
+      request.id,
+      request.nombre,
+    );
+
     if (!context.mounted) return;
 
-    if (creado != null) {
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text('Producto "${creado.nombre}" creado exitosamente'),
-          behavior: SnackBarBehavior.floating,
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        behavior: SnackBarBehavior.floating,
+        content: Text(
+          creado != null
+              ? 'Producto "${creado.nombre}" creado exitosamente'
+              : provider.errorMessage ??
+                  'No se pudo crear el producto.',
         ),
-      );
-    } else {
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(
-            provider.errorMessage ?? 'Error al crear producto',
-          ),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: errorColor,
-        ),
-      );
-    }
+      ),
+    );
   }
 
   Future<void> _confirmarEliminar(
     BuildContext context,
     Producto producto,
   ) async {
-    final messenger = ScaffoldMessenger.of(context);
-    final errorColor = Theme.of(context).colorScheme.error;
     final provider = context.read<ProductosProvider>();
 
     final confirmar = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        icon: const Icon(Icons.delete_outline),
+        icon: const Icon(
+          Icons.delete_outline_rounded,
+          color: InvenTrackStyle.orange,
+        ),
         title: const Text('Eliminar Producto'),
         content: Text(
-          '¿Estás seguro de que deseas eliminar el producto "${producto.nombre}" (${producto.id})?',
+          '¿Deseas eliminar o desactivar "${producto.nombre}" (${producto.id})?',
         ),
         actions: [
           TextButton(
@@ -138,44 +335,81 @@ class ProductosPage extends StatelessWidget {
             child: const Text('Cancelar'),
           ),
           FilledButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
             style: FilledButton.styleFrom(
-              backgroundColor: Theme.of(ctx).colorScheme.error,
+              backgroundColor: Colors.redAccent,
             ),
+            onPressed: () => Navigator.of(ctx).pop(true),
             child: const Text('Eliminar'),
           ),
         ],
       ),
     );
 
-    if (confirmar != true || !context.mounted) return;
+    if (confirmar != true || !context.mounted) {
+      return;
+    }
 
-    final response = await provider.eliminarProducto(producto.id);
+    final respuesta =
+        await provider.eliminarProducto(producto.id);
+
     if (!context.mounted) return;
 
-    if (response != null) {
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(response.mensaje),
-          behavior: SnackBarBehavior.floating,
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        behavior: SnackBarBehavior.floating,
+        content: Text(
+          respuesta?.mensaje ??
+              provider.errorMessage ??
+              'No se pudo modificar el producto.',
         ),
-      );
-    } else {
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(
-            provider.errorMessage ?? 'Error al eliminar producto',
-          ),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: errorColor,
-        ),
-      );
-    }
+      ),
+    );
   }
 }
 
-class _ProductoTile extends StatelessWidget {
-  const _ProductoTile({
+// Botones de filtrado.
+class _FiltroChip extends StatelessWidget {
+  const _FiltroChip({
+    required this.titulo,
+    required this.seleccionado,
+    required this.onTap,
+  });
+
+  final String titulo;
+  final bool seleccionado;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return ChoiceChip(
+      label: Text(titulo),
+      selected: seleccionado,
+      onSelected: (_) => onTap(),
+      showCheckmark: false,
+      selectedColor: InvenTrackStyle.mint,
+      backgroundColor: Colors.white,
+      side: BorderSide(
+        color: seleccionado
+            ? InvenTrackStyle.emerald
+            : InvenTrackStyle.outline,
+      ),
+      labelStyle: TextStyle(
+        color: seleccionado
+            ? InvenTrackStyle.deepGreen
+            : InvenTrackStyle.muted,
+        fontWeight: FontWeight.w700,
+        fontSize: 12,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(25),
+      ),
+    );
+  }
+}
+
+// Tarjeta visual de producto.
+class _ProductoCard extends StatelessWidget {
+  const _ProductoCard({
     required this.producto,
     required this.onDelete,
   });
@@ -185,68 +419,86 @@ class _ProductoTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final color = producto.activo
+        ? InvenTrackStyle.emerald
+        : InvenTrackStyle.muted;
 
     return Dismissible(
       key: ValueKey(producto.id),
       direction: DismissDirection.endToStart,
+      confirmDismiss: (_) async {
+        await onDeleteAsync();
+        return false;
+      },
       background: Container(
+        decoration: BoxDecoration(
+          color: Colors.redAccent,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        padding: const EdgeInsets.only(right: 20),
         alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 24),
-        color: theme.colorScheme.error,
-        child: Icon(
-          Icons.delete,
-          color: theme.colorScheme.onError,
+        child: const Icon(
+          Icons.delete_outline_rounded,
+          color: Colors.white,
         ),
       ),
-      confirmDismiss: (_) async {
-        onDelete();
-        return false; // Don't dismiss automatically; let the provider handle it
-      },
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: producto.activo
-              ? theme.colorScheme.primaryContainer
-              : theme.colorScheme.surfaceContainerHighest,
-          child: Text(
-            producto.id.substring(0, producto.id.length.clamp(0, 2)).toUpperCase(),
-            style: TextStyle(
-              color: producto.activo
-                  ? theme.colorScheme.onPrimaryContainer
-                  : theme.colorScheme.outline,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-        title: Text(producto.nombre),
-        subtitle: Text('ID: ${producto.id}'),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
+      child: SurfacePanel(
+        padding: const EdgeInsets.all(13),
+        child: Row(
           children: [
-            Chip(
-              label: Text(
-                producto.activo ? 'Activo' : 'Inactivo',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: producto.activo
-                      ? theme.colorScheme.onTertiaryContainer
-                      : theme.colorScheme.outline,
-                ),
+            SoftIcon(
+              Icons.inventory_2_outlined,
+              color: color,
+              size: 49,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    producto.nombre,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: InvenTrackStyle.ink,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    'ID: ${producto.id}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: InvenTrackStyle.muted,
+                      fontSize: 11.5,
+                    ),
+                  ),
+                  const SizedBox(height: 9),
+                  StatusTag(
+                    producto.activo ? 'Activo' : 'Inactivo',
+                    color: color,
+                  ),
+                ],
               ),
-              backgroundColor: producto.activo
-                  ? theme.colorScheme.tertiaryContainer
-                  : theme.colorScheme.surfaceContainerHighest,
-              side: BorderSide.none,
-              padding: const EdgeInsets.symmetric(horizontal: 4),
             ),
             IconButton(
-              icon: const Icon(Icons.delete_outline),
               tooltip: 'Eliminar o desactivar producto',
               onPressed: onDelete,
+              icon: const Icon(
+                Icons.delete_outline_rounded,
+                color: InvenTrackStyle.muted,
+              ),
             ),
           ],
         ),
       ),
     );
+  }
+
+  Future<void> onDeleteAsync() async {
+    onDelete();
   }
 }
