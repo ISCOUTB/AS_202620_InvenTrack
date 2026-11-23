@@ -1,4 +1,4 @@
-fastapi==0.134.0
+fastapi==0.165.0
 anyio==4.15.1
 uvicorn==0.30.6
 pytest==9.2.0
