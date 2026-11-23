@@ -9,34 +9,37 @@ import 'package:inventrack/screens/home_page.dart';
 import 'package:inventrack/services/api_service.dart';
 import 'package:inventrack/ui/inventrack_style.dart';
 
-// Tema visual general de InvenTrack.
-ThemeData crearTemaInvenTrack() {
+// Tema visual general de InvenTrack, en modo claro u oscuro.
+ThemeData crearTemaInvenTrack([Brightness brillo = Brightness.light]) {
+  final oscuro = brillo == Brightness.dark;
+  final paleta = oscuro ? InvenTrackColors.dark : InvenTrackColors.light;
+
   return ThemeData(
     useMaterial3: true,
-    brightness: Brightness.light,
+    brightness: brillo,
     colorScheme: ColorScheme.fromSeed(
       seedColor: InvenTrackStyle.emerald,
-      brightness: Brightness.light,
+      brightness: brillo,
+      surface: paleta.surface,
     ),
-    scaffoldBackgroundColor: InvenTrackStyle.canvas,
+    scaffoldBackgroundColor: paleta.canvas,
+    extensions: [paleta],
 
-    appBarTheme: const AppBarTheme(
-      backgroundColor: InvenTrackStyle.canvas,
-      foregroundColor: InvenTrackStyle.ink,
+    appBarTheme: AppBarTheme(
+      backgroundColor: paleta.canvas,
+      foregroundColor: paleta.ink,
       centerTitle: false,
       elevation: 0,
       surfaceTintColor: Colors.transparent,
     ),
 
     cardTheme: CardThemeData(
-      color: Colors.white,
+      color: paleta.surface,
       elevation: 0,
       surfaceTintColor: Colors.transparent,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
-        side: const BorderSide(
-          color: InvenTrackStyle.outline,
-        ),
+        side: BorderSide(color: paleta.outline),
       ),
     ),
 
@@ -56,22 +59,18 @@ ThemeData crearTemaInvenTrack() {
 
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: Colors.white,
+      fillColor: paleta.surface,
       contentPadding: const EdgeInsets.symmetric(
         horizontal: 16,
         vertical: 15,
       ),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(
-          color: InvenTrackStyle.outline,
-        ),
+        borderSide: BorderSide(color: paleta.outline),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(
-          color: InvenTrackStyle.outline,
-        ),
+        borderSide: BorderSide(color: paleta.outline),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
@@ -82,11 +81,13 @@ ThemeData crearTemaInvenTrack() {
       ),
     ),
 
-    navigationBarTheme: const NavigationBarThemeData(
-      backgroundColor: Colors.white,
-      indicatorColor: InvenTrackStyle.mint,
+    navigationBarTheme: NavigationBarThemeData(
+      backgroundColor: paleta.surface,
+      indicatorColor: paleta.mint,
       elevation: 0,
     ),
+
+    dialogTheme: DialogThemeData(backgroundColor: paleta.surface),
   );
 }
 
@@ -183,13 +184,12 @@ class _SesionIndividualState
       );
     }
 
-    return MaterialApp(
+    return _AplicacionConTema(
       title: 'Acceder a InvenTrack',
-      debugShowCheckedModeBanner: false,
-      theme: crearTemaInvenTrack(),
       home: Scaffold(
         appBar: AppBar(
           title: const Text('InvenTrack'),
+          actions: const [BotonModoTema(), SizedBox(width: 8)],
         ),
         body: Center(
           child: SingleChildScrollView(
@@ -208,19 +208,19 @@ class _SesionIndividualState
                       size: 60,
                     ),
                     const SizedBox(height: 20),
-                    const Text(
+                    Text(
                       'Bienvenido a InvenTrack',
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.w800,
-                        color: InvenTrackStyle.ink,
+                        color: context.ink,
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
+                    Text(
                       'Ingresa tu credencial para continuar.',
                       style: TextStyle(
-                        color: InvenTrackStyle.muted,
+                        color: context.muted,
                       ),
                     ),
                     const SizedBox(height: 24),
@@ -290,12 +290,32 @@ class InvenTrackApp extends StatelessWidget {
           create: (_) => InventarioProvider(service),
         ),
       ],
-      child: MaterialApp(
+      child: _AplicacionConTema(
         title: 'InvenTrack',
+        home: HomePage(salir: salir),
+      ),
+    );
+  }
+}
+
+// MaterialApp que reacciona al modo de tema elegido (claro, oscuro o sistema).
+class _AplicacionConTema extends StatelessWidget {
+  const _AplicacionConTema({required this.title, required this.home});
+
+  final String title;
+  final Widget home;
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: modoTema,
+      builder: (context, modo, _) => MaterialApp(
+        title: title,
         debugShowCheckedModeBanner: false,
         theme: crearTemaInvenTrack(),
-        themeMode: ThemeMode.light,
-        home: HomePage(salir: salir),
+        darkTheme: crearTemaInvenTrack(Brightness.dark),
+        themeMode: modo,
+        home: home,
       ),
     );
   }
