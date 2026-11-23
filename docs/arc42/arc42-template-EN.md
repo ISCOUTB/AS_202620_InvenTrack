@@ -4,7 +4,7 @@ Plantilla arc42 v9.0-EN (versión académica). Fuente: <https://arc42.org>.
 
 ## Revisión posterior a S15
 
-El perfil de demostración conserva los adaptadores en memoria descritos en los cortes históricos. El perfil durable incorpora usuarios individuales, permisos y SQLite. La vista de despliegue vigente usa una instancia de la API y un volumen local en Dokploy. Las vistas de [contexto](../c4/context.md), [contenedores](../c4/containers.md) y [componentes](../c4/components.md) ubican estas fronteras. La configuración Render permanece cerrada. [Verificación del 19 de noviembre](../verificacion-final.md).
+El perfil de demostración conserva los adaptadores en memoria descritos en los cortes históricos. El perfil durable incorpora usuarios individuales, permisos y SQLite. La vista de despliegue vigente usa una instancia de la API y un volumen local en Dokploy. Las vistas de [contexto](../c4/context.md), [contenedores](../c4/containers.md) y [componentes](../c4/components.md) ubican estas fronteras. [Verificación del 19 de noviembre](../verificacion-final.md).
 
 ## Cómo leer este documento
 
@@ -35,7 +35,7 @@ productos, proveedores, entradas y salidas de mercancía, con control de
 usuarios y trazabilidad completa de cada movimiento, además de alertas
 automáticas cuando el stock de un producto baja de un umbral crítico.
 
-Alcance propuesto al inicio del semestre. La [comparación de alcance en S16](../preparacion-s16.md) detalla los flujos entregados. El directorio de proveedores se gestiona desde Flutter y las alertas por correo requieren un servidor SMTP configurado.
+Alcance propuesto al inicio del semestre. Los flujos entregados se describen en el [contrato de la API](../api/inventrack-contrato.md). El directorio de proveedores se gestiona desde Flutter y las alertas por correo requieren un servidor SMTP configurado.
 
 - Gestión de productos
 - Gestión de proveedores
@@ -171,8 +171,7 @@ El dueño y los empleados trabajan sobre el catálogo y las existencias. El oper
 ## Technical Context
 
 La implementación actual usa FastAPI y Uvicorn dentro de un contenedor Docker.
-La API se publica mediante Render y Dokploy institucional, decisiones
-documentadas en los ADR-0005 y ADR-0006. El cliente Flutter usa el primer canal de la tabla. El segundo entrega alertas al servidor de correo configurado. La conectividad en PYMEs piloto sigue pendiente de validar bajo C7.
+La API se publica mediante Dokploy institucional, según el [ADR-0024](../adr/0024-usar-solo-dokploy-institucional.md). El cliente Flutter usa el primer canal de la tabla. El segundo entrega alertas al servidor de correo configurado. La conectividad en PYMEs piloto sigue pendiente de validar bajo C7.
 
 | Canal | Protocolo/formato | Entre |
 |---|---|---|
@@ -388,11 +387,7 @@ Su mecanismo concreto de ejecución se resolvió en el [ADR-0002](../adr/0002-co
 
 # 7. Deployment View
 
-InvenTrack tiene dos destinos operativos para la misma API: **Dokploy institucional**
-como entorno público en `iscoutb.dev` y **Render** como entorno PaaS independiente.
-Dokploy se incorporó después del cierre de la semana 8; no reemplaza a Render.
-Ambos construyen el mismo `Dockerfile`, cumplen la restricción de costo cero
-($0.00 USD) **C5** y exponen el mismo contrato HTTP.
+Dokploy publica la API de InvenTrack en `inventrack.iscoutb.dev`. Construye la imagen desde el `Dockerfile` y monta el volumen SQLite del servicio. El alojamiento institucional cumple la restricción C5 de costo cero para el equipo.
 
 ## 7.1 Infrastructure Level 1 (Modelo de 6 Nodos de Infraestructura)
 
@@ -409,9 +404,8 @@ flowchart TD
         SONAR["3. SonarCloud<br/>(Quality Gate & Static Analysis)"]
     end
 
-    subgraph DEPLOY["4. Destinos operativos"]
+    subgraph DEPLOY["4. Despliegue institucional"]
       DOKPLOY["Dokploy Compose Service<br/>(iscoutb.dev)"]
-      RENDER["Render Web Service<br/>(onrender.com)"]
       VOL["5. Volumen SQLite de Dokploy"]
     end
 
@@ -420,12 +414,10 @@ flowchart TD
     end
 
     USER -->|"HTTPS / REST"| DOKPLOY
-    USER -->|"HTTPS / REST"| RENDER
     GH -->|"Trigger de Tests & Pipeline"| SONAR
     GH -->|"Auto-Deploy via Dokploy"| DOKPLOY
-    GH -->|"Auto-Deploy via Render"| RENDER
     DOKPLOY --- VOL
-    DOKPLOY -. integración futura .-> NOTIF
+    DOKPLOY -. SMTP con STARTTLS .-> NOTIF
 ```
 
 La aplicación se inicia localmente mediante:
@@ -442,8 +434,7 @@ flutter run -d android
 
 El despliegue institucional se construye con `Dockerfile` y
 `deploy/compose.lab.yaml`; Dokploy publica automáticamente los cambios de `main`
-en `https://inventrack.iscoutb.dev`. Render conserva su configuración independiente
-en `render.yaml`. La evidencia de operación de ambos destinos se mantiene en
+en `https://inventrack.iscoutb.dev`. Los costos y límites están documentados en
 [`docs/despliegue-y-costos.md`](../despliegue-y-costos.md) y en el
 [ADR-0006](../adr/0006-desplegar-en-dokploy-institucional.md).
 
@@ -454,7 +445,7 @@ en `render.yaml`. La evidencia de operación de ambos destinos se mantiene en
 | 1 | **Cliente / Frontend** | Flutter (`frontend/`) / HTTP Client | Aplicación cliente Material 3 que consume la API REST según `contracts/openapi/v1.json` (`GET /health`, `/productos`, `/inventario`). |
 | 2 | **GitHub CI/CD** | GitHub Actions Workflow | Ejecuta las pruebas automatizadas (`pytest`) y orquesta el flujo de integración. |
 | 3 | **SonarCloud** | Scanner SAST SaaS | Evalúa la calidad del código, cobertura y vulnerabilidades antes del despliegue. |
-| 4 | **Destinos operativos** | Dokploy `iscoutb.dev` y Render `onrender.com` | Ejecutan la misma API FastAPI/Uvicorn mediante `deploy/compose.lab.yaml` y `render.yaml`, respectivamente. |
+| 4 | **Plataforma institucional** | Dokploy | Ejecuta FastAPI/Uvicorn mediante `deploy/compose.lab.yaml`. |
 | 5 | **Volumen de Dokploy** | SQLite | Conserva catálogo, stock, credenciales y auditoría entre reinicios del proceso. |
 | 6 | **Notificaciones por correo** | SMTP | La API procesa los cruces del umbral desde una cola SQLite. |
 
@@ -462,12 +453,12 @@ en `render.yaml`. La evidencia de operación de ambos destinos se mantiene en
 
 ## 7.2 Infrastructure Level 2 (Nodo de Ejecución Backend)
 
-Dentro de los contenedores hospedados en Dokploy y Render, el proceso principal
+Dentro de los contenedores hospedados en Dokploy, el proceso principal
 corre sobre Uvicorn administrando FastAPI:
 
 ```mermaid
 flowchart LR
-    subgraph DEPLOYMENT_NODES["Dokploy y Render Container Nodes"]
+    subgraph DEPLOYMENT_NODES["Dokploy Container Nodes"]
         UVI["Uvicorn ASGI Server"]
         FAST["FastAPI Main App"]
         MIDDLEWARE["Metrics & Latency Middleware<br/>(Cálculo p95 / Ventana 1000 req por método y ruta)"]
@@ -498,7 +489,6 @@ La aplicación emite logs JSON a stdout y expone la métrica Prometheus
 | Componente / Servicio | Nivel de Servicio / Plan | Consumo Estimado | Costo Mensual ($) |
 |---|---|---|---|
 | **Dokploy institucional** | Cuota compartida (512 MB por equipo / 0.5 CPU por contenedor) | API limitada a 256 MB / 50k req. | $0.00 USD |
-| **Render Web Service** | Free Tier | API Docker / 50k req. | $0.00 USD |
 | **GitHub Actions** | Public Repository Free Tier | ~120 min de build / mes | $0.00 USD |
 | **SonarCloud** | Open Source Plan | Análisis ilimitados sobre repo público | $0.00 USD |
 | **Email SMTP Notifier** | Free Tier (SendGrid/Mailgun) | < 1,000 correos de alerta / mes | $0.00 USD |
@@ -507,14 +497,13 @@ La aplicación emite logs JSON a stdout y expone la métrica Prometheus
 ### Análisis de Arranque en Frío (*Cold Start*) vs. Escenario ESC-04
 * **Dokploy:** gestiona el contenedor y el proxy HTTPS; la disponibilidad está
   sujeta a la cuota y operación del servidor compartido.
-* **Render:** gestiona su propio contenedor y puede aplicar suspensión por inactividad.
 * **Comportamiento en caliente:** El procesamiento en memoria junto con el
   `asyncio.Lock` resuelve las transacciones en **< 50 ms**, cumpliendo holgadamente
   con la latencia **p95 ≤ 400 ms** requerida por **ESC-04**.
 
 ### Punto de Quiebre (*Breaking Point*)
 El modelo de infraestructura gratuita entrará en quiebre bajo dos condiciones:
-1. **Límite de RAM (OOM):** Superar los **512 MB** asignados al equipo en Dokploy o el límite operativo del plan gratuito de Render.
+1. **Límite de RAM (OOM):** Superar los **512 MB** asignados al equipo en Dokploy.
 2. **Cuota de CPU o build:** Exceder 0.5 CPU por contenedor o la memoria compartida durante la compilación en Dokploy.
 3. **Persistencia y disponibilidad:** El perfil durable usa SQLite en una instancia. Exigir varios escritores o alta disponibilidad requiere evaluar un motor de servidor y registrar otra decisión.
 
@@ -848,7 +837,7 @@ secciones para saber por qué un escenario importa más que otro.
 
 ### Verificación de escenarios en el perfil durable
 
-ESC-01 exige 50 transacciones simultáneas en un SKU. ESC-04 exige consultas a 20 solicitudes/s con p95 ≤ 400 ms. El ensayo de 20 escrituras de ADR-0002 sigue como reto histórico independiente. Las [tres corridas por HTTP](../verificacion-final.md) verifican los dos escenarios de §10 sobre una instancia local. ESC-05 tiene pruebas 401/403 para las operaciones existentes. La [restauración](../../tests/test_perfil_durable.py) cubre integridad de ESC-03. El equipo confirmó la restauración fuera del host y la consulta autenticada desde Flutter. Una repetición con la copia ya disponible en el PC alcanzó la consulta autenticada en 1,738 s frente al objetivo de 120 s. La reposición del servicio público completo queda por medir. [Registro de S16](../preparacion-s16.md#verificación-pública-y-colaboración).
+ESC-01 exige 50 transacciones simultáneas en un SKU. ESC-04 exige consultas a 20 solicitudes/s con p95 ≤ 400 ms. El ensayo de 20 escrituras de ADR-0002 sigue como reto histórico independiente. Las [tres corridas por HTTP](../verificacion-final.md) verifican los dos escenarios de §10 sobre una instancia local. ESC-05 tiene pruebas 401/403 para las operaciones existentes. La [restauración](../../tests/test_perfil_durable.py) cubre integridad de ESC-03. El equipo confirmó la restauración fuera del host y la consulta autenticada desde Flutter. Una repetición con la copia ya disponible en el PC alcanzó la consulta autenticada en 1,738 s frente al objetivo de 120 s. La reposición del servicio público completo queda por medir. [Registro de S16](../verificacion-final.md#verificación-pública-y-colaboración).
 
 ## 10.3 Trade-offs de Arquitectura
 
@@ -917,7 +906,7 @@ implementadas las capacidades que permanecen fuera del MVP.
 | Stock insuficiente para una salida | El inventario podría quedar negativo o la operación podría aplicarse parcialmente. | `StockInsuficienteError` se traduce a `409`; el lock protege la lectura y actualización del stock. | [Caso de uso](../../app/inventario/application/registrar_movimiento.py), [prueba de inventario](../../tests/inventario/test_inventario.py). Implementado. |
 | Espera del lock superior a 2 segundos | Una petición queda retenida durante una contención excesiva. | Timeout por SKU y respuesta `503 Service Unavailable`; el contexto libera el lock en `finally`. | [ADR-0002](../adr/0002-control-concurrencia-memoria-inventario.md), [prueba de degradación](../../tests/inventario/test_degradacion_lock.py). Implementado. |
 | Reinicio del proceso o múltiples réplicas | Se pierde o diverge el estado almacenado en memoria. | Mantener una instancia para el MVP; evaluar persistencia relacional compartida y lock distribuido antes de escalar horizontalmente. | [ADR-0012](../adr/0012-mantener-repositorios-en-memoria-en-el-mvp.md), deuda aceptada. Pendiente post-MVP. |
-| Arranque en frío del destino gratuito | La primera solicitud puede superar el umbral de latencia por suspensión del servicio. | Calentar la instancia antes de medir y separar la sonda `/health` de la medición de negocio. | [ADR-0005](../adr/0005-eleccion-plataforma-despliegue.md), [experimento S10](../retos/corte-2-experimento.md). Mitigación operativa. |
+| Arranque tras un redespliegue | La primera solicitud puede superar el umbral de latencia mientras se inicia la API. | Calentar la instancia antes de medir y separar la sonda `/health` de la medición de negocio. | [ADR-0005](../adr/0005-eleccion-plataforma-despliegue.md), [experimento S10](../retos/corte-2-experimento.md). Mitigación operativa. |
 | Reintento de una entrada o salida después de un timeout de red | Dentro de una instancia, la misma clave y payload devuelve el resultado guardado; tras reinicio o en otra réplica la clave puede no existir. | `InMemoryIdempotencyStore` reserva la clave antes del caso de uso; una clave con payload diferente devuelve `409`. Migrar a almacenamiento durable antes de escalar. | [ADR-0017](../adr/0017-idempotencia-http-en-comandos-de-inventario.md) y [pruebas HTTP](../../tests/inventario/test_inventario.py). |
 | Acceso sin autenticación o rol insuficiente | Un usuario podría acceder a operaciones administrativas sin autorización. | Mantener autenticación y roles fuera del MVP declarado; no presentar ESC-05 como implementado y exigir un cambio arquitectónico antes de habilitar usuarios reales. | [Contrato API](../api/inventrack-contrato.md), ESC-05. Pendiente de alcance. |
 | Dependencia con vulnerabilidad conocida | Un defecto publicado en una dependencia puede afectar la superficie HTTP o el entorno de ejecución. | Mantener versiones fijadas, hashes completos y ejecutar `pip-audit` en CI; actualizar ante nuevos avisos. | [Evidencia S13](../evidencia-seguridad-s13.md). Lock vigente y auditoría del 1 nov 2026 sin vulnerabilidades conocidas. |

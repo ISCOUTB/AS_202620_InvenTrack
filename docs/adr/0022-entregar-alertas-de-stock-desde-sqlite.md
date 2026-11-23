@@ -19,4 +19,4 @@ El encargado recibe un correo por cruce en condiciones normales. Si el proceso t
 
 ## Trazabilidad
 
-[Adaptador SMTP](../../app/alertas/infrastructure/correo.py) · [prueba del cruce, el reinicio y la entrega](../../tests/test_gestion_integrada.py) · [alcance S16](../preparacion-s16.md).
+[Adaptador SMTP](../../app/alertas/infrastructure/correo.py) · [prueba del cruce, el reinicio y la entrega](../../tests/test_gestion_integrada.py) · [verificación de entrega por SMTP](../verificacion-final.md#verificación-pública-y-colaboración).

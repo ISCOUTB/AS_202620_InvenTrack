@@ -1,6 +1,6 @@
 ﻿# Prototipo de Terraform para Azure App Service
 
-El equipo conserva esta carpeta como registro de la primera propuesta de despliegue de InvenTrack. La configuración de Azure quedó incompleta. Durante el intento de aprovisionamiento, la suscripción solicitó una tarjeta para verificar la cuenta. La restricción C5 del proyecto exigía un presupuesto de cero dólares y excluía el uso de medios de pago personales. El equipo documentó la elección de Render en el [ADR-0005](../docs/adr/0005-eleccion-plataforma-despliegue.md).
+El equipo conserva esta carpeta como registro de la primera propuesta de despliegue de InvenTrack. La configuración de Azure quedó incompleta. Durante el intento de aprovisionamiento, la suscripción solicitó una tarjeta para verificar la cuenta. La restricción C5 del proyecto exigía un presupuesto de cero dólares y excluía el uso de medios de pago personales. El equipo documentó la evaluación inicial de plataformas en el [ADR-0005](../docs/adr/0005-eleccion-plataforma-despliegue.md).
 
 Los archivos Terraform describen los [recursos previstos](main.tf), los [parámetros de entrada](variables.tf), los [valores de salida](outputs.tf) y las [versiones requeridas](versions.tf).
 

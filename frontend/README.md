@@ -49,7 +49,7 @@ flutter run -d android --dart-define=INVENTRACK_API_URL=https://inventrack.iscou
 flutter run -d windows --dart-define=INVENTRACK_API_URL=https://inventrack.iscoutb.dev
 ```
 
-> **Acceso en Dokploy.** Para probar catálogo e inventario en la instancia institucional, añade `--dart-define=INVENTRACK_AUTH=true` al comando y usa una credencial individual de ensayo. El 22/11/2026 las consultas anónimas devolvieron 401. En un entorno con `INVENTRACK_ALLOW_BUSINESS_DATA=false`, el negocio devuelve 503. [Verificación institucional](../docs/preparacion-s16.md#verificación-pública-y-colaboración).
+> **Acceso en Dokploy.** Para probar catálogo e inventario en la instancia institucional, añade `--dart-define=INVENTRACK_AUTH=true` al comando y usa una credencial individual de ensayo. El 22/11/2026 las consultas anónimas devolvieron 401. En un entorno con `INVENTRACK_ALLOW_BUSINESS_DATA=false`, el negocio devuelve 503. [Verificación institucional](../docs/verificacion-final.md#verificación-pública-y-colaboración).
 >
 > **Conexión desde móvil:** En el emulador Android, `10.0.2.2` apunta al `localhost` de la máquina anfitriona. En un dispositivo físico se debe usar la IP local del equipo que ejecuta el backend, por ejemplo `http://192.168.1.10:8000`, y permitir el tráfico correspondiente en la red.
 >

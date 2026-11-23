@@ -55,7 +55,7 @@ La propiedad detallada de estos datos y sus fronteras está documentada en
 | FastAPI y Pydantic | API HTTP y validación de payloads. | La superficie HTTP depende de sus versiones fijadas. | Dependencias fijadas en `requirements.txt`. |
 | Uvicorn | Servidor ASGI. | Expone la aplicación en el contenedor. | Ejecutado como usuario no root. |
 | Python base `3.11-slim` | Runtime del contenedor. | Imagen externa que debe mantenerse actualizada. | Definida en `Dockerfile`. |
-| Render y Dokploy | Plataformas de despliegue documentadas. | Disponibilidad, configuración y protección del tráfico dependen de la plataforma. | Configuradas fuera del código de la aplicación. |
+| Dokploy | Plataforma de despliegue institucional. | Disponibilidad, configuración y protección del tráfico dependen de la plataforma. | Configuración fuera del código de la aplicación. |
 | GitHub Actions / SonarCloud | CI y análisis de calidad. | Procesan código y resultados del repositorio. | Configurados en `.github/workflows/` y `sonar-project.properties`. |
 | Repositorios `InMemory` | Persistencia temporal del MVP. | Pérdida de datos ante reinicio y falta de coordinación entre réplicas. | Decisión aceptada en ADR-0012. |
 
@@ -203,8 +203,7 @@ en esta evidencia. El valor real del token debe gestionarse como secreto del pro
 despliegue; no se debe incluir en Compose, README, logs ni comandos
 compartidos. Compose solo contiene una referencia a la variable externa. Esta
 comprobación es histórica y no demuestra que la punta actual
-`e17afb8ad59fba8c851e06338c1219f7f4bc918f` haya sido redesplegada ni que Render
-o Dokploy estén sirviendo actualmente esa revisión. La comprobación autorizada
+`e17afb8ad59fba8c851e06338c1219f7f4bc918f` haya sido redesplegada ni que Dokploy esté sirviendo actualmente esa revisión. La comprobación autorizada
 con el token y el hash realmente servido requieren configuración y acceso
 externos, por lo que permanecen pendientes.
 
@@ -224,7 +223,7 @@ localmente con una variable de prueba; no se registró el secreto real.
 | T-03 — pérdida de estado | Responsable técnico de backend + responsable de datos | [ADR-0012](adr/0012-mantener-repositorios-en-memoria-en-el-mvp.md) y repositorios `InMemory` | Persistencia durable, backup y restauración probados antes de operar datos reales. |
 | T-04 — divergencia entre réplicas | Responsable de plataforma/DevOps | [ADR-0002](adr/0002-control-concurrencia-memoria-inventario.md) y [ADR-0017](adr/0017-idempotencia-http-en-comandos-de-inventario.md) | Una sola instancia controlada o coordinación distribuida probada antes de escalar. |
 | T-05 — auditoría asíncrona incompleta | Responsable del módulo inventario + responsable de mensajería | [broker simulado](../app/messaging/broker_simulador.py) y [evidencia S12](evidencia-mensajeria-s12.md) | Outbox durable o garantía equivalente, con reintentos y DLQ verificables. |
-| T-06 — exposición de métricas y documentación | Responsable de plataforma/DevOps | [AccessPolicyMiddleware](../app/main.py), [prueba de regresión](../tests/test_health.py), [render.yaml](../render.yaml) y [Compose institucional](../deploy/compose.lab.yaml) | Producción con negocio deshabilitado por defecto y superficies internas inaccesibles sin secreto gestionado. |
+| T-06 — exposición de métricas y documentación | Responsable de plataforma/DevOps | [AccessPolicyMiddleware](../app/main.py), [prueba de regresión](../tests/test_health.py) y [Compose institucional](../deploy/compose.lab.yaml) | Producción con negocio deshabilitado por defecto y superficies internas inaccesibles sin secreto gestionado. |
 | T-07 — identidad y privacidad en auditoría | Responsable de seguridad + responsable del módulo inventario | [propiedad de datos](propiedad-datos.md), logs de [app/main.py](../app/main.py) y política de retención pendiente | Actor autenticado, redacción de identificadores y retención/acceso aprobados. |
 | T-08 — entrada inválida | Responsable técnico de backend | [router de inventario](../app/inventario/infrastructure/router.py), [pruebas de validación](../tests/inventario/test_inventario.py) y contrato OpenAPI | Límites de entrada y pruebas contractuales mantenidos en CI. |
 | T-09 — privilegios del contenedor | Responsable de plataforma/DevOps | [Dockerfile](../Dockerfile) y [resultado del escaneo de imagen](#resultado-del-escaneo-de-la-imagen-docker) | Usuario no root implementado; el escaneo encontró vulnerabilidades y requiere actualización de la imagen/dependencias. |
@@ -295,7 +294,7 @@ durante la operación:
 | `X-Correlation-ID` | Puede serlo si el cliente incluye un identificador asociado a una persona. | Trazar una solicitud entre componentes. | Recibido opcionalmente y escrito en eventos/logs. |
 | `X-Idempotency-Key` | Normalmente es un identificador técnico, pero no debe contener nombres, correos o documentos. | Evitar repetir un comando HTTP. | Recibido opcionalmente y almacenado temporalmente en memoria. |
 | `event_id` | Identificador técnico; no identifica por sí solo a una persona. | Identificar un evento de auditoría. | Generado por el servidor y registrado. |
-| IP, user-agent y datos de acceso del proveedor | Pueden ser datos personales o identificables. | Seguridad y operación de la plataforma. | Posible tratamiento en Render, Dokploy, proxy o sistema de logs; no es almacenado explícitamente por la aplicación. |
+| IP, user-agent y datos de acceso del proveedor | Pueden ser datos personales o identificables. | Seguridad y operación de la plataforma. | Posible tratamiento en Dokploy, proxy o sistema de logs; no es almacenado explícitamente por la aplicación. |
 
 La aplicación registra datos técnicos de solicitudes y eventos, pero no tiene
 un campo de identidad autenticada del actor. Por ello, actualmente no puede

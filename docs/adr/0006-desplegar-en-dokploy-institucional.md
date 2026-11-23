@@ -1,7 +1,8 @@
 # ADR-0006: Desplegar InvenTrack en Dokploy institucional
 
 **Fecha:** 2026-09-29  
-**Estado:** Aceptado  
+**Estado:** Reemplazado en la elección de destinos por [ADR-0024](0024-usar-solo-dokploy-institucional.md).
+
 **Complementa:** [ADR-0005: Elección de plataforma de despliegue](0005-eleccion-plataforma-despliegue.md)
 
 ## Contexto

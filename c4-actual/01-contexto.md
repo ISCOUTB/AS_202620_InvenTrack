@@ -11,7 +11,7 @@ C4Context
     System(inventrack, "InvenTrack", "Sistema de inventarios para pequeñas empresas: productos, stock por SKU, movimientos, proveedores, usuarios y cierre/conciliación de turno")
 
     System_Ext(smtp, "Servidor SMTP", "Entrega el correo de alerta de stock bajo")
-    System_Ext(plataforma, "Plataforma de despliegue", "Dokploy institucional (iscoutb.dev) y Render; ejecutan el contenedor y hacen health check")
+    System_Ext(plataforma, "Plataforma de despliegue", "Dokploy institucional (iscoutb.dev); ejecuta el contenedor y comprueba su salud")
     System_Ext(monitor, "Consumidor de métricas y Swagger", "Acceso interno con X-Internal-Token a /metrics, /docs y /openapi.json")
     System_Ext(ci, "GitHub Actions y SonarCloud", "Pruebas, análisis estático, auditoría de dependencias y validación del contrato OpenAPI")
 

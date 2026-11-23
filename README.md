@@ -9,11 +9,11 @@
 
 ---
 
-## Semana 16 · Implementación documentada
+## Semana 16 · Entrega técnica final
 
-Reto propuesto: contrastar el conteo físico por SKU con una copia del inventario tomada al cierre de turno. [Ensayo de conciliación y antecedentes](docs/preparacion-s16.md) · [Sistema institucional](https://inventrack.iscoutb.dev).
+El equipo implementó la conciliación por SKU al cierre de turno. En el ensayo, el inventario y el conteo sumaban 35 unidades y la aplicación identificó las cuatro diferencias que ese total ocultaba. [Prueba de conciliación](docs/verificacion-final.md#conciliación-por-sku) · [Sistema institucional](https://inventrack.iscoutb.dev).
 
-En Flutter, **Gestión → Cierre de turno** permite tomar el corte y comparar un CSV con cabecera `sku,cantidad`. La verificación local actual pasó las 49 pruebas Python recopiladas y las 10 pruebas Flutter; el análisis de Flutter terminó sin hallazgos. En Dokploy, se obtuvo 200 en `/health` y 401 en las rutas de Gestión sin credencial. El equipo confirmó el acceso autenticado a Gestión desde Flutter, la entrega del aviso por SMTP y la restauración de una copia en su PC. [Evidencia de S16](docs/preparacion-s16.md).
+En Flutter, **Gestión → Cierre de turno** permite tomar el corte y comparar un CSV con cabecera `sku,cantidad`. La verificación local actual pasó las 49 pruebas Python recopiladas y las 10 pruebas Flutter; el análisis de Flutter terminó sin hallazgos. En Dokploy, se obtuvo 200 en `/health` y 401 en las rutas de Gestión sin credencial. El equipo confirmó el acceso autenticado a Gestión desde Flutter, la entrega del aviso por SMTP y la restauración de una copia en su PC. [Evidencia de S16](docs/verificacion-final.md).
 
 ## Ejecutar el perfil durable
 
@@ -29,7 +29,7 @@ python -m uvicorn app.main:app
 
 Entregar la credencial una sola vez y usar `Authorization: Bearer <credencial individual>` por HTTPS fuera de localhost. Los roles disponibles son `admin`, `operador` y `lector`. Reemitir para el mismo ID rota la credencial. `python -m app.usuarios.infrastructure.credenciales revocar operador-01` invalida el acceso. Para crear productos se necesita un administrador. Emitir las credenciales dentro del servicio con acceso al mismo volumen. El secreto operativo de métricas y documentación se configura por separado.
 
-El Compose de Dokploy monta un volumen en `/app/data` y mantiene negocio cerrado por defecto. Verificar permisos del volumen, TLS y respaldo externo antes de activarlo. Render conserva el perfil cerrado sin disco persistente. Hacer copias con `python -m app.shared.infrastructure.respaldo inventrack.sqlite3 copia.sqlite3`. Ambos nombres se interpretan dentro del directorio de `INVENTRACK_DB_PATH`, o del directorio de trabajo si la variable está ausente. El volumen debe admitir enlaces duros para publicar la copia verificada con un nombre nuevo. Para restaurar, detener el servicio, ejecutar el mismo comando desde la copia hacia un archivo nuevo y arrancar con esa ruta en `INVENTRACK_DB_PATH`. Proteger las copias y el volumen con permisos de operador.
+El Compose de Dokploy monta un volumen en `/app/data` y mantiene negocio cerrado por defecto. Verificar permisos del volumen, TLS y respaldo externo antes de activarlo. Hacer copias con `python -m app.shared.infrastructure.respaldo inventrack.sqlite3 copia.sqlite3`. Ambos nombres se interpretan dentro del directorio de `INVENTRACK_DB_PATH`, o del directorio de trabajo si la variable está ausente. El volumen debe admitir enlaces duros para publicar la copia verificada con un nombre nuevo. Para restaurar, detener el servicio, ejecutar el mismo comando desde la copia hacia un archivo nuevo y arrancar con esa ruta en `INVENTRACK_DB_PATH`. Proteger las copias y el volumen con permisos de operador.
 
 Para el cliente autenticado, desde `frontend/` ejecutar `flutter run --dart-define=INVENTRACK_AUTH=true --dart-define=INVENTRACK_API_URL=https://dominio-del-ensayo` y escribir el token individual en la pantalla de acceso. Para verificar el backend ejecutar `python -m pytest -q`. [Resultados y estado de los despliegues](docs/verificacion-final.md) · [decisión de identidad](docs/adr/0019-autenticar-usuarios-y-autorizar-por-rol.md) · [decisión de almacenamiento](docs/adr/0020-persistir-inventario-y-auditoria-en-sqlite.md).
 
@@ -41,17 +41,9 @@ Para el cliente autenticado, desde `frontend/` ejecutar `flutter run --dart-defi
 * **Matriz de Trazabilidad:** Cadena navegable `Aspecto → Requisito → C4 → ADR → Código → Pruebas → Evidencia` ([Aspectos de Calidad](docs/aspectos.md)).
 * **Contrato de API:** OpenAPI v1 versionado y validado automáticamente contra la implementación FastAPI ([ADR-0004](docs/adr/0004-contrato-api-versionado-openapi.md)).
 * **Mensajería asíncrona:** Las entradas y salidas publican el evento `MovimientoDeInventarioRegistrado` para auditoría en segundo plano, con trazabilidad, deduplicación, reintentos, backoff exponencial y DLQ en memoria ([ADR-0013](docs/adr/0013-evaluacion-mensajeria-asincrona-vs-sincrona.md), [ADR-0016](docs/adr/0016-integrar-eventos-de-auditoria-en-movimientos.md)).
-* **Despliegue Productivo:** Configurado para Render (PaaS) y Dokploy mediante infraestructura como código (`render.yaml` y `deploy/compose.lab.yaml`); el redespliegue y funcionamiento público del commit actual requieren verificación externa.
+* **Despliegue institucional.** Dokploy construye la imagen de la API mediante [Compose](deploy/compose.lab.yaml) y monta el volumen SQLite.
 * **CI y cobertura:** GitHub Actions ejecuta la suite completa con `pytest-cov`, genera `coverage.xml`, ejecuta el análisis SonarCloud y valida explícitamente el contrato OpenAPI. A fecha actual existen 49 pruebas Python recopiladas y 10 pruebas Flutter. El registro adjunto de un run previo mostró 48 pruebas aprobadas y el contrato OpenAPI fallando por el esquema `ValidationError`; el contrato se alineó con el esquema generado y el problema quedó corregido.
 * **Transparencia en Uso de IA:** Prompts, decisiones aceptadas, correcciones y rechazos por criterio técnico ([Registro de IA](docs/ia.md)).
-
----
-
-## 🌐 Entorno de Producción (Render)
-
-* **URL Pública:** `https://inventrack-api.onrender.com`
-* **Health Check:** `https://inventrack-api.onrender.com/health`
-* **Métricas y Swagger:** restringidos en producción; requieren el token interno configurado por plataforma.
 
 ---
 
@@ -60,7 +52,7 @@ Para el cliente autenticado, desde `frontend/` ejecutar `flutter run --dart-defi
 * **URL Pública:** `https://inventrack.iscoutb.dev`
 * **Health Check:** `https://inventrack.iscoutb.dev/health` (verificado `200 OK`: `{"status":"ok","service":"InvenTrack"}`)
 * **Métricas y Swagger:** restringidos en producción; devuelven `404` sin el token interno configurado por plataforma ([ADR-0018](docs/adr/0018-restringir-superficies-internas-en-produccion.md)).
-* **Estado documentado:** El cambio 503 a 401 confirmó que las rutas de negocio alcanzan la autenticación. Dokploy respondió 200 en `/health` y 401 en `/sesion`, `/proveedores`, `/usuarios` y `/cierres` sin credencial. El equipo ya comprobó el alta de producto, la entrada, la salida válida y el rechazo por stock insuficiente. El equipo también confirmó el recorrido autenticado de Gestión. [Verificación de S16](docs/preparacion-s16.md#verificación-pública-y-colaboración).
+* **Estado documentado:** El cambio 503 a 401 confirmó que las rutas de negocio alcanzan la autenticación. Dokploy respondió 200 en `/health` y 401 en `/sesion`, `/proveedores`, `/usuarios` y `/cierres` sin credencial. El equipo ya comprobó el alta de producto, la entrada, la salida válida y el rechazo por stock insuficiente. El equipo también confirmó el recorrido autenticado de Gestión. [Verificación de S16](docs/verificacion-final.md#verificación-pública-y-colaboración).
 
 ---
 
@@ -111,8 +103,8 @@ Para el cliente autenticado, desde `frontend/` ejecutar `flutter run --dart-defi
 | [ADR-0002](docs/adr/0002-control-concurrencia-memoria-inventario.md) | Control de concurrencia en memoria, criterios de revisión y costo de reversión (Aceptado) |
 | [ADR-0003](docs/adr/0003-integracion-productos-inventario-via-puertos-de-aplicacion.md) | Integración entre productos e inventario mediante puertos de aplicación y adaptadores (Aceptado) |
 | [ADR-0004](docs/adr/0004-contrato-api-versionado-openapi.md) | Contrato de API versionado con OpenAPI y validación automática (Aceptado) |
-| [ADR-0005](docs/adr/0005-eleccion-plataforma-despliegue.md) | Elección de Render PaaS, estimación de costos y punto de ruptura (Aceptado) |
-| [ADR-0006](docs/adr/0006-desplegar-en-dokploy-institucional.md) | Dokploy institucional como segundo destino operativo (Aceptado) |
+| [ADR-0005](docs/adr/0005-eleccion-plataforma-despliegue.md) | Restricción de costo y antecedentes del despliegue |
+| [ADR-0006](docs/adr/0006-desplegar-en-dokploy-institucional.md) | Despliegue en Dokploy institucional (Aceptado) |
 | [ADR-0007](docs/adr/0007-exponer-p95-de-latencia-en-metricas.md) | Exposición del p95 de latencia en métricas HTTP (Aceptado) |
 | [ADR-0008](docs/adr/0008-no-incorporar-componente-generativo.md) | No incorporar un componente generativo al MVP (Aceptado) |
 | [ADR-0010](docs/adr/0010-decision-extraccion-microservicios.md) | No extraer inventario a un microservicio en el MVP (Aceptado) |
@@ -132,8 +124,8 @@ Para el cliente autenticado, desde `frontend/` ejecutar `flutter run --dart-defi
 | [Evidencia S12 de CI y despliegue](docs/evidencia-despliegue-s12.md) | Run público, Quality Gate y estado verificable de los despliegues |
 | [Evidencia de prueba contractual](docs/evidencia-prueba-contrato.md) | Reproducción del fallo ante un cambio incompatible y recuperación de la prueba |
 | [Verificación posterior a S15](docs/verificacion-final.md) | Escenarios 2026-11-19, restauración, CI y disponibilidad pública |
-| [Preparación y evidencia S16](docs/preparacion-s16.md) | Conciliación de cierre, concurrencia, despliegue y estado pendiente |
-| [Despliegue y costos](docs/despliegue-y-costos.md) | URL pública, IaC (`render.yaml`), observabilidad, secretos y estimación mensual |
+| [Verificación técnica](docs/verificacion-final.md) | Conciliación de cierre, concurrencia, despliegue y recuperación verificada |
+| [Despliegue y costos](docs/despliegue-y-costos.md) | URL pública, Compose institucional, observabilidad, secretos y estimación mensual |
 | [Medición Reto Corte 1](docs/retos/corte-1-medicion.md) | Diagnóstico, pruebas de concurrencia, degradación controlada y comando de reproducción |
 | [Reporte Experimento Corte 2](docs/retos/corte-2-experimento.md) | Hipótesis, montaje, variables y resultados del experimento de concurrencia de inventario (S10) |
 | [Uso de IA](docs/ia.md) | Registro transparente de IA (sugerencias aceptadas vs. rechazadas)|
@@ -232,7 +224,7 @@ La documentación sigue la plantilla **arc42**, disponible completa en [`docs/ar
 | 4 · Solution Strategy | Decisiones clave (Monolito Modular, Hexagonal por módulo, desacoplamiento) |
 | 5 · Building Block View | Descomposición en subsistemas y módulos internos (Productos, Inventario, Proveedores, etc.) |
 | 6 · Runtime View | Diagramas de secuencia para flujos críticos (ej. Registro concurrente de movimientos) |
-| 7 · Deployment View | Despliegues operativos en Dokploy y Render mediante Docker |
+| 7 · Deployment View | Despliegue institucional mediante Docker y Dokploy |
 | 8 · Cross-cutting Concepts | Lenguaje ubicuo, mapa de contextos, mecanismo de exclusión mutua asíncrona por SKU y manejo unificado de excepciones |
 | 9 · Architecture Decisions | Enlace y matriz de trazabilidad con los ADRs |
 | 10 · Quality Requirements | Árbol de utilidad y 5 escenarios de calidad medibles |
@@ -267,8 +259,8 @@ Las decisiones arquitectónicas se documentan como archivos individuales en [`do
 - **[ADR-0002](docs/adr/0002-control-concurrencia-memoria-inventario.md):** Adopción de exclusión mutua asíncrona (`asyncio.Lock()`) por SKU para resolver el reto de consistencia ante peticiones simultáneas de inventario.
 - **[ADR-0003](docs/adr/0003-integracion-productos-inventario-via-puertos-de-aplicacion.md):** Integración entre productos e inventario mediante puertos de aplicación y adaptadores.
 - **[ADR-0004](docs/adr/0004-contrato-api-versionado-openapi.md):** Versionado del contrato de API con OpenAPI y validación automática de compatibilidad en CI.
-- **[ADR-0005](docs/adr/0005-eleccion-plataforma-despliegue.md):** Elección de Render (PaaS) como plataforma de despliegue productivo y estimación de costos.
-- **[ADR-0006](docs/adr/0006-desplegar-en-dokploy-institucional.md):** Incorporación posterior de Dokploy como segundo destino operativo, en paralelo con Render.
+- **[ADR-0005](docs/adr/0005-eleccion-plataforma-despliegue.md):** Antecedentes y restricciones de costo del despliegue.
+- **[ADR-0006](docs/adr/0006-desplegar-en-dokploy-institucional.md):** Incorporación del servicio institucional en Dokploy.
 - **[ADR-0007](docs/adr/0007-exponer-p95-de-latencia-en-metricas.md):** Exposición del p95 de latencia en métricas HTTP.
 - **[ADR-0008](docs/adr/0008-no-incorporar-componente-generativo.md):** Decisión de no incorporar un componente generativo al MVP.
 - **[ADR-0010](docs/adr/0010-decision-extraccion-microservicios.md):** Decisión de no extraer inventario a un microservicio independiente en el MVP.
@@ -284,6 +276,8 @@ Las decisiones arquitectónicas se documentan como archivos individuales en [`do
 - El equipo aceptó enviar los avisos de stock desde una cola SQLite. [ADR-0022](docs/adr/0022-entregar-alertas-de-stock-desde-sqlite.md).
 - ADR-0023 reemplaza la restricción de ADR-0019 que reservaba la administración de identidades a la consola. La primera credencial administrativa se emite por CLI. Con ella, el administrador puede gestionar otras cuentas desde Flutter. [ADR-0023](docs/adr/0023-administrar-identidades-desde-flutter.md).
 
+- [ADR-0024](docs/adr/0024-usar-solo-dokploy-institucional.md) establece Dokploy como único destino del despliegue.
+
 ## Despliegue en iscoutb.dev
 
 El proyecto está desplegado en el servidor institucional Dokploy descrito en
@@ -292,9 +286,6 @@ La definición reproducible está en [`deploy/compose.lab.yaml`](deploy/compose.
 Este MVP publica únicamente la API y no necesita una base de datos externa. El
 token interno se configura como secreto en el entorno del proyecto Dokploy y se
 referencia desde el servicio; nunca se versiona. Dokploy monta el volumen SQLite definido en Compose. El perfil local sin `INVENTRACK_DB_PATH` usa memoria. [ADR-0020](docs/adr/0020-persistir-inventario-y-auditoria-en-sqlite.md).
-Dokploy se incorporó después del cierre de la semana 8 y se mantiene en paralelo
-con el despliegue existente en Render.
-
 ### Publicación
 
 1. Haz push de `deploy/compose.lab.yaml` y `Dockerfile` a la rama `main`.
@@ -332,7 +323,7 @@ la respuesta están en [`evidencia-seguridad-s13.md`](docs/evidencia-seguridad-s
 | Backend | FastAPI + Uvicorn | Implementado |
 | Persistencia | SQLite transaccional durable ([ADR-0020](docs/adr/0020-persistir-inventario-y-auditoria-en-sqlite.md)) y adaptadores In-Memory de demostración ([ADR-0012](docs/adr/0012-mantener-repositorios-en-memoria-en-el-mvp.md)) | Implementado con soporte de respaldos y recuperación |
 | Mensajería | Simulador asíncrono local | Broker de auditoría en memoria y cola SQLite persistente para el correo de stock bajo |
-| Hosting / despliegue | Dokploy institucional + Render + Docker | Activo en `https://inventrack.iscoutb.dev` (`/health` verificado 200 OK) y Render secundario |
+| Hosting / despliegue | Dokploy institucional y Docker | API pública en `https://inventrack.iscoutb.dev` |
 | CI / calidad de código | GitHub Actions + Pytest + pytest-asyncio + pytest-cov + Flutter SDK | Suite síncrona y asíncrona con cobertura XML (`coverage.xml`), análisis SonarCloud, `pip-audit`, validación de contrato OpenAPI y suite Flutter (`analyze` + `test`) |
 
 ## Estructura del repositorio
@@ -343,7 +334,6 @@ la respuesta están en [`evidencia-seguridad-s13.md`](docs/evidencia-seguridad-s
     ├── test.yml                 # Pruebas, contrato y build de la imagen
     └── deploy.yml               # Despliegue de la imagen
 Dockerfile                       # Imagen reproducible de producción (no-root user)
-render.yaml                      # Configuración IaC de despliegue para Render
 deploy/
 └── compose.lab.yaml             # Compose para el servidor Dokploy institucional
 docs/
@@ -372,7 +362,6 @@ docs/
 ├── evidencia-mensajeria-s12.md   # Evidencia reproducible del taller de mensajería
 ├── evidencia-seguridad-s13.md    # Amenazas, controles y exposición en producción
 ├── verificacion-final.md         # Verificación posterior a S15
-├── preparacion-s16.md            # Evidencia y alcance de conciliación S16
 ├── retos/
 │   ├── corte-1-medicion.md      # Diagnóstico y medición del Reto de Concurrencia
 │   └── corte-2-experimento.md   # Experimento de concurrencia de inventario
@@ -520,12 +509,12 @@ flutter test
 | Corte 1 | Reto de concurrencia e integración de inventario (ADR-0002 + Medición) | Completo |
 | S6 | Mapa de contextos, propiedad de datos, auditoría de modularidad y C4 Nivel 3 | Completo |
 | S7 | Contrato OpenAPI versionado (ADR-0004) y validación automática en CI | Completo |
-| S8 | Despliegue público, IaC (`render.yaml`), observabilidad y costos (ADR-0005) | Completo (Desplegado en Render) |
+| S8 | Observabilidad, costos y evaluación de alternativas de despliegue (ADR-0005) | Documentado |
 | S9 | Observabilidad de latencia, p95 HTTP y evidencia de defecto/medición con apoyo de IA (ADR-0007) | Completo |
 | S10 | Experimento operativo, hipótesis y validación de alta concurrencia de inventario (S10) | Completo |
 | S12 | Mensajería asíncrona para auditoría: contrato, integración real, duplicados, reintentos, DLQ y trazabilidad (ADR-0016) | Completo; suite de mensajería documentada |
 | S15 | Persistencia SQLite, identidad por usuario, restauración y serialización de escrituras | Implementado y verificado localmente |
-| S16 | [Reto de conciliación, matrices y pendientes externos](docs/preparacion-s16.md) | En preparación. Gestión, correo y restauración fuera del host confirmados por el equipo |
+| S16 | [Resultados del reto de conciliación y evidencias](docs/verificacion-final.md) | Documentación final. Gestión, correo y restauración fuera del host confirmados por el equipo |
 
 ## Uso de IA
 

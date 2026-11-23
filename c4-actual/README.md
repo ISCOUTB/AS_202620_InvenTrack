@@ -1,6 +1,6 @@
 # C4 actual de InvenTrack
 
-Modelo C4 reconstruido a partir del código vigente (`app/`, `frontend/`, `deploy/`, `render.yaml`, `Dockerfile`, `.github/`).
+Modelo C4 reconstruido a partir del código vigente (`app/`, `frontend/`, `deploy/`, `Dockerfile`, `.github/`).
 No se basa en `docs/c4/`. Los diagramas usan Mermaid (se visualizan en GitHub y en VS Code con una extensión Mermaid).
 
 | Nivel | Archivo | Qué responde |
@@ -8,7 +8,7 @@ No se basa en `docs/c4/`. Los diagramas usan Mermaid (se visualizan en GitHub y 
 | 1 · Contexto | [01-contexto.md](01-contexto.md) | Quién usa el sistema y con qué sistemas externos habla |
 | 2 · Contenedores | [02-contenedores.md](02-contenedores.md) | Qué se despliega y cómo se comunica |
 | 3 · Componentes | [03-componentes.md](03-componentes.md) | Cómo está organizada la API por dentro |
-| Complementario · Despliegue | [04-despliegue.md](04-despliegue.md) | Dónde corre cada contenedor (Dokploy, Render, CI) |
+| Complementario · Despliegue | [04-despliegue.md](04-despliegue.md) | Dónde corre cada contenedor (Dokploy, CI) |
 | Complementario · Dinámico | [05-flujos.md](05-flujos.md) | Secuencias clave: salida de stock, cierre/conciliación, alerta por correo, acceso |
 
 ## Hechos del código en los que se apoya

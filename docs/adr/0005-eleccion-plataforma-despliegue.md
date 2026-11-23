@@ -1,5 +1,7 @@
 # ADR-0005: Pivote y Elección Definitiva de Plataforma de Despliegue (Render PaaS)
 
+**Estado:** Reemplazado por [ADR-0024](0024-usar-solo-dokploy-institucional.md).
+
 ## Contexto y Problema
 El sistema InvenTrack requiere un entorno de despliegue público, estable y accesible a través de Internet para validar los contratos de la API y permitir la evaluación del proyecto.
 

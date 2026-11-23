@@ -14,7 +14,7 @@ documentada (`e17afb8ad59fba8c851e06338c1219f7f4bc918f`):
 
 El run incluye la suite de 34 pruebas, la validación del contrato OpenAPI y el
 escaneo `pip-audit` con hashes. No constituye por sí solo evidencia de
-redespliegue ni de funcionamiento público de Render o Dokploy.
+redespliegue ni de funcionamiento público de Dokploy.
 
 ## SonarCloud
 
@@ -34,7 +34,7 @@ respuesta pública de la API:
 Resultado: `OK`; cobertura nueva `95.4%`, duplicación nueva `0.0%` y security
 hotspots revisados `100.0%`.
 
-## Despliegue institucional y alternativa
+## Despliegue institucional
 
 La URL institucional declarada es <https://inventrack.iscoutb.dev>. La consulta
 del 27 de octubre de 2026 no pudo resolver DNS/TLS para `/health` ni
@@ -43,17 +43,6 @@ describe el estado vigente. La comprobación posterior de S13 verificó
 `/health` con `200`, superficies internas con `404` sin token y rutas de negocio
 con `503` preventivo. Esta evidencia S12 no afirma que la mensajería sea
 consultable públicamente.
-
-La alternativa Render respondió en la raíz durante esa consulta:
-
-```text
-Our server is running on port 10000
-```
-
-Sin embargo, `/health` y `/metrics` respondieron `503` durante la misma
-consulta. Ese resultado es histórico y no representa el estado actual. La
-aplicación local sí expone esas rutas y las métricas de mensajería se validan
-en las pruebas; esta evidencia S12 no certifica el estado actual de Render.
 
 ## Criterio de publicación
 
