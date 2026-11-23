@@ -1,6 +1,6 @@
 # ADR-0022: Entregar alertas de stock desde una cola SQLite
 
-- **Estado:** Propuesto
+- **Estado:** Aceptado
 - **Fecha:** 2026-11-22
 - **Decisores:** Equipo InvenTrack
 - **Complementa:** [ADR-0020](0020-persistir-inventario-y-auditoria-en-sqlite.md) y [ADR-0021](0021-serializar-escrituras-sqlite.md)

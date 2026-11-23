@@ -19,7 +19,7 @@ C4Container
     Rel(usuario, app, "Usa")
     Rel(app, api, "Llama", "JSON / HTTPS + Authorization: Bearer")
     Rel(api, db, "Lee y escribe; una transacción por petición", "sqlite3")
-    Rel(api, smtp, "Envía correos pendientes", "SMTP + STARTTLS")
+    Rel(api, smtp, "Envía avisos de stock desde la cola", "SMTP + STARTTLS")
     Rel(cli, db, "Gestiona credenciales y copias", "sqlite3")
     Rel(monitor, api, "GET /metrics", "X-Internal-Token")
 ```

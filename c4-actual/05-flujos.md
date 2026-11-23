@@ -46,7 +46,7 @@ sequenceDiagram
     participant DB as SQLite correos_stock
     participant S as Servidor SMTP
 
-    loop Mientras haya pendientes (espera 5 s si la cola está vacía)
+    loop Durante la vida del despachador (espera 5 s si no hay avisos listos)
         T->>DB: UPDATE ... RETURNING (toma una fila, turno nuevo, reserva 120 s)
         T->>S: STARTTLS, login opcional, send_message
         alt Envío correcto

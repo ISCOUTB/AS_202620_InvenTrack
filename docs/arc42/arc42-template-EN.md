@@ -138,7 +138,7 @@ restricción (porque cada tipo se negocia distinto):
 | C4 | Organizativa | Equipo de 3–4 personas con dedicación parcial (curso de un semestre) y entregas semanales fijas los domingos. | Calendario académico; limita cuánto alcance se construye por iteración y obliga a priorizar el MVP declarado en la ficha del problema. |
 | C5 | Técnica | Sin presupuesto para servicios de pago; debe usarse stack y hosting con capa gratuita/open source. | Restricción real del contexto: son PYMEs sin músculo financiero para licencias, y el equipo no cuenta con presupuesto del curso. |
 | C6 | Técnica | La interfaz debe ser utilizable por personas con alfabetización digital variable, que hoy trabajan con Excel o papel. | Perfil real de los usuarios objetivo descrito en la ficha del problema; condiciona la complejidad admisible de los flujos. |
-| C7 | Técnica (pendiente de confirmar) | Conectividad e infraestructura de despliegue disponibles en las PYMEs piloto. | Se resolverá con la encuesta "Disponibilidad técnica y de despliegue" (Inicio y orientación); hasta entonces se asume acceso vía navegador web estándar. |
+| C7 | Técnica (pendiente de confirmar) | Conectividad e infraestructura de despliegue disponibles en las PYMEs piloto. | Queda por contrastar en una PYME piloto la disponibilidad de un dispositivo para el cliente Flutter y la conectividad HTTPS con la API. |
 
 **Por qué importan para la arquitectura, no solo para la gestión del
 proyecto:** C5 (sin presupuesto) descarta de entrada cualquier solución
@@ -848,7 +848,7 @@ secciones para saber por qué un escenario importa más que otro.
 
 ### Verificación de escenarios en el perfil durable
 
-ESC-01 exige 50 transacciones simultáneas en un SKU. ESC-04 exige consultas a 20 solicitudes/s con p95 ≤ 400 ms. El ensayo de 20 escrituras de ADR-0002 sigue como reto histórico independiente. Las [tres corridas por HTTP](../verificacion-final.md) verifican los dos escenarios de §10 sobre una instancia local. ESC-05 tiene pruebas 401/403 para las operaciones existentes. La [restauración](../../tests/test_perfil_durable.py) cubre integridad de ESC-03. Su RTO operativo de dos minutos queda pendiente de simulacro en el host.
+ESC-01 exige 50 transacciones simultáneas en un SKU. ESC-04 exige consultas a 20 solicitudes/s con p95 ≤ 400 ms. El ensayo de 20 escrituras de ADR-0002 sigue como reto histórico independiente. Las [tres corridas por HTTP](../verificacion-final.md) verifican los dos escenarios de §10 sobre una instancia local. ESC-05 tiene pruebas 401/403 para las operaciones existentes. La [restauración](../../tests/test_perfil_durable.py) cubre integridad de ESC-03. El equipo confirmó la restauración fuera del host y la consulta autenticada desde Flutter. Una repetición con la copia ya disponible en el PC alcanzó la consulta autenticada en 1,738 s frente al objetivo de 120 s. La reposición del servicio público completo queda por medir. [Registro de S16](../preparacion-s16.md#verificación-pública-y-colaboración).
 
 ## 10.3 Trade-offs de Arquitectura
 
@@ -885,11 +885,11 @@ como corregidas, asumidas o pendientes sin evidencia.
 
 ### Riesgos después de S15
 
-La prueba del perfil durable cubre autorización, actor y restauración en un proceso nuevo. Continúan como riesgos la pérdida del volumen sin copia externa, la disponibilidad del servidor SMTP, la rotación manual de secretos y la contención del escritor SQLite. El responsable de despliegue debe verificar TLS, retención y restauración fuera del host. El responsable de backend debe evaluar otro motor antes de habilitar varias réplicas. [Evidencia y límites](../verificacion-final.md).
+La prueba del perfil durable cubre autorización, actor y restauración en un proceso nuevo. Continúan como riesgos la pérdida del volumen sin copia externa, la disponibilidad del servidor SMTP, la rotación manual de secretos y la contención del escritor SQLite. En S16 el equipo confirmó el envío por SMTP y la recuperación fuera del host. Operaciones aún debe documentar la política de retención, redacción y acceso a los logs. La API opera con una instancia. Antes de habilitar varias réplicas, el equipo debe validar la coordinación de escrituras e idempotencia entre ellas. [Evidencia y límites](../verificacion-final.md).
 
 ### Deudas y riesgos del perfil inicial (registro histórico de S15)
 
-| Deuda o riesgo | Estado actual |
+| Deuda o riesgo | Estado registrado en S15 |
 |---|---|
 | Autenticación y autorización por roles | Pendiente; las rutas de negocio permanecen deshabilitadas en producción. |
 | Persistencia durable, copias de seguridad y restauración | Pendiente; el MVP usa repositorios en memoria. |

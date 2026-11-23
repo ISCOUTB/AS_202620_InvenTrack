@@ -1,6 +1,6 @@
 # ADR-0021: Serializar las escrituras de la instancia SQLite
 
-- **Estado:** Propuesto
+- **Estado:** Aceptado
 - **Fecha:** 2026-11-22
 - **Decisores:** Equipo InvenTrack
 - **Complementa:** [ADR-0020](0020-persistir-inventario-y-auditoria-en-sqlite.md)

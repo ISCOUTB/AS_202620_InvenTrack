@@ -1,6 +1,6 @@
 # ADR-0023: Administrar identidades desde Flutter
 
-- **Estado:** Propuesto
+- **Estado:** Aceptado
 - **Fecha:** 2026-11-22
 - **Decisores:** Equipo InvenTrack
 - **Reemplaza:** La restricción de [ADR-0019](0019-autenticar-usuarios-y-autorizar-por-rol.md) que excluye la administración de identidades por HTTP. Se conservan las credenciales individuales, los roles y la validación de permisos en cada petición.

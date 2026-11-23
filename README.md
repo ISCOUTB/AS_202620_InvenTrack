@@ -127,8 +127,8 @@ Para el cliente autenticado, desde `frontend/` ejecutar `flutter run --dart-defi
 | [ADR-0019](docs/adr/0019-autenticar-usuarios-y-autorizar-por-rol.md) | Identidad individual y autorización por rol (Aceptado) |
 | [ADR-0020](docs/adr/0020-persistir-inventario-y-auditoria-en-sqlite.md) | Persistencia transaccional en SQLite (Aceptado) |
 | [ADR-0021](docs/adr/0021-serializar-escrituras-sqlite.md) | Serialización de escrituras SQLite (Aceptado) |
-| [ADR-0022](docs/adr/0022-entregar-alertas-de-stock-desde-sqlite.md) | Entrega de alertas de stock desde SQLite (Propuesto) |
-| [ADR-0023](docs/adr/0023-administrar-identidades-desde-flutter.md) | Administración de identidades desde Flutter (Propuesto) |
+| [ADR-0022](docs/adr/0022-entregar-alertas-de-stock-desde-sqlite.md) | Entrega de alertas de stock desde SQLite (Aceptado) |
+| [ADR-0023](docs/adr/0023-administrar-identidades-desde-flutter.md) | Administración de identidades desde Flutter (Aceptado) |
 | [Evidencia S12 de CI y despliegue](docs/evidencia-despliegue-s12.md) | Run público, Quality Gate y estado verificable de los despliegues |
 | [Evidencia de prueba contractual](docs/evidencia-prueba-contrato.md) | Reproducción del fallo ante un cambio incompatible y recuperación de la prueba |
 | [Verificación posterior a S15](docs/verificacion-final.md) | Escenarios 2026-11-19, restauración, CI y disponibilidad pública |
@@ -280,9 +280,9 @@ Las decisiones arquitectónicas se documentan como archivos individuales en [`do
 **Decisiones del perfil durable y de Gestión**
 
 - La autenticación individual y los permisos por rol siguen la decisión aceptada en [ADR-0019](docs/adr/0019-autenticar-usuarios-y-autorizar-por-rol.md).
-- La persistencia transaccional en SQLite está aceptada. La serialización de escrituras tiene estado propuesto. [ADR-0020](docs/adr/0020-persistir-inventario-y-auditoria-en-sqlite.md) · [ADR-0021](docs/adr/0021-serializar-escrituras-sqlite.md).
-- El envío de avisos de stock desde una cola SQLite tiene estado propuesto. [ADR-0022](docs/adr/0022-entregar-alertas-de-stock-desde-sqlite.md).
-- ADR-0023 propone reemplazar la restricción de ADR-0019 que reservaba la administración de identidades a la consola. La primera credencial administrativa se emite por CLI. Con ella, el administrador puede gestionar otras cuentas desde Flutter. [ADR-0023](docs/adr/0023-administrar-identidades-desde-flutter.md).
+- La persistencia transaccional en SQLite está aceptada. El equipo también aceptó serializar las escrituras. [ADR-0020](docs/adr/0020-persistir-inventario-y-auditoria-en-sqlite.md) · [ADR-0021](docs/adr/0021-serializar-escrituras-sqlite.md).
+- El equipo aceptó enviar los avisos de stock desde una cola SQLite. [ADR-0022](docs/adr/0022-entregar-alertas-de-stock-desde-sqlite.md).
+- ADR-0023 reemplaza la restricción de ADR-0019 que reservaba la administración de identidades a la consola. La primera credencial administrativa se emite por CLI. Con ella, el administrador puede gestionar otras cuentas desde Flutter. [ADR-0023](docs/adr/0023-administrar-identidades-desde-flutter.md).
 
 ## Despliegue en iscoutb.dev
 
