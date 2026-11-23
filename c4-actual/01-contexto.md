@@ -1,27 +1,33 @@
 # Nivel 1 · Diagrama de contexto
 
 ```mermaid
-C4Context
-    title Contexto del sistema — InvenTrack
+flowchart TB
+    %%{init: {"flowchart": {"nodeSpacing": 70, "rankSpacing": 90, "curve": "basis", "htmlLabels": true}, "themeVariables": {"fontSize": "15px"}}}%%
+    admin(["<b>Administrador</b><br/>Gestiona productos, proveedores,<br/>usuarios y cierres de turno"]):::person
+    operador(["<b>Operador</b><br/>Registra entradas y salidas<br/>y toma cierres de turno"]):::person
+    lector(["<b>Lector</b><br/>Consulta productos, stock,<br/>movimientos y cierres (solo lectura)"]):::person
 
-    Person(admin, "Administrador", "Gestiona productos, proveedores, usuarios y cierres de turno")
-    Person(operador, "Operador", "Registra entradas y salidas de stock y toma cierres de turno")
-    Person(lector, "Lector", "Consulta productos, stock, movimientos y cierres (solo lectura)")
+    inventrack["<b>InvenTrack</b><br/>Sistema de inventarios para pequeñas empresas:<br/>productos, stock por SKU, movimientos,<br/>proveedores, usuarios y cierre de turno"]:::sys
 
-    System(inventrack, "InvenTrack", "Sistema de inventarios para pequeñas empresas: productos, stock por SKU, movimientos, proveedores, usuarios y cierre/conciliación de turno")
+    smtp["<b>Servidor SMTP</b><br/>Entrega el correo de alerta<br/>de stock bajo"]:::ext
+    plataforma["<b>Plataforma de despliegue</b><br/>Dokploy institucional:<br/>ejecuta el contenedor y comprueba su salud"]:::ext
+    monitor["<b>Consumidor de métricas y Swagger</b><br/>Acceso interno a /metrics,<br/>/docs y /openapi.json"]:::ext
+    ci["<b>GitHub Actions y SonarCloud</b><br/>Pruebas, análisis estático,<br/>auditoría de dependencias y contrato OpenAPI"]:::ext
 
-    System_Ext(smtp, "Servidor SMTP", "Entrega el correo de alerta de stock bajo")
-    System_Ext(plataforma, "Plataforma de despliegue", "Dokploy institucional (iscoutb.dev); ejecuta el contenedor y comprueba su salud")
-    System_Ext(monitor, "Consumidor de métricas y Swagger", "Acceso interno con X-Internal-Token a /metrics, /docs y /openapi.json")
-    System_Ext(ci, "GitHub Actions y SonarCloud", "Pruebas, análisis estático, auditoría de dependencias y validación del contrato OpenAPI")
+    admin -->|"App Flutter<br/>HTTPS + Bearer"| inventrack
+    operador -->|"App Flutter<br/>HTTPS + Bearer"| inventrack
+    lector -->|"App Flutter<br/>HTTPS + Bearer"| inventrack
+    inventrack -->|"Alerta de stock bajo<br/>SMTP + STARTTLS"| smtp
+    plataforma -->|"Despliega y verifica<br/>GET /health"| inventrack
+    monitor -->|"Lee métricas y docs<br/>X-Internal-Token"| inventrack
+    ci -->|"Verifica código y contrato<br/>pytest, flutter test, OpenAPI"| inventrack
 
-    Rel(admin, inventrack, "Usa", "App Flutter / HTTPS + Bearer")
-    Rel(operador, inventrack, "Usa", "App Flutter / HTTPS + Bearer")
-    Rel(lector, inventrack, "Consulta", "App Flutter / HTTPS + Bearer")
-    Rel(inventrack, smtp, "Envía alerta de stock bajo", "SMTP + STARTTLS")
-    Rel(plataforma, inventrack, "Despliega y verifica", "GET /health")
-    Rel(monitor, inventrack, "Lee métricas y documentación", "HTTPS + X-Internal-Token")
-    Rel(ci, inventrack, "Verifica el código y el contrato", "pytest, flutter test, OpenAPI")
+    classDef person fill:#08427b,stroke:#052e56,color:#ffffff
+    classDef sys fill:#1168bd,stroke:#0b4884,color:#ffffff
+    classDef ext fill:#999999,stroke:#6b6b6b,color:#ffffff
+    classDef cont fill:#438dd5,stroke:#2e6295,color:#ffffff
+    classDef comp fill:#85bbf0,stroke:#5d82a8,color:#000000
+    classDef db fill:#438dd5,stroke:#2e6295,color:#ffffff
 ```
 
 ## Actores y permisos (según `permitido()` en `app/usuarios/infrastructure/credenciales.py`)

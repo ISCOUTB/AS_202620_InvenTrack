@@ -1,27 +1,33 @@
 # Nivel 2 · Diagrama de contenedores
 
 ```mermaid
-C4Container
-    title Contenedores — InvenTrack
+flowchart TB
+    %%{init: {"flowchart": {"nodeSpacing": 70, "rankSpacing": 90, "curve": "basis", "htmlLabels": true}, "themeVariables": {"fontSize": "15px"}}}%%
+    usuario(["<b>Usuario</b> (admin / operador / lector)<br/>Introduce su token individual<br/>en la pantalla de acceso"]):::person
+    monitor["<b>Consumidor de métricas</b><br/>Prometheus u operador"]:::ext
+    smtp["<b>Servidor SMTP</b><br/>Alertas de stock bajo"]:::ext
 
-    Person(usuario, "Usuario (admin / operador / lector)", "Introduce su token individual en la pantalla de acceso")
+    subgraph sis ["InvenTrack"]
+        direction TB
+        app["<b>Cliente Flutter</b><br/>Dart / Flutter, provider, http<br/>Inicio, productos, inventario y gestión<br/>Windows, Android e iOS"]:::cont
+        api["<b>API InvenTrack</b><br/>Python 3.11, FastAPI, Uvicorn<br/>Monolito modular hexagonal, Bearer y roles,<br/>métricas, logs JSON, broker simulado, cola de correo"]:::cont
+        db[("<b>Base SQLite</b><br/>modo WAL<br/>usuarios, productos, stocks, movimientos,<br/>comandos, auditoria, proveedores,<br/>cierres, correos_stock")]:::db
+        cli["<b>CLI de administración</b><br/>python -m ...<br/>Credenciales (emitir y revocar),<br/>respaldo y restauración"]:::cont
+    end
 
-    System_Boundary(sis, "InvenTrack") {
-        Container(app, "Cliente Flutter", "Dart / Flutter, provider, http", "Pantallas de inicio, productos, inventario y gestión (proveedores, usuarios, cierres). Windows, Android e iOS")
-        Container(api, "API InvenTrack", "Python 3.11, FastAPI, Uvicorn", "Monolito modular hexagonal. Autenticación Bearer y roles, métricas Prometheus, logs JSON, broker de mensajería simulado y cola de correo")
-        ContainerDb(db, "Base SQLite", "SQLite en modo WAL", "usuarios, productos, stocks, movimientos, comandos (idempotencia), auditoria, proveedores, cierres, correos_stock")
-        Container(cli, "CLI de administración", "python -m ...", "Emite y revoca credenciales (app.usuarios.infrastructure.credenciales); respaldo y restauración (app.shared.infrastructure.respaldo)")
-    }
+    usuario -->|"Usa"| app
+    app -->|"JSON / HTTPS<br/>Bearer"| api
+    api -->|"Lee y escribe<br/>una transacción por petición"| db
+    cli -->|"Credenciales y copias<br/>sqlite3"| db
+    api -->|"Avisos de stock desde la cola<br/>SMTP + STARTTLS"| smtp
+    monitor -->|"GET /metrics<br/>X-Internal-Token"| api
 
-    System_Ext(smtp, "Servidor SMTP", "Alertas de stock bajo")
-    System_Ext(monitor, "Consumidor de métricas", "Prometheus u operador")
-
-    Rel(usuario, app, "Usa")
-    Rel(app, api, "Llama", "JSON / HTTPS + Authorization: Bearer")
-    Rel(api, db, "Lee y escribe; una transacción por petición", "sqlite3")
-    Rel(api, smtp, "Envía avisos de stock desde la cola", "SMTP + STARTTLS")
-    Rel(cli, db, "Gestiona credenciales y copias", "sqlite3")
-    Rel(monitor, api, "GET /metrics", "X-Internal-Token")
+    classDef person fill:#08427b,stroke:#052e56,color:#ffffff
+    classDef sys fill:#1168bd,stroke:#0b4884,color:#ffffff
+    classDef ext fill:#999999,stroke:#6b6b6b,color:#ffffff
+    classDef cont fill:#438dd5,stroke:#2e6295,color:#ffffff
+    classDef comp fill:#85bbf0,stroke:#5d82a8,color:#000000
+    classDef db fill:#438dd5,stroke:#2e6295,color:#ffffff
 ```
 
 ## Contenedores

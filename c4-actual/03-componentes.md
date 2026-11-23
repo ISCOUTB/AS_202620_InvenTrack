@@ -3,144 +3,174 @@
 ## 3.1 API: middleware, composition root y módulos
 
 ```mermaid
-C4Component
-    title Componentes — API InvenTrack (vista general)
+flowchart TB
+    %%{init: {"flowchart": {"nodeSpacing": 70, "rankSpacing": 90, "curve": "basis", "htmlLabels": true}, "themeVariables": {"fontSize": "15px"}}}%%
+    app["<b>Cliente Flutter</b><br/>Dart"]:::ext
+    db[("<b>Base SQLite</b><br/>WAL")]:::db
+    smtp["<b>Servidor SMTP</b>"]:::ext
 
-    Container_Ext(app, "Cliente Flutter", "Dart")
-    ContainerDb_Ext(db, "Base SQLite", "WAL")
-    System_Ext(smtp, "Servidor SMTP")
+    subgraph api ["API InvenTrack (FastAPI)"]
+        direction TB
+        obs["<b>ObservabilityMiddleware</b><br/>Cuenta peticiones, calcula p95,<br/>escribe logs JSON"]:::comp
+        acceso["<b>AccessPolicyMiddleware</b><br/>Oculta superficies internas, aplica perfil (503/403),<br/>autentica, autoriza por rol y abre la transacción"]:::comp
+        root["<b>Composition root</b> (app/main.py)<br/>Construye repositorios, casos de uso y adaptadores<br/>/health y /metrics (ADR-0003)"]:::comp
+        usuarios["<b>Módulo usuarios</b><br/>Sesión, administración<br/>y tokens"]:::comp
+        productos["<b>Módulo productos</b><br/>Alta, consulta y baja"]:::comp
+        inventario["<b>Módulo inventario</b><br/>Entradas, salidas, stock, movimientos,<br/>idempotencia, cierres y conciliación"]:::comp
+        proveedores["<b>Módulo proveedores</b><br/>CRUD de proveedores"]:::comp
+        alertas["<b>Módulo alertas</b><br/>Cruce de umbral de stock<br/>y envío de correos"]:::comp
+        mensajeria["<b>Broker simulado</b> (app/messaging)<br/>Reintentos, backoff, deduplicación y DLQ"]:::comp
+        shared["<b>Núcleo compartido SQLite</b> (app/shared)<br/>Conexión por petición, lock de escritura,<br/>esquema, actor y respaldo"]:::comp
+    end
 
-    Container_Boundary(api, "API InvenTrack (FastAPI)") {
-        Component(obs, "ObservabilityMiddleware", "Starlette middleware", "Cuenta peticiones, acumula duraciones, calcula p95 y escribe logs JSON")
-        Component(acceso, "AccessPolicyMiddleware", "Starlette middleware", "Oculta superficies internas en producción, aplica el perfil (503/403), autentica, autoriza por rol y abre la transacción por petición")
-        Component(root, "Composition root", "app/main.py", "Construye repositorios, casos de uso y adaptadores; conecta los módulos (ADR-0003); /health, /metrics")
-        Component(usuarios, "Módulo usuarios", "Router + credenciales", "Sesión y administración de usuarios; emisión, rotación y revocación de tokens")
-        Component(productos, "Módulo productos", "Hexagonal", "Alta, consulta y baja de productos")
-        Component(inventario, "Módulo inventario", "Hexagonal", "Entradas, salidas, stock, movimientos, idempotencia, cierres y conciliación")
-        Component(proveedores, "Módulo proveedores", "Router", "CRUD de proveedores")
-        Component(alertas, "Módulo alertas", "Infraestructura", "Detecta cruce del umbral de stock y envía correos desde la cola")
-        Component(mensajeria, "Broker simulado", "app/messaging", "Publicación en proceso con reintentos, backoff exponencial, deduplicación y DLQ")
-        Component(shared, "Núcleo compartido SQLite", "app/shared", "Conexión por petición (ContextVar), lock de escritura, esquema, actor, respaldo")
-    }
+    app -->|"HTTPS + Bearer"| obs
+    obs -->|"Pasa la petición"| acceso
+    acceso -->|"Autentica"| usuarios
+    acceso -->|"Delega tras autorizar"| productos
+    acceso -->|"Delega tras autorizar"| inventario
+    acceso -->|"Delega tras autorizar"| proveedores
+    acceso -->|"Abre transacción<br/>y fija el actor"| shared
+    root -.->|"Ensambla"| productos
+    root -.->|"Ensambla"| inventario
+    inventario -->|"Valida producto<br/>(puertos ADR-0003)"| productos
+    inventario -->|"Publica evento<br/>de movimiento"| mensajeria
+    inventario -->|"Registra cruce<br/>de umbral"| alertas
+    productos -->|"Persiste"| shared
+    inventario -->|"Persiste"| shared
+    proveedores -->|"Persiste"| shared
+    usuarios -->|"Persiste"| shared
+    alertas -->|"Lee y actualiza<br/>correos_stock"| shared
+    shared -->|"sqlite3"| db
+    alertas -->|"SMTP + STARTTLS"| smtp
 
-    Rel(app, obs, "HTTPS + Bearer")
-    Rel(obs, acceso, "Pasa la petición")
-    Rel(acceso, shared, "Abre transacción y fija el actor")
-    Rel(acceso, usuarios, "Autentica con la tabla usuarios")
-    Rel(acceso, productos, "Delega tras autorizar")
-    Rel(acceso, inventario, "Delega tras autorizar")
-    Rel(acceso, proveedores, "Delega tras autorizar")
-    Rel(root, productos, "Ensambla")
-    Rel(root, inventario, "Ensambla")
-    Rel(inventario, productos, "Valida producto activo e historial", "puertos ADR-0003")
-    Rel(inventario, mensajeria, "Publica MovimientoDeInventarioRegistrado")
-    Rel(inventario, alertas, "Registra cruce de umbral")
-    Rel(productos, shared, "Persiste")
-    Rel(inventario, shared, "Persiste")
-    Rel(proveedores, shared, "Persiste")
-    Rel(usuarios, shared, "Persiste")
-    Rel(alertas, shared, "Lee y actualiza correos_stock")
-    Rel(shared, db, "sqlite3")
-    Rel(alertas, smtp, "SMTP + STARTTLS")
+    classDef person fill:#08427b,stroke:#052e56,color:#ffffff
+    classDef sys fill:#1168bd,stroke:#0b4884,color:#ffffff
+    classDef ext fill:#999999,stroke:#6b6b6b,color:#ffffff
+    classDef cont fill:#438dd5,stroke:#2e6295,color:#ffffff
+    classDef comp fill:#85bbf0,stroke:#5d82a8,color:#000000
+    classDef db fill:#438dd5,stroke:#2e6295,color:#ffffff
 ```
 
 ## 3.2 Módulo inventario
 
 ```mermaid
-C4Component
-    title Componentes — módulo inventario
+flowchart TB
+    %%{init: {"flowchart": {"nodeSpacing": 70, "rankSpacing": 90, "curve": "basis", "htmlLabels": true}, "themeVariables": {"fontSize": "15px"}}}%%
+    subgraph inv ["app/inventario"]
+        direction TB
+        rtr["<b>Router de inventario</b><br/>POST entradas y salidas,<br/>GET /inventario/id"]:::comp
+        cierres["<b>Router de cierres</b><br/>POST y GET /cierres,<br/>POST /cierres/id/conciliar"]:::comp
+        conc["<b>Conciliación</b><br/>Compara saldos contra<br/>el conteo físico (CSV)"]:::comp
+        reg["<b>RegistrarMovimientoInventario</b><br/>Valida producto, aplica entrada o salida,<br/>impide stock negativo"]:::comp
+        hist["<b>ConsultarHistorialMovimientos</b><br/>Lista movimientos por producto"]:::comp
+        dom["<b>Dominio</b><br/>Stock, Movimiento, excepciones<br/>y puertos"]:::comp
+        idem["<b>Idempotencia</b><br/>Clave + huella por actor"]:::comp
+        repo["<b>Repositorios</b><br/>InMemory (demo) o SQLite"]:::comp
+        val["<b>ValidadorDeProductoAdapter</b><br/>Adaptador del puerto hacia productos"]:::comp
+    end
 
-    Container_Boundary(inv, "app/inventario") {
-        Component(rtr, "Router de inventario", "FastAPI APIRouter", "POST /inventario/{id}/entradas, POST /inventario/{id}/salidas, GET /inventario/{id}")
-        Component(cierres, "Router de cierres", "FastAPI APIRouter", "POST /cierres, GET /cierres, POST /cierres/{id}/conciliar")
-        Component(conc, "Conciliación", "application", "interpretar_csv (sku,cantidad) y comparar saldos contra el conteo físico")
-        Component(reg, "RegistrarMovimientoInventario", "application", "Caso de uso: valida producto, aplica entrada o salida, impide stock negativo, registra el movimiento")
-        Component(hist, "ConsultarHistorialMovimientos", "application", "Lista movimientos por producto")
-        Component(dom, "Dominio", "domain", "Stock, Movimiento, excepciones, puertos StockRepository, MovimientoRepository y ValidadorDeProducto")
-        Component(idem, "Idempotencia", "infrastructure", "Clave + huella por actor; en memoria o tabla comandos")
-        Component(repo, "Repositorios", "infrastructure", "InMemory (demo) o SQLite: StockSQLite, MovimientosSQLite, IdempotenciaSQLite, guardar_evento")
-        Component(val, "ValidadorDeProductoAdapter", "infrastructure", "Adaptador del puerto hacia ConsultarProducto (módulo productos)")
-    }
+    prod["<b>Módulo productos</b><br/>ConsultarProducto"]:::ext
+    broker["<b>Broker simulado</b><br/>publicar()"]:::ext
+    alert["<b>Módulo alertas</b><br/>registrar_cruce()"]:::ext
+    db[("<b>Base SQLite</b>")]:::db
 
-    Component_Ext(prod, "Módulo productos", "ConsultarProducto, ProductoRepository")
-    Component_Ext(broker, "Broker simulado", "publicar()")
-    Component_Ext(alert, "Módulo alertas", "registrar_cruce()")
-    ContainerDb_Ext(db, "Base SQLite")
+    rtr -->|"Invoca"| reg
+    rtr -->|"Reserva clave"| idem
+    rtr -->|"Publica evento<br/>en segundo plano"| broker
+    rtr -->|"Guarda evento<br/>de auditoría"| repo
+    rtr -->|"Registra cruce<br/>de umbral"| alert
+    reg -->|"Usa"| dom
+    reg -->|"Valida producto"| val
+    reg -->|"Guarda stock<br/>y movimiento"| repo
+    hist -->|"Lee movimientos"| repo
+    val -->|"Consulta"| prod
+    cierres -->|"Compara"| conc
+    cierres -->|"Lee stock"| repo
+    repo -->|"SQL"| db
 
-    Rel(rtr, reg, "Invoca")
-    Rel(rtr, idem, "Reserva clave de idempotencia")
-    Rel(rtr, broker, "Publica evento en segundo plano")
-    Rel(rtr, repo, "Guarda evento de auditoría")
-    Rel(rtr, alert, "Registra cruce de umbral")
-    Rel(reg, dom, "Usa")
-    Rel(reg, val, "Valida producto", "puerto")
-    Rel(reg, repo, "Guarda stock y movimiento", "puertos")
-    Rel(hist, repo, "Lee movimientos")
-    Rel(val, prod, "Consulta")
-    Rel(cierres, conc, "Compara")
-    Rel(cierres, repo, "Lee stock")
-    Rel(repo, db, "SQL")
+    classDef person fill:#08427b,stroke:#052e56,color:#ffffff
+    classDef sys fill:#1168bd,stroke:#0b4884,color:#ffffff
+    classDef ext fill:#999999,stroke:#6b6b6b,color:#ffffff
+    classDef cont fill:#438dd5,stroke:#2e6295,color:#ffffff
+    classDef comp fill:#85bbf0,stroke:#5d82a8,color:#000000
+    classDef db fill:#438dd5,stroke:#2e6295,color:#ffffff
 ```
 
 ## 3.3 Módulos productos, usuarios, proveedores y alertas
 
 ```mermaid
-C4Component
-    title Componentes — productos, usuarios, proveedores y alertas
+flowchart TB
+    %%{init: {"flowchart": {"nodeSpacing": 70, "rankSpacing": 90, "curve": "basis", "htmlLabels": true}, "themeVariables": {"fontSize": "15px"}}}%%
+    db[("<b>Base SQLite</b>")]:::db
+    smtp["<b>Servidor SMTP</b>"]:::ext
+    inv["<b>Módulo inventario</b><br/>MovimientoRepository"]:::ext
 
-    Container_Boundary(p, "app/productos") {
-        Component(prouter, "Router de productos", "FastAPI", "GET y POST /productos, DELETE /productos/{id}")
-        Component(pcu, "Casos de uso", "application", "CrearProducto, ConsultarProducto, EliminarProducto")
-        Component(prepo, "Repositorios de producto", "infrastructure", "InMemoryProductoRepository o ProductosSQLite")
-        Component(phist, "HistorialMovimientosAdapter", "infrastructure", "Impide eliminar un producto con movimientos (consulta a inventario)")
-    }
-    Container_Boundary(u, "app/usuarios") {
-        Component(urouter, "Router de usuarios", "FastAPI", "GET /sesion, GET y POST /usuarios, POST /usuarios/{id}/rotar, PUT /usuarios/{id}/rol, DELETE /usuarios/{id}")
-        Component(cred, "credenciales", "infrastructure", "emitir, autenticar (SHA-256 del token), permitido (matriz rol/método/ruta) y CLI emitir/revocar")
-    }
-    Container_Boundary(v, "app/proveedores") {
-        Component(vrouter, "Router de proveedores", "FastAPI", "GET y POST /proveedores, PUT y DELETE /proveedores/{id}")
-    }
-    Container_Boundary(a, "app/alertas") {
-        Component(correo, "correo.py", "infrastructure", "registrar_cruce (umbral 10), cola correos_stock, despachar_uno con backoff, procesar_cola asyncio, envío SMTP")
-    }
+    subgraph p ["app/productos"]
+        direction TB
+        prouter["<b>Router de productos</b><br/>GET y POST /productos,<br/>DELETE /productos/id"]:::comp
+        pcu["<b>Casos de uso</b><br/>Crear, Consultar y Eliminar producto"]:::comp
+        prepo["<b>Repositorios de producto</b><br/>InMemory o ProductosSQLite"]:::comp
+        phist["<b>HistorialMovimientosAdapter</b><br/>Impide eliminar un producto<br/>con movimientos"]:::comp
+    end
+    subgraph u ["app/usuarios"]
+        direction TB
+        urouter["<b>Router de usuarios</b><br/>/sesion y /usuarios<br/>(rotar, rol, eliminar)"]:::comp
+        cred["<b>credenciales</b><br/>emitir, autenticar (SHA-256),<br/>permitido (rol/método/ruta), CLI"]:::comp
+    end
+    subgraph v ["app/proveedores"]
+        vrouter["<b>Router de proveedores</b><br/>GET, POST, PUT y DELETE"]:::comp
+    end
+    subgraph a ["app/alertas"]
+        correo["<b>correo.py</b><br/>registrar_cruce (umbral 10), cola correos_stock,<br/>despacho con backoff y envío SMTP"]:::comp
+    end
 
-    ContainerDb_Ext(db, "Base SQLite")
-    System_Ext(smtp, "Servidor SMTP")
-    Component_Ext(inv, "Módulo inventario", "MovimientoRepository")
+    prouter -->|"Invoca"| pcu
+    pcu -->|"Usa"| prepo
+    pcu -->|"Verifica movimientos"| phist
+    phist -->|"Consulta historial"| inv
+    prepo -->|"SQL"| db
+    urouter -->|"Usa"| cred
+    cred -->|"SQL"| db
+    vrouter -->|"SQL"| db
+    correo -->|"SQL"| db
+    correo -->|"SMTP + STARTTLS"| smtp
 
-    Rel(prouter, pcu, "Invoca")
-    Rel(pcu, prepo, "Usa")
-    Rel(pcu, phist, "Verifica movimientos")
-    Rel(phist, inv, "Consulta historial")
-    Rel(prepo, db, "SQL")
-    Rel(urouter, cred, "Usa")
-    Rel(cred, db, "SQL")
-    Rel(vrouter, db, "SQL")
-    Rel(correo, db, "SQL")
-    Rel(correo, smtp, "SMTP + STARTTLS")
+    classDef person fill:#08427b,stroke:#052e56,color:#ffffff
+    classDef sys fill:#1168bd,stroke:#0b4884,color:#ffffff
+    classDef ext fill:#999999,stroke:#6b6b6b,color:#ffffff
+    classDef cont fill:#438dd5,stroke:#2e6295,color:#ffffff
+    classDef comp fill:#85bbf0,stroke:#5d82a8,color:#000000
+    classDef db fill:#438dd5,stroke:#2e6295,color:#ffffff
 ```
 
 ## 3.4 Cliente Flutter
 
 ```mermaid
-C4Component
-    title Componentes — Cliente Flutter
+flowchart TB
+    %%{init: {"flowchart": {"nodeSpacing": 70, "rankSpacing": 90, "curve": "basis", "htmlLabels": true}, "themeVariables": {"fontSize": "15px"}}}%%
+    api["<b>API InvenTrack</b><br/>FastAPI"]:::ext
 
-    Container_Boundary(f, "frontend/lib") {
-        Component(screens, "screens", "Widgets de página", "home_page, productos_page, inventario_page, gestion_page")
-        Component(widgets, "widgets y ui", "Widgets reutilizables", "stock_card, movimiento_card, diálogos de producto y movimiento, inventrack_style")
-        Component(prov, "providers", "provider (ChangeNotifier)", "health_provider, productos_provider, inventario_provider")
-        Component(svc, "services/api_service.dart", "http.Client", "Único punto de acceso HTTP: exige https salvo localhost, añade Bearer y traduce errores a ApiException")
-        Component(models, "models", "Dart", "Producto, Stock, Movimiento")
-        Component(cfg, "config/api_config.dart", "dart-define", "INVENTRACK_API_URL e INVENTRACK_AUTH")
-    }
-    Container_Ext(api, "API InvenTrack", "FastAPI")
+    subgraph f ["frontend/lib"]
+        direction TB
+        screens["<b>screens</b><br/>home, productos, inventario<br/>y gestión"]:::comp
+        widgets["<b>widgets y ui</b><br/>stock_card, movimiento_card,<br/>diálogos e inventrack_style"]:::comp
+        prov["<b>providers</b> (ChangeNotifier)<br/>health, productos e inventario"]:::comp
+        svc["<b>services/api_service.dart</b><br/>Único acceso HTTP: https salvo localhost,<br/>añade Bearer y traduce errores a ApiException"]:::comp
+        models["<b>models</b><br/>Producto, Stock, Movimiento"]:::comp
+        cfg["<b>config/api_config.dart</b><br/>INVENTRACK_API_URL<br/>e INVENTRACK_AUTH"]:::comp
+    end
 
-    Rel(screens, widgets, "Compone")
-    Rel(screens, prov, "Observa y dispara acciones")
-    Rel(prov, svc, "Usa")
-    Rel(svc, models, "Serializa")
-    Rel(svc, cfg, "Lee URL base")
-    Rel(svc, api, "JSON / HTTPS")
+    screens -->|"Compone"| widgets
+    screens -->|"Observa y dispara acciones"| prov
+    prov -->|"Usa"| svc
+    svc -->|"Serializa"| models
+    svc -->|"Lee URL base"| cfg
+    svc -->|"JSON / HTTPS"| api
+
+    classDef person fill:#08427b,stroke:#052e56,color:#ffffff
+    classDef sys fill:#1168bd,stroke:#0b4884,color:#ffffff
+    classDef ext fill:#999999,stroke:#6b6b6b,color:#ffffff
+    classDef cont fill:#438dd5,stroke:#2e6295,color:#ffffff
+    classDef comp fill:#85bbf0,stroke:#5d82a8,color:#000000
+    classDef db fill:#438dd5,stroke:#2e6295,color:#ffffff
 ```
