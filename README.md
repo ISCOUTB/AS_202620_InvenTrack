@@ -46,7 +46,7 @@ Para el cliente autenticado, desde `frontend/` ejecutar `flutter run --dart-defi
 * **Transparencia en Uso de IA:** Prompts, decisiones aceptadas, correcciones y rechazos por criterio técnico ([Registro de IA](docs/ia.md)).
 
 ---
-
+ 
 ## 🌐 Entorno Institucional (iscoutb.dev)
 
 * **URL Pública:** `https://inventrack.iscoutb.dev`
