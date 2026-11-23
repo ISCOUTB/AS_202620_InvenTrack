@@ -888,6 +888,18 @@ La prueba del perfil durable cubre autorización, actor y restauración en un pr
 | Outbox o mensajería durable | Pendiente; el broker y la DLQ son volátiles. |
 | Escaneo de imagen Docker | Ejecutado; encontró 45 vulnerabilidades y requiere actualización de la imagen base/dependencias. |
 
+### Estado final de las deudas (S16)
+
+| Deuda o riesgo | Estado final | Evidencia |
+|---|---|---|
+| Autenticación y autorización por roles | Resuelto: credencial individual revocable y roles admin/operador/lector | [ADR-0019](../adr/0019-autenticar-usuarios-y-autorizar-por-rol.md), pruebas en tests/test_perfil_durable.py |
+| Persistencia durable, respaldo y restauración | Resuelto en el perfil durable con SQLite; restauración verificada | [ADR-0020](../adr/0020-persistir-inventario-y-auditoria-en-sqlite.md), [ADR-0021](../adr/0021-serializar-escrituras-sqlite.md) |
+| Identidad del actor en movimientos | Resuelto: el evento y el movimiento guardan el actor | ADR-0019, ADR-0020 |
+| Coordinación entre réplicas | Aceptado: una sola instancia | ADR-0002, ADR-0017, ADR-0020 |
+| Outbox o mensajería durable | Aceptado: broker y DLQ en memoria | ADR-0013, ADR-0016 |
+| Retención y acceso a logs | Pendiente de política operativa | docs/evidencia-seguridad-s13.md |
+| Escaneo de imagen Docker (45 vulnerabilidades) | Pendiente: actualizar imagen base | Dockerfile |
+
 - **Almacenamiento en Memoria (In-Memory Adapter):** Según [ADR-0012](../adr/0012-mantener-repositorios-en-memoria-en-el-mvp.md), para cumplir estrictamente con la restricción de presupuesto cero (C5) del MVP, la persistencia se apoya en diccionarios en memoria RAM con cerrojos asíncronos (`asyncio.Lock`).
   - *Riesgo:* Ante reinicios del contenedor o despliegue en múltiples réplicas horizontales, el estado del inventario no es persistente ni compartido.
   - *Mitigación:* La prueba vigente ejecuta 20 peticiones concurrentes sobre salidas reales, comprueba el stock final y exige $p95 \le 400\text{ ms}$ en una instancia. La evolución prioritaria post-MVP es evaluar una base relacional compartida mediante los puertos existentes, incluyendo migración, respaldos y restauración.
