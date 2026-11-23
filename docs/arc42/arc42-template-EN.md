@@ -99,8 +99,9 @@ trabajadas en clase:
 | Rol | Perspectiva | Contacto | Expectativas |
 |---|---|---|---|
 | Dueño de la PYME (patrocinador / usuario principal) | Usuario y negocio | Equipo InvenTrack / negocio piloto | Ver el stock real en cualquier momento; tomar decisiones de compra con datos históricos; no depender de una sola persona para conocer el inventario. |
-| Empleado / vendedor (usuario operativo) | Usuario y negocio | Equipo InvenTrack | Registrar entradas y salidas rápido, sin errores y sin capacitación extensa. |
-| Administrador del sistema (rol dentro de la PYME) | Operaciones y seguridad | Equipo InvenTrack | Gestionar usuarios, permisos y catálogo de productos y proveedores; auditar quién hizo cada movimiento. |
+| Operador (vendedor o empleado de bodega) | Usuario y negocio | Equipo InvenTrack | Registrar entradas y salidas rápido, sin errores y sin capacitación extensa, con credencial individual y rol `operador`. |
+| Lector (consulta) | Usuario y negocio | Equipo InvenTrack | Consultar catálogo y existencias sin poder modificarlos (rol `lector`). |
+| Administrador (dueño de la PYME, rol `admin`) | Operaciones y seguridad | Equipo InvenTrack | Gestionar usuarios, credenciales, catálogo, proveedores y cierres de turno; auditar qué actor hizo cada movimiento. |
 | Proveedor (interesado indirecto, no usa el sistema) | Usuario y negocio (indirecto) | No aplica | Que la información de sus productos y órdenes quede registrada correctamente por el negocio. |
 | Equipo de desarrollo / arquitectura (curso) | Operaciones y seguridad | Esteban Peluffo, Felix Taborda, Jose Vargas, Javier Carta — equipo AS_202620_InvenTrack | Poder evolucionar y mantener el sistema; decisiones arquitectónicas trazables (aspecto → requisito → C4 → ADR → código → pruebas → evidencia). |
 | Docente / evaluador (interesado académico) | — (fuera del marco de negocio) | Jairo Serrano (jserrano@utb.edu.co) | Verificar que la arquitectura responde a los atributos de calidad declarados, con evidencia y trazabilidad real. |
@@ -163,7 +164,8 @@ El dueño y los empleados trabajan sobre el catálogo y las existencias. El oper
 | Actor / sistema externo | Tipo | Interacción con InvenTrack |
 |---|---|---|
 | Dueño de la PYME | Persona | Gestiona el catálogo, consulta existencias y registra movimientos. |
-| Empleado / vendedor | Persona | Registra entradas y salidas de mercancía; consulta stock actual. |
+| Operador (vendedor o empleado de bodega) | Persona | Registra entradas y salidas de mercancía y consulta stock actual con rol `operador`. |
+| Lector | Persona | Consulta catálogo y existencias con rol `lector`, sin permisos de escritura. |
 | Operaciones | Persona | Emite y revoca credenciales, gestiona el volumen y restaura copias. |
 | Servicio de notificaciones | SMTP externo | Recibe alertas de stock bajo desde la cola durable. |
 | Proveedor | Interesado indirecto | El administrador mantiene el directorio de nombres y contactos. |
