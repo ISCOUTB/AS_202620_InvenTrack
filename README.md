@@ -13,7 +13,7 @@
 
 Reto propuesto: contrastar el conteo físico por SKU con una copia del inventario tomada al cierre de turno. [Ensayo de conciliación y antecedentes](docs/preparacion-s16.md) · [Sistema institucional](https://inventrack.iscoutb.dev).
 
-En Flutter, **Gestión → Cierre de turno** permite tomar el corte y comparar un CSV con cabecera `sku,cantidad`. La verificación local actual pasó las 49 pruebas Python recopiladas y las 10 pruebas Flutter; el análisis de Flutter terminó sin hallazgos. En la última comprobación pública, Dokploy respondió 200 en `/health` y 404 en `/sesion`; por ello, el despliegue público todavía requiere integrar el backend actualizado de Gestión y ejecutar el cliente correspondiente. [Evidencia de S16](docs/preparacion-s16.md).
+En Flutter, **Gestión → Cierre de turno** permite tomar el corte y comparar un CSV con cabecera `sku,cantidad`. La verificación local actual pasó las 49 pruebas Python recopiladas y las 10 pruebas Flutter; el análisis de Flutter terminó sin hallazgos. En Dokploy, se obtuvo 200 en `/health` y 401 en las rutas de Gestión sin credencial. Falta verificar esas operaciones desde Flutter con una cuenta de ensayo. [Evidencia de S16](docs/preparacion-s16.md).
 
 ## Ejecutar el perfil durable
 
@@ -42,7 +42,7 @@ Para el cliente autenticado, desde `frontend/` ejecutar `flutter run --dart-defi
 * **Contrato de API:** OpenAPI v1 versionado y validado automáticamente contra la implementación FastAPI ([ADR-0004](docs/adr/0004-contrato-api-versionado-openapi.md)).
 * **Mensajería asíncrona:** Las entradas y salidas publican el evento `MovimientoDeInventarioRegistrado` para auditoría en segundo plano, con trazabilidad, deduplicación, reintentos, backoff exponencial y DLQ en memoria ([ADR-0013](docs/adr/0013-evaluacion-mensajeria-asincrona-vs-sincrona.md), [ADR-0016](docs/adr/0016-integrar-eventos-de-auditoria-en-movimientos.md)).
 * **Despliegue Productivo:** Configurado para Render (PaaS) y Dokploy mediante infraestructura como código (`render.yaml` y `deploy/compose.lab.yaml`); el redespliegue y funcionamiento público del commit actual requieren verificación externa.
-* **CI y cobertura:** GitHub Actions ejecuta la suite completa con `pytest-cov`, genera `coverage.xml`, ejecuta el análisis SonarCloud y valida explícitamente el contrato OpenAPI. A fecha actual existen 49 pruebas Python recopiladas y 10 pruebas Flutter.
+* **CI y cobertura:** GitHub Actions ejecuta la suite completa con `pytest-cov`, genera `coverage.xml`, ejecuta el análisis SonarCloud y valida explícitamente el contrato OpenAPI. A fecha actual existen 49 pruebas Python recopiladas y 10 pruebas Flutter. El registro adjunto de un run previo mostró 48 pruebas aprobadas y el contrato OpenAPI fallando por el esquema `ValidationError`; el contrato se alineó con el esquema generado y el problema quedó corregido.
 * **Transparencia en Uso de IA:** Prompts, decisiones aceptadas, correcciones y rechazos por criterio técnico ([Registro de IA](docs/ia.md)).
 
 ---
@@ -60,7 +60,7 @@ Para el cliente autenticado, desde `frontend/` ejecutar `flutter run --dart-defi
 * **URL Pública:** `https://inventrack.iscoutb.dev`
 * **Health Check:** `https://inventrack.iscoutb.dev/health` (verificado `200 OK`: `{"status":"ok","service":"InvenTrack"}`)
 * **Métricas y Swagger:** restringidos en producción; devuelven `404` sin el token interno configurado por plataforma ([ADR-0018](docs/adr/0018-restringir-superficies-internas-en-produccion.md)).
-* **Estado documentado:** El cambio 503 a 401 confirmó que las rutas de negocio alcanzan la autenticación. Dokploy respondió 200 en `/health` y 404 en `/sesion` al comprobar el despliegue posterior a los cambios locales de Gestión. La prueba manual autenticada reportó alta de producto, entrada, salida válida y rechazo por stock insuficiente. El despliegue público de las nuevas rutas de usuarios, proveedores y cierres requiere una integración posterior. [Verificación de S16](docs/preparacion-s16.md#verificación-pública-y-colaboración).
+* **Estado documentado:** El cambio 503 a 401 confirmó que las rutas de negocio alcanzan la autenticación. Dokploy respondió 200 en `/health` y 401 en `/sesion`, `/proveedores`, `/usuarios` y `/cierres` sin credencial. El equipo ya comprobó el alta de producto, la entrada, la salida válida y el rechazo por stock insuficiente. Falta el recorrido autenticado de Gestión. [Verificación de S16](docs/preparacion-s16.md#verificación-pública-y-colaboración).
 
 ---
 
@@ -525,7 +525,7 @@ flutter test
 | S10 | Experimento operativo, hipótesis y validación de alta concurrencia de inventario (S10) | Completo |
 | S12 | Mensajería asíncrona para auditoría: contrato, integración real, duplicados, reintentos, DLQ y trazabilidad (ADR-0016) | Completo; suite de mensajería documentada |
 | S15 | Persistencia SQLite, identidad por usuario, restauración y serialización de escrituras | Implementado y verificado localmente |
-| S16 | [Reto de conciliación, matrices y pendientes externos](docs/preparacion-s16.md) | Implementado localmente; despliegue público de Gestión pendiente de integración |
+| S16 | [Reto de conciliación, matrices y pendientes externos](docs/preparacion-s16.md) | En preparación. Rutas protegidas verificadas en Dokploy, recorrido autenticado de Gestión pendiente |
 
 ## Uso de IA
 
