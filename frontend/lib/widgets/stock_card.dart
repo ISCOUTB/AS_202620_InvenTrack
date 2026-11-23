@@ -71,10 +71,10 @@ class StockCard extends StatelessWidget {
                   crossAxisAlignment:
                       CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'RESUMEN DE EXISTENCIAS',
                       style: TextStyle(
-                        color: InvenTrackStyle.muted,
+                        color: context.muted,
                         fontSize: 10,
                         letterSpacing: 1,
                         fontWeight: FontWeight.w800,
@@ -85,8 +85,8 @@ class StockCard extends StatelessWidget {
                       'Producto: ${stock.productoId}',
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: InvenTrackStyle.ink,
+                      style: TextStyle(
+                        color: context.ink,
                         fontSize: 15,
                         fontWeight: FontWeight.w800,
                       ),
@@ -99,18 +99,18 @@ class StockCard extends StatelessWidget {
 
           const SizedBox(height: 19),
 
-          const Divider(
-            color: InvenTrackStyle.outline,
+          Divider(
+            color: context.outline,
             height: 1,
           ),
 
           const SizedBox(height: 19),
 
           // Cantidad disponible.
-          const Text(
+          Text(
             'Stock disponible',
             style: TextStyle(
-              color: InvenTrackStyle.muted,
+              color: context.muted,
               fontSize: 12,
               fontWeight: FontWeight.w600,
             ),
@@ -126,22 +126,22 @@ class StockCard extends StatelessWidget {
                   '${stock.cantidad}',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 39,
                     height: 1.1,
                     fontWeight: FontWeight.w800,
-                    color: InvenTrackStyle.ink,
+                    color: context.ink,
                     letterSpacing: -1.5,
                   ),
                 ),
               ),
               const SizedBox(width: 7),
-              const Padding(
-                padding: EdgeInsets.only(bottom: 5),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 5),
                 child: Text(
                   'unidades',
                   style: TextStyle(
-                    color: InvenTrackStyle.muted,
+                    color: context.muted,
                     fontSize: 12,
                   ),
                 ),
@@ -190,10 +190,10 @@ class StockCard extends StatelessWidget {
 
           const SizedBox(height: 13),
 
-          const Text(
+          Text(
             'Cantidad obtenida de la última consulta o movimiento registrado.',
             style: TextStyle(
-              color: InvenTrackStyle.muted,
+              color: context.muted,
               fontSize: 10.5,
               height: 1.4,
             ),

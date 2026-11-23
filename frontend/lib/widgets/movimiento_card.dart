@@ -51,10 +51,10 @@ class MovimientoCard extends StatelessWidget {
                   children: [
                     Text(
                       titulo,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w800,
-                        color: InvenTrackStyle.ink,
+                        color: context.ink,
                       ),
                     ),
 
@@ -64,8 +64,8 @@ class MovimientoCard extends StatelessWidget {
                       'ID ${movimiento.productoId}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: InvenTrackStyle.muted,
+                      style: TextStyle(
+                        color: context.muted,
                         fontSize: 11.5,
                       ),
                     ),
@@ -82,9 +82,9 @@ class MovimientoCard extends StatelessWidget {
 
           const SizedBox(height: 17),
 
-          const Divider(
+          Divider(
             height: 1,
-            color: InvenTrackStyle.outline,
+            color: context.outline,
           ),
 
           const SizedBox(height: 16),
@@ -97,10 +97,10 @@ class MovimientoCard extends StatelessWidget {
                   crossAxisAlignment:
                       CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Cantidad',
                       style: TextStyle(
-                        color: InvenTrackStyle.muted,
+                        color: context.muted,
                         fontSize: 11.5,
                       ),
                     ),
@@ -140,7 +140,7 @@ class MovimientoCard extends StatelessWidget {
               Container(
                 height: 42,
                 width: 1,
-                color: InvenTrackStyle.outline,
+                color: context.outline,
               ),
 
               const SizedBox(width: 20),
@@ -150,10 +150,10 @@ class MovimientoCard extends StatelessWidget {
                   crossAxisAlignment:
                       CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Stock final',
                       style: TextStyle(
-                        color: InvenTrackStyle.muted,
+                        color: context.muted,
                         fontSize: 11.5,
                       ),
                     ),
@@ -164,8 +164,8 @@ class MovimientoCard extends StatelessWidget {
                       '${movimiento.stockFinal}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: InvenTrackStyle.ink,
+                      style: TextStyle(
+                        color: context.ink,
                         fontSize: 25,
                         fontWeight: FontWeight.w800,
                       ),

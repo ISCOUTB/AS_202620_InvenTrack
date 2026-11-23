@@ -70,27 +70,27 @@ class _ProductosPageState extends State<ProductosPage> {
     final inactivos = productos.length - activos;
 
     return Scaffold(
-      backgroundColor: InvenTrackStyle.canvas,
+      backgroundColor: context.canvas,
       body: RefreshIndicator(
         onRefresh: () => provider.cargarProductos(),
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.fromLTRB(18, 20, 18, 105),
           children: [
-            const Text(
+            Text(
               'Mis productos',
               style: TextStyle(
                 fontSize: 25,
                 fontWeight: FontWeight.w800,
                 letterSpacing: -0.7,
-                color: InvenTrackStyle.ink,
+                color: context.ink,
               ),
             ),
             const SizedBox(height: 5),
-            const Text(
+            Text(
               'Organiza y administra tu catálogo fácilmente.',
               style: TextStyle(
-                color: InvenTrackStyle.muted,
+                color: context.muted,
                 fontSize: 13,
               ),
             ),
@@ -110,18 +110,18 @@ class _ProductosPageState extends State<ProductosPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Total de productos',
                           style: TextStyle(
-                            color: InvenTrackStyle.muted,
+                            color: context.muted,
                             fontSize: 12,
                           ),
                         ),
                         const SizedBox(height: 3),
                         Text(
                           '${productos.length}',
-                          style: const TextStyle(
-                            color: InvenTrackStyle.ink,
+                          style: TextStyle(
+                            color: context.ink,
                             fontSize: 30,
                             fontWeight: FontWeight.w800,
                           ),
@@ -150,9 +150,9 @@ class _ProductosPageState extends State<ProductosPage> {
               controller: _busquedaController,
               decoration: InputDecoration(
                 hintText: 'Buscar producto...',
-                prefixIcon: const Icon(
+                prefixIcon: Icon(
                   Icons.search_rounded,
-                  color: InvenTrackStyle.muted,
+                  color: context.muted,
                 ),
                 suffixIcon: _busquedaController.text.isNotEmpty
                     ? IconButton(
@@ -386,17 +386,17 @@ class _FiltroChip extends StatelessWidget {
       selected: seleccionado,
       onSelected: (_) => onTap(),
       showCheckmark: false,
-      selectedColor: InvenTrackStyle.mint,
-      backgroundColor: Colors.white,
+      selectedColor: context.mint,
+      backgroundColor: context.surface,
       side: BorderSide(
         color: seleccionado
             ? InvenTrackStyle.emerald
-            : InvenTrackStyle.outline,
+            : context.outline,
       ),
       labelStyle: TextStyle(
         color: seleccionado
             ? InvenTrackStyle.deepGreen
-            : InvenTrackStyle.muted,
+            : context.muted,
         fontWeight: FontWeight.w700,
         fontSize: 12,
       ),
@@ -421,7 +421,7 @@ class _ProductoCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = producto.activo
         ? InvenTrackStyle.emerald
-        : InvenTrackStyle.muted;
+        : context.muted;
 
     return Dismissible(
       key: ValueKey(producto.id),
@@ -460,8 +460,8 @@ class _ProductoCard extends StatelessWidget {
                     producto.nombre,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: InvenTrackStyle.ink,
+                    style: TextStyle(
+                      color: context.ink,
                       fontSize: 14,
                       fontWeight: FontWeight.w800,
                     ),
@@ -471,8 +471,8 @@ class _ProductoCard extends StatelessWidget {
                     'ID: ${producto.id}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: InvenTrackStyle.muted,
+                    style: TextStyle(
+                      color: context.muted,
                       fontSize: 11.5,
                     ),
                   ),
@@ -487,9 +487,9 @@ class _ProductoCard extends StatelessWidget {
             IconButton(
               tooltip: 'Eliminar o desactivar producto',
               onPressed: onDelete,
-              icon: const Icon(
+              icon: Icon(
                 Icons.delete_outline_rounded,
-                color: InvenTrackStyle.muted,
+                color: context.muted,
               ),
             ),
           ],

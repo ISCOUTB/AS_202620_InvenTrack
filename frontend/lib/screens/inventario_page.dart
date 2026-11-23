@@ -39,21 +39,21 @@ class _InventarioPageState extends State<InventarioPage> {
     return ListView(
       padding: const EdgeInsets.fromLTRB(18, 20, 18, 35),
       children: [
-        const Text(
+        Text(
           'Mi inventario',
           style: TextStyle(
             fontSize: 25,
             fontWeight: FontWeight.w800,
-            color: InvenTrackStyle.ink,
+            color: context.ink,
             letterSpacing: -0.7,
           ),
         ),
         const SizedBox(height: 5),
-        const Text(
+        Text(
           'Controla las existencias y movimientos de tus productos.',
           style: TextStyle(
             fontSize: 13,
-            color: InvenTrackStyle.muted,
+            color: context.muted,
           ),
         ),
         const SizedBox(height: 20),
@@ -75,12 +75,12 @@ class _InventarioPageState extends State<InventarioPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Text(
+                Text(
                   'Identificador del producto',
                   style: TextStyle(
                     fontWeight: FontWeight.w700,
                     fontSize: 13,
-                    color: InvenTrackStyle.ink,
+                    color: context.ink,
                   ),
                 ),
                 const SizedBox(height: 11),
@@ -108,13 +108,13 @@ class _InventarioPageState extends State<InventarioPage> {
 
                 if (productos.isNotEmpty) ...[
                   const SizedBox(height: 17),
-                  const Text(
+                  Text(
                     'PRODUCTOS DISPONIBLES',
                     style: TextStyle(
                       fontSize: 10.5,
                       fontWeight: FontWeight.w800,
                       letterSpacing: 1,
-                      color: InvenTrackStyle.muted,
+                      color: context.muted,
                     ),
                   ),
                   const SizedBox(height: 9),
@@ -135,7 +135,7 @@ class _InventarioPageState extends State<InventarioPage> {
                           ),
                         ),
                         backgroundColor:
-                            InvenTrackStyle.mint,
+                            context.mint,
                         side: BorderSide.none,
                         shape: RoundedRectangleBorder(
                           borderRadius:
@@ -186,30 +186,30 @@ class _InventarioPageState extends State<InventarioPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Row(
+              Row(
                 children: [
-                  SoftIcon(
+                  const SoftIcon(
                     Icons.swap_vert_rounded,
                     size: 47,
                   ),
-                  SizedBox(width: 12),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       'Registrar movimiento',
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w800,
-                        color: InvenTrackStyle.ink,
+                        color: context.ink,
                       ),
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 9),
-              const Text(
+              Text(
                 'Primero selecciona un producto mediante su ID. Después registra la cantidad.',
                 style: TextStyle(
-                  color: InvenTrackStyle.muted,
+                  color: context.muted,
                   fontSize: 12,
                   height: 1.5,
                 ),
@@ -289,9 +289,9 @@ class _InventarioPageState extends State<InventarioPage> {
                   child: Text(
                     inventario.errorMessage ??
                         'Ocurrió un error.',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
-                      color: InvenTrackStyle.ink,
+                      color: context.ink,
                     ),
                   ),
                 ),

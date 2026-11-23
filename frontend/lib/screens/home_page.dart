@@ -45,26 +45,27 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       appBar: AppBar(
         titleSpacing: 20,
-        title: const Row(
+        title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
+            const Icon(
               Icons.inventory_2_rounded,
               color: InvenTrackStyle.emerald,
               size: 27,
             ),
-            SizedBox(width: 9),
+            const SizedBox(width: 9),
             Text(
               'InvenTrack',
               style: TextStyle(
                 fontWeight: FontWeight.w800,
                 letterSpacing: -0.6,
-                color: InvenTrackStyle.ink,
+                color: context.ink,
               ),
             ),
           ],
         ),
         actions: [
+          const BotonModoTema(),
           IconButton(
             tooltip: 'Gestión',
             icon: const Icon(Icons.business_center_outlined),
@@ -88,7 +89,7 @@ class _HomePageState extends State<HomePage> {
                       ? Icons.cloud_done_outlined
                       : Icons.cloud_off_outlined,
               color: health.isChecking
-                  ? InvenTrackStyle.muted
+                  ? context.muted
                   : health.isHealthy
                       ? InvenTrackStyle.emerald
                       : InvenTrackStyle.orange,
@@ -169,21 +170,21 @@ class DashboardPage extends StatelessWidget {
       child: ListView(
         padding: const EdgeInsets.fromLTRB(18, 14, 18, 32),
         children: [
-          const Text(
+          Text(
             'Resumen de inventario',
             style: TextStyle(
               fontSize: 23,
               fontWeight: FontWeight.w800,
-              color: InvenTrackStyle.ink,
+              color: context.ink,
               letterSpacing: -0.6,
             ),
           ),
           const SizedBox(height: 5),
-          const Text(
+          Text(
             'Todo lo importante de tu negocio, en un solo lugar.',
             style: TextStyle(
               fontSize: 13,
-              color: InvenTrackStyle.muted,
+              color: context.muted,
             ),
           ),
           const SizedBox(height: 20),
@@ -305,9 +306,9 @@ class DashboardPage extends StatelessWidget {
                           producto.nombre,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.w700,
-                            color: InvenTrackStyle.ink,
+                            color: context.ink,
                           ),
                         ),
                         subtitle: Text(
@@ -319,7 +320,7 @@ class DashboardPage extends StatelessWidget {
                           producto.activo ? 'Activo' : 'Inactivo',
                           color: producto.activo
                               ? InvenTrackStyle.emerald
-                              : InvenTrackStyle.muted,
+                              : context.muted,
                         ),
                         onTap: () => onNavigate(1),
                       ),
@@ -472,7 +473,7 @@ class _ConnectionPanel extends StatelessWidget {
     final comprobando = health.isChecking;
 
     final color = comprobando
-        ? InvenTrackStyle.muted
+        ? context.muted
         : conectado
             ? InvenTrackStyle.emerald
             : InvenTrackStyle.orange;
@@ -499,17 +500,17 @@ class _ConnectionPanel extends StatelessWidget {
                       : conectado
                           ? 'Servicio conectado'
                           : 'Servicio no disponible',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w800,
-                    color: InvenTrackStyle.ink,
+                    color: context.ink,
                     fontSize: 13,
                   ),
                 ),
                 const SizedBox(height: 3),
-                const Text(
+                Text(
                   'Estado de conexión con la API',
                   style: TextStyle(
-                    color: InvenTrackStyle.muted,
+                    color: context.muted,
                     fontSize: 11,
                   ),
                 ),
@@ -565,26 +566,26 @@ class _ActionTile extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.w800,
-                        color: InvenTrackStyle.ink,
+                        color: context.ink,
                         fontSize: 14,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       subtitle,
-                      style: const TextStyle(
-                        color: InvenTrackStyle.muted,
+                      style: TextStyle(
+                        color: context.muted,
                         fontSize: 11.5,
                       ),
                     ),
                   ],
                 ),
               ),
-              const Icon(
+              Icon(
                 Icons.chevron_right_rounded,
-                color: InvenTrackStyle.muted,
+                color: context.muted,
               ),
             ],
           ),

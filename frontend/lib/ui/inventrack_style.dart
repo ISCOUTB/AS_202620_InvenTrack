@@ -23,6 +23,120 @@ abstract final class InvenTrackStyle {
   );
 }
 
+/// Paleta que cambia entre modo claro y oscuro.
+@immutable
+class InvenTrackColors extends ThemeExtension<InvenTrackColors> {
+  const InvenTrackColors({
+    required this.ink,
+    required this.muted,
+    required this.outline,
+    required this.canvas,
+    required this.surface,
+    required this.mint,
+    required this.shadow,
+  });
+
+  final Color ink;
+  final Color muted;
+  final Color outline;
+  final Color canvas;
+  final Color surface;
+  final Color mint;
+  final Color shadow;
+
+  static const light = InvenTrackColors(
+    ink: InvenTrackStyle.ink,
+    muted: InvenTrackStyle.muted,
+    outline: InvenTrackStyle.outline,
+    canvas: InvenTrackStyle.canvas,
+    surface: Colors.white,
+    mint: InvenTrackStyle.mint,
+    shadow: Color(0x0A183C33),
+  );
+
+  static const dark = InvenTrackColors(
+    ink: Color(0xFFE6F2EF),
+    muted: Color(0xFF93A8A3),
+    outline: Color(0xFF263D40),
+    canvas: Color(0xFF0C1819),
+    surface: Color(0xFF142528),
+    mint: Color(0xFF123F38),
+    shadow: Color(0x66000000),
+  );
+
+  @override
+  InvenTrackColors copyWith({
+    Color? ink,
+    Color? muted,
+    Color? outline,
+    Color? canvas,
+    Color? surface,
+    Color? mint,
+    Color? shadow,
+  }) {
+    return InvenTrackColors(
+      ink: ink ?? this.ink,
+      muted: muted ?? this.muted,
+      outline: outline ?? this.outline,
+      canvas: canvas ?? this.canvas,
+      surface: surface ?? this.surface,
+      mint: mint ?? this.mint,
+      shadow: shadow ?? this.shadow,
+    );
+  }
+
+  @override
+  InvenTrackColors lerp(InvenTrackColors? other, double t) {
+    if (other == null) return this;
+    return InvenTrackColors(
+      ink: Color.lerp(ink, other.ink, t)!,
+      muted: Color.lerp(muted, other.muted, t)!,
+      outline: Color.lerp(outline, other.outline, t)!,
+      canvas: Color.lerp(canvas, other.canvas, t)!,
+      surface: Color.lerp(surface, other.surface, t)!,
+      mint: Color.lerp(mint, other.mint, t)!,
+      shadow: Color.lerp(shadow, other.shadow, t)!,
+    );
+  }
+}
+
+/// Atajos para leer los colores del tema activo.
+extension InvenTrackContext on BuildContext {
+  InvenTrackColors get _paleta =>
+      Theme.of(this).extension<InvenTrackColors>() ?? InvenTrackColors.light;
+
+  Color get ink => _paleta.ink;
+  Color get muted => _paleta.muted;
+  Color get outline => _paleta.outline;
+  Color get canvas => _paleta.canvas;
+  Color get surface => _paleta.surface;
+  Color get mint => _paleta.mint;
+  Color get watchShadow => _paleta.shadow;
+}
+
+/// Modo de tema elegido por la persona. Por defecto sigue al sistema.
+final ValueNotifier<ThemeMode> modoTema = ValueNotifier(ThemeMode.system);
+
+/// Botón que alterna entre modo claro y oscuro.
+class BotonModoTema extends StatelessWidget {
+  const BotonModoTema({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final oscuro = Theme.of(context).brightness == Brightness.dark;
+
+    return IconButton(
+      tooltip: oscuro ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro',
+      icon: Icon(
+        oscuro ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+      ),
+      onPressed: () {
+        modoTema.value = oscuro ? ThemeMode.light : ThemeMode.dark;
+      },
+    );
+  }
+}
+
 class SurfacePanel extends StatelessWidget {
   const SurfacePanel({
     super.key,
@@ -38,16 +152,16 @@ class SurfacePanel extends StatelessWidget {
     return Container(
       padding: padding,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.surface,
         borderRadius: BorderRadius.circular(22),
         border: Border.all(
-          color: InvenTrackStyle.outline,
+          color: context.outline,
         ),
-        boxShadow: const [
+        boxShadow: [
           BoxShadow(
-            color: Color(0x0A183C33),
+            color: context.watchShadow,
             blurRadius: 22,
-            offset: Offset(0, 9),
+            offset: const Offset(0, 9),
           ),
         ],
       ),
@@ -79,19 +193,19 @@ class SectionHeading extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 19,
                   fontWeight: FontWeight.w800,
-                  color: InvenTrackStyle.ink,
+                  color: context.ink,
                 ),
               ),
               if (subtitle != null) ...[
                 const SizedBox(height: 3),
                 Text(
                   subtitle!,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12.5,
-                    color: InvenTrackStyle.muted,
+                    color: context.muted,
                   ),
                 ),
               ],
@@ -164,9 +278,9 @@ class StatTile extends StatelessWidget {
           const SizedBox(height: 13),
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 27,
-              color: InvenTrackStyle.ink,
+              color: context.ink,
               fontWeight: FontWeight.w800,
             ),
           ),
@@ -175,8 +289,8 @@ class StatTile extends StatelessWidget {
             label,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: InvenTrackStyle.muted,
+            style: TextStyle(
+              color: context.muted,
               fontSize: 11.5,
               fontWeight: FontWeight.w600,
             ),
@@ -247,9 +361,9 @@ class EmptyPanel extends StatelessWidget {
             Text(
               title,
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 17,
-                color: InvenTrackStyle.ink,
+                color: context.ink,
                 fontWeight: FontWeight.w800,
               ),
             ),
@@ -257,8 +371,8 @@ class EmptyPanel extends StatelessWidget {
             Text(
               subtitle,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: InvenTrackStyle.muted,
+              style: TextStyle(
+                color: context.muted,
                 height: 1.4,
               ),
             ),
