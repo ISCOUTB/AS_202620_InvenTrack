@@ -1,5 +1,19 @@
 # Verificación técnica de InvenTrack · S15 y S16
 
+## Revisiones de la entrega
+
+| Cambio integrado en `main` | Commit |
+|---|---|
+| Gestión de proveedores y usuarios, historial, cortes y alertas | [`21cc2b4`](https://github.com/ISCOUTB/AS_202620_InvenTrack/commit/21cc2b4a28f8df3f5015d452ebf44802de97ce62) |
+| Validación SMTP y respuestas HTTP de proveedores y cierres | [`8e1779c`](https://github.com/ISCOUTB/AS_202620_InvenTrack/commit/8e1779c15c490863ff1f8841bd7ae665586075b3) |
+| Sincronización del esquema de errores OpenAPI | [`6f868f6`](https://github.com/ISCOUTB/AS_202620_InvenTrack/commit/6f868f692e3e5fbef188aff37122fe589145e154) |
+| Registro de decisiones y evidencia de recuperación | [`1563759`](https://github.com/ISCOUTB/AS_202620_InvenTrack/commit/156375915d752a3229b57f9ebf9845f0975fd3e5) |
+| Despliegue institucional y consolidación de las evidencias | [`2c57cb2`](https://github.com/ISCOUTB/AS_202620_InvenTrack/commit/2c57cb2fe99529b92f1796e06a8c3e9d5da559a3) |
+| Corrección de referencias en el registro de IA | [`d5ea0e5`](https://github.com/ISCOUTB/AS_202620_InvenTrack/commit/d5ea0e506457d6ce5c208e8e5672cc474d42b340) |
+| Diagramas de contexto, contenedores, componentes, despliegue y flujos | [`4261496`](https://github.com/ISCOUTB/AS_202620_InvenTrack/commit/4261496022f09d182ed9c234ea457707474462b8) |
+
+En `4261496` finalizaron correctamente los jobs de pruebas Python, Flutter y auditoría de dependencias, y el análisis de SonarCloud. [Ejecución de CI](https://github.com/ISCOUTB/AS_202620_InvenTrack/actions/runs/45107822814) · [análisis de SonarCloud](https://github.com/ISCOUTB/AS_202620_InvenTrack/runs/137473408676).
+
 ## Escenarios de negocio
 
 Tres corridas sobre Uvicorn en Windows, Python 3.11, HTTP por loopback, SQLite en archivo y un actor de ensayo autenticado. Cada corrida creó un SKU nuevo. ESC-01 lanzó 50 salidas distintas sobre 40 unidades. En cada corrida hubo 40 respuestas 200 con saldos consecutivos de 39 a 0 y diez respuestas 409. Repetir una clave exitosa reprodujo la respuesta original y el saldo siguió en cero. Para ESC-04 se calentó la lectura y se programaron 40 consultas de stock espaciadas 50 ms. Cada respuesta fue 200 con el saldo esperado. Los p95 por rango más cercano fueron 9,169, 14,095 y 8,000 ms frente a 400 ms. Las marcas de inicio permiten inspeccionar el espaciamiento efectivo. [Muestras individuales](retos/escenarios-2026-11-19.json) · [prueba reproducible](../tests/inventario/test_escenarios_calidad.py).

@@ -13,7 +13,7 @@
 
 El equipo implementó la conciliación por SKU al cierre de turno. En el ensayo, el inventario y el conteo sumaban 35 unidades y la aplicación identificó las cuatro diferencias que ese total ocultaba. [Prueba de conciliación](docs/verificacion-final.md#conciliación-por-sku) · [Sistema institucional](https://inventrack.iscoutb.dev).
 
-En Flutter, **Gestión → Cierre de turno** permite tomar el corte y comparar un CSV con cabecera `sku,cantidad`. La verificación local actual pasó las 49 pruebas Python recopiladas y las 10 pruebas Flutter; el análisis de Flutter terminó sin hallazgos. En Dokploy, se obtuvo 200 en `/health` y 401 en las rutas de Gestión sin credencial. El equipo confirmó el acceso autenticado a Gestión desde Flutter, la entrega del aviso por SMTP y la restauración de una copia en su PC. [Evidencia de S16](docs/verificacion-final.md).
+En Flutter, **Gestión → Cierre de turno** permite tomar el corte y comparar un CSV con cabecera `sku,cantidad`. La verificación local actual pasó las 49 pruebas Python recopiladas y las 10 pruebas Flutter; el análisis de Flutter terminó sin hallazgos. En Dokploy, se obtuvo 200 en `/health` y 401 en las rutas de Gestión sin credencial. El equipo confirmó el acceso autenticado a Gestión desde Flutter, la entrega del aviso por SMTP y la restauración de una copia en su PC. [Evidencia de S16](docs/verificacion-final.md) · [commits y CI de la entrega](docs/verificacion-final.md#revisiones-de-la-entrega).
 
 ## Ejecutar el perfil durable
 
