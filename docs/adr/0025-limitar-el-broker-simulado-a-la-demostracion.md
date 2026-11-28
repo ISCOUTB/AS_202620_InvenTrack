@@ -1,16 +1,25 @@
-# ADR-0025 · Limitar el broker simulado a la demostración en memoria
+# ADR-0025: Limitar el broker simulado a la demostración en memoria
 
-**Estado:** Implementado el 27 de noviembre de 2026. Complementa [ADR-0016](0016-integrar-eventos-de-auditoria-en-movimientos.md) para la demo y [ADR-0020](0020-persistir-inventario-y-auditoria-en-sqlite.md) para SQLite.
+- **Estado:** Aceptado
+- **Fecha:** 2026-11-27
+- **Decisores:** Equipo InvenTrack
+- **Complementa:** [ADR-0016](0016-integrar-eventos-de-auditoria-en-movimientos.md) para la demo y [ADR-0020](0020-persistir-inventario-y-auditoria-en-sqlite.md) para SQLite.
 
-## Contexto y opciones
+## Contexto y alternativas
 
 En el perfil durable, una entrada o salida escribía su evento con actor en SQLite y además lo enviaba al simulador del taller. El simulador retenía mensajes, claves y registros de consumo en colecciones que crecían durante la vida del proceso. Esa segunda copia se perdía al reiniciar. El trabajador de correo ya leía sus avisos de SQLite.
 
 Mantener ambos recorridos preservaba los contadores del simulador a costa de ese crecimiento. Incorporar un broker externo habría exigido operar otro servicio y coordinar su entrega con la transacción SQLite. El único consumidor externo actual, SMTP, ya dispone de la cola persistente `correos_stock`.
 
-## Decisión y consecuencias
+## Decisión
 
-En la demo, el router sigue publicando al simulador en segundo plano. Con SQLite, guarda la auditoría y el aviso que corresponda dentro de la transacción del movimiento. Un fallo de persistencia revierte el comando. Repetir una clave exitosa con el mismo actor y los mismos datos reproduce su respuesta. En este perfil, los contadores del broker permanecen en cero. La auditoría y el estado de la cola se consultan en la base.
+En la demo, el router sigue publicando al simulador en segundo plano. Con SQLite, guarda la auditoría y el aviso que corresponda dentro de la transacción del movimiento.
+
+## Consecuencias y reversión
+
+Un fallo de persistencia revierte el comando. Repetir una clave exitosa con el mismo actor y los mismos datos reproduce su respuesta. En el perfil SQLite, los contadores del broker permanecen en cero. La auditoría y el estado de la cola se consultan en la base.
+
+Para revertir la decisión, el router volvería a publicar cada evento nuevo en el simulador además de guardarlo en SQLite. Esto volvería a acumular una copia de los eventos en memoria.
 
 ## Trazabilidad
 
