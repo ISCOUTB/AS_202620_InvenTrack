@@ -57,10 +57,8 @@ def _error_salida(exc: Exception) -> HTTPException:
 
 def _crear_handler_entrada(
     registro: RegistrarMovimientoInventario,
-    broker: SimuladorBrokerMensajeria,
-    consumidor_auditoria: Callable[[dict], Any],
     idempotency_store: IdempotencyStore,
-    persistir_evento: Callable[[dict], None] | None,
+    auditar: Callable[[dict, BackgroundTasks], None],
 ) -> Callable[[str, MovimientoRequest], Awaitable[MovimientoResponse]]:
     async def registrar_entrada(
         producto_id: str,
@@ -82,13 +80,7 @@ def _crear_handler_entrada(
         respuesta = MovimientoResponse(**resultado.__dict__)
         if not idempotent_result.replayed:
             evento = _crear_evento(respuesta, correlation_id, idempotency_key)
-            if persistir_evento:
-                persistir_evento(evento)
-            background_tasks.add_task(
-                broker.publicar,
-                evento,
-                consumidor_auditoria,
-            )
+            auditar(evento, background_tasks)
         return respuesta
 
     return registrar_entrada
@@ -96,10 +88,8 @@ def _crear_handler_entrada(
 
 def _crear_handler_salida(
     registro: RegistrarMovimientoInventario,
-    broker: SimuladorBrokerMensajeria,
-    consumidor_auditoria: Callable[[dict], Any],
     idempotency_store: IdempotencyStore,
-    persistir_evento: Callable[[dict], None] | None,
+    auditar: Callable[[dict, BackgroundTasks], None],
 ) -> Callable[[str, MovimientoRequest], Awaitable[MovimientoResponse]]:
     async def registrar_salida(
         producto_id: str,
@@ -128,13 +118,7 @@ def _crear_handler_salida(
         respuesta = MovimientoResponse(**resultado.__dict__)
         if not idempotent_result.replayed:
             evento = _crear_evento(respuesta, correlation_id, idempotency_key)
-            if persistir_evento:
-                persistir_evento(evento)
-            background_tasks.add_task(
-                broker.publicar,
-                evento,
-                consumidor_auditoria,
-            )
+            auditar(evento, background_tasks)
         return respuesta
 
     return registrar_salida
@@ -184,9 +168,15 @@ def crear_router(
     consumidor_auditoria = consumidor_auditoria or _consumidor_auditoria_nulo
     idempotency_store = idempotency_store or InMemoryIdempotencyStore()
 
+    def auditar(evento: dict, tareas: BackgroundTasks) -> None:
+        if persistir_evento is not None:
+            persistir_evento(evento)
+        else:
+            tareas.add_task(broker.publicar, evento, consumidor_auditoria)
+
     router.add_api_route(
         "/inventario/{producto_id}/entradas",
-        _crear_handler_entrada(registro, broker, consumidor_auditoria, idempotency_store, persistir_evento),
+        _crear_handler_entrada(registro, idempotency_store, auditar),
         methods=["POST"],
         responses={
             400: BAD_REQUEST_RESPONSE,
@@ -198,7 +188,7 @@ def crear_router(
 
     router.add_api_route(
         "/inventario/{producto_id}/salidas",
-        _crear_handler_salida(registro, broker, consumidor_auditoria, idempotency_store, persistir_evento),
+        _crear_handler_salida(registro, idempotency_store, auditar),
         methods=["POST"],
         responses={
             400: BAD_REQUEST_RESPONSE,

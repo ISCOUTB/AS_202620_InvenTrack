@@ -14,6 +14,7 @@ from contextlib import closing
 from email import message_from_bytes, policy
 
 from app.shared.infrastructure.sqlite import inicializar
+from app.shared.infrastructure.respaldo import copiar
 from app.usuarios.infrastructure.credenciales import emitir
 from app.alertas.infrastructure import correo
 
@@ -75,8 +76,9 @@ def test_smtp_remoto_exige_certificado_y_nombre_del_servidor(monkeypatch):
     transporte.assert_called_once()
 
 
-def test_gestion_durable_y_correo(tmp_path):
+def test_gestion_durable_y_correo(tmp_path, monkeypatch):
     ruta = tmp_path / "inventario.sqlite3"
+    monkeypatch.setenv("INVENTRACK_DB_PATH", str(ruta))
     inicializar(ruta)
     with closing(sqlite3.connect(ruta)) as db, db:
         token = emitir(db, "responsable", "admin")
@@ -85,6 +87,12 @@ def test_gestion_durable_y_correo(tmp_path):
                    INVENTRACK_DB_PATH=str(ruta), TOKEN_DE_PRUEBA=token)
     comando = [sys.executable, "-m", "tests.test_gestion_integrada"]
     subprocess.run([*comando, "turno"], env=entorno, check=True, timeout=40)
+    # El segundo proceso debe poder recuperar el turno usando solo la copia.
+    copia = tmp_path / "copia.sqlite3"
+    restaurada = tmp_path / "restaurada.sqlite3"
+    copiar(ruta, copia)
+    copiar(copia, restaurada)
+    entorno["INVENTRACK_DB_PATH"] = str(restaurada)
     with socketserver.TCPServer(("127.0.0.1", 0), ReceptorSMTP) as servidor:
         servidor.mensajes = []
         hilo = threading.Thread(target=servidor.serve_forever, daemon=True)
@@ -103,6 +111,8 @@ def test_gestion_durable_y_correo(tmp_path):
 
 
 def durante_turno(cliente):
+    from app.main import _broker_mensajeria
+
     assert cliente.get("/sesion").json() == {"rol": "admin"}
     proveedor = cliente.post("/proveedores", json={"nombre": "Cooperativa", "contacto": "Oficina"})
     assert proveedor.status_code == 201
@@ -128,6 +138,9 @@ def durante_turno(cliente):
         assert cliente.post("/inventario/CAFE/salidas", headers=venta, json={"cantidad": 4}).json()["stock_final"] == 10
     assert cliente.post("/inventario/CAFE/salidas", headers=cabeceras, json={"cantidad": 1}).status_code == 200
     assert cliente.post("/inventario/CAFE/salidas", headers=cabeceras, json={"cantidad": 100}).status_code == 409
+    assert _broker_mensajeria.metrics["published"] == 0
+    with closing(sqlite3.connect(os.environ["INVENTRACK_DB_PATH"])) as db:
+        assert db.execute("SELECT count(*) FROM auditoria").fetchone() == (3,)
     assert cliente.put("/usuarios/caja/rol", json={"rol": "lector"}).status_code == 200
     assert cliente.post("/cierres", headers=cabeceras).status_code == 403
     token = cliente.post("/usuarios/caja/rotar").json()["token"]
