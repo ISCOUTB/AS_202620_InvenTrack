@@ -58,22 +58,3 @@ La referencia de partida es el commit `51f353704cabdd0100c082d6af3912d18dc83795`
 | Verificar alcance, asignación del desafío y contribución individual | [S16, rúbrica][s16] y [corte, C1/C5][corte] | Aplazada | La conciliación tiene pruebas, pero la asignación y el alcance acordado requieren la consigna del aula. La planilla conserva una atribución provisional. La valoración de la defensa corresponde al docente. | [Prueba del desafío](tests/inventario/test_conciliacion_turno.py) · [Planilla del equipo](https://github.com/ISCOUTB/AS_202620_feedback/blob/master/revisiones/2026-2/AS_202620_InvenTrack/planilla.md) |
 
 Las 15 filas tienen una decisión: 13 aceptadas y dos aplazadas. Ocho proceden de hilos de revisión interna de los PR 15 y 16. Las pruebas modificadas comprueban [el turno restaurado y la auditoría durable](tests/test_gestion_integrada.py) y [la navegación, la sesión y los temas en Flutter](frontend/test/widget_test.dart).
-
-Los enlaces a los commits de trabajo identifican objetos del clon local. Mientras se mantengan locales se consultan con `git show 6c031e0` y `git show 061ff1e`. El historial posterior al candidato se obtiene con `git log --oneline 51f3537..main`. El último CI público verificado pertenece a `51f3537`. Para acreditar la ausencia de regresiones en la entrega publicada se necesita el run verde del SHA que quede en `main` antes del cierre de SAVIO. [Run de la referencia original](https://github.com/ISCOUTB/AS_202620_InvenTrack/actions/runs/45112590983).
-
-### Retrospectiva del trabajo
-
-Estas cuatro lecciones se deducen de aportes identificables. Cada integrante tiene pendiente confirmar o corregir la que se vincula con su trabajo.
-
-| Trabajo de referencia | Qué funcionó | Qué quedó corto | Qué cambiar en la próxima iteración |
-|---|---|---|---|
-| Félix Taborda · [persistencia SQLite](https://github.com/ISCOUTB/AS_202620_InvenTrack/commit/df16ecb) | Restaurar en otro proceso permitió verificar saldo e idempotencia. | El cronómetro arrancó con el respaldo ya descargado. | Medir desde la pérdida del host hasta la primera lectura autenticada en la instancia repuesta y comparar el último movimiento con la hora del respaldo. |
-| José Vargas · [simulador](https://github.com/ISCOUTB/AS_202620_InvenTrack/commit/5507934) | Las pruebas de reintento y DLQ hicieron repetibles los fallos de consumo. | La integración durable conservaba una segunda copia de cada evento en RAM. | En cada perfil, probar cuántos eventos se guardan y qué consumidor debe recibirlos. |
-| Esteban Peluffo · [controles de acceso](https://github.com/ISCOUTB/AS_202620_InvenTrack/commit/e12e765) | Las sondas anónimas permiten distinguir salud de autenticación. | Un 200 en salud y un 401 en sesión dejan sin observar la operación del vendedor. | Registrar el SHA servido junto con una venta aceptada y otra rechazada en la misma sesión de ensayo. |
-| Javier Carta · [PR de interfaz](https://github.com/ISCOUTB/AS_202620_InvenTrack/pull/15), firma por confirmar | Reutilizar la selección de pestañas simplificó la navegación desde Inicio. | El recorrido anterior omitía el retorno a Inicio y los dos estados del botón de salida. | Verificar la vista activa después de cada toque y probar la presencia del control en ambas configuraciones. |
-
-[backend]: https://github.com/ISCOUTB/AS_202620_InvenTrack/commit/6c031e04df3f8539d8166d609e29830b365eef18
-[cliente]: https://github.com/ISCOUTB/AS_202620_InvenTrack/commit/061ff1e112eb32a27c7293b240b94132a49982ef
-[s16]: https://github.com/ISCOUTB/AS_202620_feedback/blob/master/revisiones/2026-2/AS_202620_InvenTrack/semana-16-final.md
-[corte]: https://github.com/ISCOUTB/AS_202620_feedback/blob/master/revisiones/2026-2/AS_202620_InvenTrack/corte-final-2026-11-25.md
-[ensayos]: docs/verificacion-final.md#comprobaciones-del-27-de-noviembre-de-2026
