@@ -57,7 +57,7 @@ def verificar(documento):
 
 def main():
     documentos = [RAIZ / "README.md", RAIZ / "frontend/README.md", RAIZ / "correcciones.md",
-                  *sorted((RAIZ / "docs").rglob("*.md"))]
+                  *sorted((RAIZ / "docs").rglob("*.md")), *sorted((RAIZ / "c4-actual").glob("*.md"))]
     errores = [error for documento in documentos for error in verificar(documento)]
     filas = 0
     for numero, linea in lineas(RAIZ / "docs/aspectos.md"):

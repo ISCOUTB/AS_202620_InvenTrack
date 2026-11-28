@@ -1,6 +1,6 @@
 # InvenTrack — Frontend (Flutter)
 
-InvenTrack Frontend es una **aplicación cliente nativa multiplataforma** (móvil para Android e iOS, y escritorio para Windows), desarrollada en **Flutter** para interactuar con la API backend de **InvenTrack**.
+La aplicación final de InvenTrack es un cliente Flutter para **Android**. La configuración de Windows sirve exclusivamente para pruebas locales del equipo. El directorio `ios/` conserva archivos de Flutter fuera del alcance de la entrega.
 
 > **Aclaración arquitectónica:** Este frontend es un **cliente nativo que se compila y ejecuta en el dispositivo del usuario**; **no es una aplicación web desplegada en servidor** ni un sitio web alojado independientemente. Toda su comunicación se realiza vía HTTP/HTTPS contra los endpoints expuestos por la API de InvenTrack, cumpliendo de forma estricta el contrato OpenAPI versionado [`contracts/openapi/v1.json`](../contracts/openapi/v1.json) sin extender ni alterar los endpoints del backend.
 
@@ -12,7 +12,6 @@ La acción **Gestión** de la pantalla principal abre el directorio de proveedor
 
 - **Flutter SDK** `>= 3.41` y **Dart SDK** `>= 3.0.0 <4.0.0` (verificado con Flutter `3.41.6` / Dart `3.11.4`).
 - Para ejecutar en **Android**: Android Studio, Android SDK y un emulador o dispositivo habilitado en `flutter doctor`.
-- Para ejecutar en **iOS**: macOS con Xcode y un simulador o dispositivo iOS. Flutter no permite compilar iOS desde Windows.
 - **Backend FastAPI** de InvenTrack en ejecución (por defecto en `http://localhost:8000`).
 
 ---
@@ -28,36 +27,30 @@ python -m uvicorn app.main:app --reload
 ### 2. Arrancar el frontend móvil (desde `frontend/`)
 
 ```powershell
-flutter run -d android
+flutter devices
+# Sustituye emulator-5554 por el identificador de tu emulador Android.
+flutter run -d emulator-5554 --dart-define=INVENTRACK_API_URL=http://10.0.2.2:8000
 ```
 
 > Si aún no se han descargado los paquetes en el entorno local, ejecutar previamente `flutter pub get`.
 
 ### Configurar otra URL de API
 
-Por defecto (`lib/config/api_config.dart`), el cliente se conecta a `http://localhost:8000`. Puede indicarse otra URL en tiempo de compilación/ejecución mediante `--dart-define`:
+`INVENTRACK_API_URL` fija la dirección al compilar. El valor predeterminado es `http://localhost:8000`. Para usar la API institucional en Dokploy con autenticación individual:
 
 ```powershell
-flutter run -d android --dart-define=INVENTRACK_API_URL=http://10.0.2.2:8000
+flutter run -d emulator-5554 --dart-define=INVENTRACK_AUTH=true --dart-define=INVENTRACK_API_URL=https://inventrack.iscoutb.dev
 ```
 
-Para apuntar directamente al backend institucional en Dokploy:
+> **Acceso en Dokploy.** Para probar catálogo e inventario en la instancia institucional, usa una credencial individual de ensayo. El 22/11/2026 las consultas anónimas devolvieron 401. En un entorno con `INVENTRACK_ALLOW_BUSINESS_DATA=false`, el negocio devuelve 503. [Verificación institucional](../docs/verificacion-final.md#verificación-pública-y-colaboración).
+>
+> **Conexión desde móvil:** En el emulador Android, `10.0.2.2` apunta al `localhost` de la máquina anfitriona. En un teléfono conectado por USB, `adb reverse tcp:8000 tcp:8000` permite usar `http://localhost:8000` con la API local.
 
-```powershell
-flutter run -d android --dart-define=INVENTRACK_API_URL=https://inventrack.iscoutb.dev
-# o en Windows:
-flutter run -d windows --dart-define=INVENTRACK_API_URL=https://inventrack.iscoutb.dev
-```
-
-> **Acceso en Dokploy.** Para probar catálogo e inventario en la instancia institucional, añade `--dart-define=INVENTRACK_AUTH=true` al comando y usa una credencial individual de ensayo. El 22/11/2026 las consultas anónimas devolvieron 401. En un entorno con `INVENTRACK_ALLOW_BUSINESS_DATA=false`, el negocio devuelve 503. [Verificación institucional](../docs/verificacion-final.md#verificación-pública-y-colaboración).
->
-> **Conexión desde móvil:** En el emulador Android, `10.0.2.2` apunta al `localhost` de la máquina anfitriona. En un dispositivo físico se debe usar la IP local del equipo que ejecuta el backend, por ejemplo `http://192.168.1.10:8000`, y permitir el tráfico correspondiente en la red.
->
-> **iOS:** Ejecuta `flutter run -d ios` desde macOS con Xcode configurado. Para el simulador iOS normalmente se puede usar `http://127.0.0.1:8000`; un dispositivo físico debe usar la IP local del equipo que ejecuta el backend.
->
-> El proyecto conserva el runner `windows/` existente, pero la plataforma objetivo del producto es ahora móvil mediante `android/` e `ios/`.
+Para una prueba de escritorio con la demo local, ejecuta `flutter run -d windows` desde `frontend/`.
 
 ---
+
+El selector de tema permite alternar claro y oscuro durante la sesión. Al cerrar el proceso, la siguiente apertura vuelve a seguir el tema del dispositivo.
 
 ## Cómo probar y verificar
 

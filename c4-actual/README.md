@@ -18,5 +18,5 @@ No se basa en `docs/c4/`. Los diagramas usan Mermaid (se visualizan en GitHub y 
 - Autenticación por token individual: se guarda el SHA-256 en la tabla `usuarios`. Roles `admin`, `operador`, `lector` (`credenciales.py:permitido`).
 - Una conexión y una transacción SQLite por petición; escrituras serializadas con un lock anyio (espera máxima 5 s, luego 503 con `Retry-After`).
 - Alertas de stock bajo: cola transaccional en la tabla `correos_stock`, consumida por una tarea asyncio que envía por SMTP con STARTTLS.
-- El broker de mensajería es un **simulador en proceso** (reintentos, backoff, deduplicación, DLQ); no hay broker externo.
-- Cliente Flutter (`frontend/`) con `provider` y `http`; apunta a la API con `INVENTRACK_API_URL`.
+- La demo registra los eventos con un broker simulado en memoria (reintentos y DLQ). El perfil durable escribe la auditoría en SQLite dentro de la transacción de inventario.
+- Cliente Android desarrollado en Flutter (`frontend/`) con `provider` y `http`; apunta a la API con `INVENTRACK_API_URL`.

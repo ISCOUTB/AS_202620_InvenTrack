@@ -12,8 +12,64 @@ import 'package:inventrack/providers/productos_provider.dart';
 import 'package:inventrack/screens/inventario_page.dart';
 import 'package:inventrack/screens/productos_page.dart';
 import 'package:inventrack/services/api_service.dart';
+import 'package:inventrack/ui/inventrack_style.dart';
+
+double contraste(Color texto, Color fondo) {
+  final a = texto.computeLuminance();
+  final b = fondo.computeLuminance();
+  return a > b ? (a + 0.05) / (b + 0.05) : (b + 0.05) / (a + 0.05);
+}
 
 void main() {
+  testWidgets('Cada destino selecciona su vista y salir depende de la sesión', (tester) async {
+    final servicio = ApiService(client: MockClient((request) async {
+      return http.Response(request.url.path == '/productos' ? '[]' : '{"status":"ok"}', 200);
+    }));
+    addTearDown(servicio.dispose);
+    await tester.pumpWidget(InvenTrackApp(apiService: servicio));
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('Cerrar sesión'), findsNothing);
+    const destinos = ['Inicio', 'Productos', 'Inventario'];
+    for (final indice in [1, 2, 0]) {
+      await tester.tap(find.widgetWithText(NavigationDestination, destinos[indice]));
+      await tester.pumpAndSettle();
+      expect(tester.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex, indice);
+      expect(tester.widget<IndexedStack>(find.byType(IndexedStack)).index, indice);
+    }
+    var salidas = 0;
+    await tester.pumpWidget(InvenTrackApp(apiService: servicio, salir: () => salidas++));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Cerrar sesión'));
+    expect(salidas, 1);
+  });
+
+  testWidgets('El acceso usa la paleta activa en claro y oscuro', (tester) async {
+    final modoInicial = modoTema.value;
+    addTearDown(() => modoTema.value = modoInicial);
+    modoTema.value = ThemeMode.light;
+    await tester.pumpWidget(const SesionIndividual());
+    final app = tester.widget<MaterialApp>(find.byType(MaterialApp));
+    expect(app.theme!.extension<InvenTrackColors>(), InvenTrackColors.light);
+    expect(app.darkTheme!.extension<InvenTrackColors>(), InvenTrackColors.dark);
+    for (final paleta in [InvenTrackColors.light, InvenTrackColors.dark]) {
+      if (paleta == InvenTrackColors.dark) {
+        await tester.tap(find.byTooltip('Cambiar a modo oscuro'));
+        await tester.pumpAndSettle();
+      }
+      final titulo = tester.widget<Text>(find.text('Bienvenido a InvenTrack'));
+      expect(titulo.style!.color, paleta.ink);
+      final etiqueta = tester.element(find.text('Ingresar'));
+      final texto = DefaultTextStyle.of(etiqueta).style.color!;
+      final fondo = etiqueta.findAncestorWidgetOfExactType<Material>()!.color!;
+      expect(contraste(texto, fondo), greaterThanOrEqualTo(4.5));
+      final colores = Theme.of(etiqueta).colorScheme;
+      for (final color in [colores.primary, colores.secondary, etiqueta.aviso]) {
+        final tinte = Color.alphaBlend(color.withValues(alpha: 0.11), paleta.surface);
+        expect(contraste(color, tinte), greaterThanOrEqualTo(4.5));
+      }
+    }
+  });
+
   testWidgets(
     'Flujo basico de productos e inventario con API simulada',
     (WidgetTester tester) async {

@@ -13,7 +13,9 @@
 
 El equipo implementó la conciliación por SKU al cierre de turno. En el ensayo, el inventario y el conteo sumaban 35 unidades y la aplicación identificó las cuatro diferencias que ese total ocultaba. [Prueba de conciliación](docs/verificacion-final.md#conciliación-por-sku) · [Sistema institucional](https://inventrack.iscoutb.dev).
 
-En Flutter, **Gestión → Cierre de turno** permite tomar el corte y comparar un CSV con cabecera `sku,cantidad`. La verificación local actual pasó las 49 pruebas Python recopiladas y las 10 pruebas Flutter; el análisis de Flutter terminó sin hallazgos. En Dokploy, se obtuvo 200 en `/health` y 401 en las rutas de Gestión sin credencial. El equipo confirmó el acceso autenticado a Gestión desde Flutter, la entrega del aviso por SMTP y la restauración de una copia en su PC. [Evidencia de S16](docs/verificacion-final.md) · [commits y CI de la entrega](docs/verificacion-final.md#revisiones-de-la-entrega).
+En Flutter, **Gestión → Cierre de turno** permite tomar el corte y comparar un CSV con cabecera `sku,cantidad`. En la verificación de S16 pasaron 49 pruebas Python y 10 pruebas Flutter. Las comprobaciones posteriores están en el [registro de verificación](docs/verificacion-final.md#comprobaciones-del-27-de-noviembre-de-2026). En Dokploy, se obtuvo 200 en `/health` y 401 en las rutas de Gestión sin credencial. El equipo confirmó el acceso autenticado a Gestión desde Flutter, la entrega del aviso por SMTP y la restauración de una copia en su PC. [Evidencia de S16](docs/verificacion-final.md) · [commits y CI de la entrega](docs/verificacion-final.md#revisiones-de-la-entrega).
+
+La aplicación final es el cliente **Android**. El equipo conserva la configuración de Windows exclusivamente para pruebas locales. [Ejecución en Android](frontend/README.md) · [Correcciones y evidencia](correcciones.md#retroalimentación-del-cierre).
 
 ## Ejecutar el perfil durable
 
@@ -40,9 +42,9 @@ Para el cliente autenticado, desde `frontend/` ejecutar `flutter run --dart-defi
 * **Medición de Concurrencia:** La prueba ejecuta 20 salidas reales sobre el mismo SKU, calcula el p95 y exige el umbral de $\le 400\text{ ms}$ ([Experimento reproducible](docs/retos/corte-2-experimento.md)).
 * **Matriz de Trazabilidad:** Cadena navegable `Aspecto → Requisito → C4 → ADR → Código → Pruebas → Evidencia` ([Aspectos de Calidad](docs/aspectos.md)).
 * **Contrato de API:** OpenAPI v1 versionado y validado automáticamente contra la implementación FastAPI ([ADR-0004](docs/adr/0004-contrato-api-versionado-openapi.md)).
-* **Mensajería asíncrona:** Las entradas y salidas publican el evento `MovimientoDeInventarioRegistrado` para auditoría en segundo plano, con trazabilidad, deduplicación, reintentos, backoff exponencial y DLQ en memoria ([ADR-0013](docs/adr/0013-evaluacion-mensajeria-asincrona-vs-sincrona.md), [ADR-0016](docs/adr/0016-integrar-eventos-de-auditoria-en-movimientos.md)).
+* **Mensajería asíncrona:** La demo publica eventos en un broker en memoria con reintentos y DLQ. En Dokploy, SQLite confirma el movimiento y su auditoría en una transacción. El correo de stock bajo usa una cola persistente ([ADR-0013](docs/adr/0013-evaluacion-mensajeria-asincrona-vs-sincrona.md), [ADR-0016](docs/adr/0016-integrar-eventos-de-auditoria-en-movimientos.md)).
 * **Despliegue institucional.** Dokploy construye la imagen de la API mediante [Compose](deploy/compose.lab.yaml) y monta el volumen SQLite.
-* **CI y cobertura:** GitHub Actions ejecuta la suite completa con `pytest-cov`, genera `coverage.xml`, ejecuta el análisis SonarCloud y valida explícitamente el contrato OpenAPI. A fecha actual existen 49 pruebas Python recopiladas y 10 pruebas Flutter. El registro adjunto de un run previo mostró 48 pruebas aprobadas y el contrato OpenAPI fallando por el esquema `ValidationError`; el contrato se alineó con el esquema generado y el problema quedó corregido.
+* **CI y cobertura:** GitHub Actions ejecuta la suite completa con `pytest-cov`, genera `coverage.xml`, ejecuta el análisis SonarCloud y valida explícitamente el contrato OpenAPI. En S16 se ejecutaron 49 pruebas Python y 10 pruebas Flutter. El registro adjunto de un run previo mostró 48 pruebas aprobadas y el contrato OpenAPI fallando por el esquema `ValidationError`; el contrato se alineó con el esquema generado y el problema quedó corregido.
 * **Transparencia en Uso de IA:** Prompts, decisiones aceptadas, correcciones y rechazos por criterio técnico ([Registro de IA](docs/ia.md)).
 
 ---
@@ -171,7 +173,9 @@ Antes de entrar a cada carpeta, vale la pena explicar la lógica detrás de la e
 
 ## Mensajería asíncrona y auditoría
 
-El sistema usa un modelo híbrido conforme al [ADR-0013](docs/adr/0013-evaluacion-mensajeria-asincrona-vs-sincrona.md):
+En Dokploy, SQLite confirma saldo, historial, clave idempotente y evento con actor en una transacción. Si la salida cruza el umbral de stock bajo, la misma transacción guarda un aviso para el despachador SMTP. [Decisión de auditoría](docs/adr/0025-limitar-el-broker-simulado-a-la-demostracion.md).
+
+En la demostración en memoria se aplica el [ADR-0013](docs/adr/0013-evaluacion-mensajeria-asincrona-vs-sincrona.md):
 
 1. El registro de stock y movimiento permanece síncrono y protegido por el
    lock por SKU.
@@ -190,7 +194,7 @@ La implementación se encuentra en [`app/inventario/infrastructure/router.py`](a
 [`app/messaging/broker_simulador.py`](app/messaging/broker_simulador.py) y
 [`app/main.py`](app/main.py).
 
-### Garantías y límites
+### Garantías y límites del simulador en memoria
 
 | Propiedad | Implementación |
 |---|---|
@@ -401,8 +405,8 @@ frontend/                        # Cliente Flutter (Material 3 + Provider)
 │   └── widgets/                 # Diálogos, tarjetas y conciliación de cierres
 ├── test/                        # Pruebas unitarias y de widgets con MockClient
 ├── android/                     # Runner nativo Android
-├── ios/                         # Runner nativo iOS
-└── windows/                     # Runner nativo Windows conservado
+├── ios/                         # Configuración iOS fuera del alcance de entrega
+└── windows/                     # Runner Windows para pruebas locales
 tests/                           # Batería de pruebas automatizadas
 ├── test_health.py
 ├── test_gestion_integrada.py     # Gestión, usuarios, proveedores y SMTP
@@ -459,30 +463,22 @@ está en [`docs/evidencia-mensajeria-s12.md`](docs/evidencia-mensajeria-s12.md).
 
 ### Cómo ejecutar el frontend (Flutter)
 
-> **Clarificación arquitectónica:** El frontend es una **aplicación cliente nativa** (móvil para Android e iOS, y escritorio para Windows), **no una aplicación web desplegada en un servidor independiente**. Consume directamente la API REST de InvenTrack por HTTP/HTTPS.
+El cliente Flutter se instala en Android y consume la API REST. Dokploy aloja la API.
 
-Requisitos: Flutter SDK (`>= 3.41`), Dart SDK (`>= 3.0.0`), Android Studio/SDK para Android o macOS/Xcode para iOS, o el runner de escritorio Windows. Ver detalles completos en [`frontend/README.md`](frontend/README.md).
+Se requieren Flutter, Android SDK y un emulador o teléfono conectado. `flutter devices` muestra el identificador del dispositivo. Los ejemplos usan `emulator-5554`. [Requisitos del cliente](frontend/README.md).
 
-Para ejecutar contra el backend local:
+Con la API en el puerto 8000 del equipo anfitrión, ejecutar desde la raíz para el emulador Android:
 
 ```powershell
 cd frontend
-flutter run -d android
-# o en escritorio Windows:
-flutter run -d windows
+flutter run -d emulator-5554 --dart-define=INVENTRACK_API_URL=http://10.0.2.2:8000
 ```
 
 Para apuntar a la API institucional desplegada en Dokploy:
 
 ```powershell
 cd frontend
-flutter run -d android --dart-define=INVENTRACK_API_URL=https://inventrack.iscoutb.dev
-```
-
-Para iOS se requiere macOS con Xcode:
-
-```text
-flutter run -d ios
+flutter run -d emulator-5554 --dart-define=INVENTRACK_AUTH=true --dart-define=INVENTRACK_API_URL=https://inventrack.iscoutb.dev
 ```
 
 Las pruebas y el análisis estático del frontend se ejecutan desde `frontend/` con:

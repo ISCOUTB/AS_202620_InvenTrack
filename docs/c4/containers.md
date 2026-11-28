@@ -17,7 +17,7 @@ flowchart TB
 
     subgraph InvenTrack["InvenTrack — Monolito Modular (ADR-0001)"]
         Web[["🖥️ Frontend
-        Flutter (Android / iOS / Windows)"]]
+        Flutter para Android"]]
         
         subgraph ApiContainer ["⚙️ API Backend (Contenedor Único FastAPI + Uvicorn)"]
             Api[["FastAPI App"]]
@@ -72,7 +72,7 @@ Flutter se ejecuta en el dispositivo del usuario. FastAPI sirve a los clientes d
 | Contenedor en el diagrama | Corresponde a | Estado |
 |---|---|---|
 | API Backend | Toda la carpeta [`app/`](../../app/) — un único proceso FastAPI que ensambla los módulos en `app/main.py`. Expone la interfaz pública descrita en el [Contrato de API de InvenTrack](../api/inventrack-contrato.md). | Funcional con cortes verticales en [`app/productos/`](../../app/productos/) y [`app/inventario/`](../../app/inventario/) (Arquitectura Hexagonal + Mutex para concurrencia) |
-| Frontend | Carpeta [`frontend/`](../../frontend/) — aplicación Flutter (`lib/main.dart`, `lib/services/api_service.dart`, `lib/providers/`, `lib/screens/`) | Implementado para los endpoints del contrato OpenAPI v1 (`health`, `productos`, `inventario`) con runners móviles `android/` e `ios/` y pruebas `MockClient` |
+| Frontend | Carpeta [`frontend/`](../../frontend/) — aplicación Flutter (`lib/main.dart`, `lib/services/api_service.dart`, `lib/providers/`, `lib/screens/`) | Implementado para los endpoints del contrato OpenAPI v1 (`health`, `productos`, `inventario`) con el cliente Android y pruebas `MockClient` |
 | Persistencia | Catálogo, stock, movimientos, respuestas idempotentes y auditoría | El perfil durable usa SQLite en un volumen local. La demostración usa memoria. [ADR-0020](../adr/0020-persistir-inventario-y-auditoria-en-sqlite.md). |
 
 ---

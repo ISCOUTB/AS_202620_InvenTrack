@@ -45,8 +45,6 @@ ThemeData crearTemaInvenTrack([Brightness brillo = Brightness.light]) {
 
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
-        backgroundColor: InvenTrackStyle.emerald,
-        foregroundColor: Colors.white,
         padding: const EdgeInsets.symmetric(
           horizontal: 20,
           vertical: 15,
@@ -186,72 +184,76 @@ class _SesionIndividualState
 
     return _AplicacionConTema(
       title: 'Acceder a InvenTrack',
-      home: Scaffold(
-        appBar: AppBar(
-          title: const Text('InvenTrack'),
-          actions: const [BotonModoTema(), SizedBox(width: 8)],
-        ),
-        body: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(
-                maxWidth: 420,
-              ),
-              child: SurfacePanel(
-                child: Column(
-                  crossAxisAlignment:
-                      CrossAxisAlignment.stretch,
-                  children: [
-                    const SoftIcon(
-                      Icons.inventory_2_rounded,
-                      size: 60,
+      home: Builder(builder: _pantallaAcceso),
+    );
+  }
+
+  Widget _pantallaAcceso(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('InvenTrack'),
+        actions: const [BotonModoTema(), SizedBox(width: 8)],
+      ),
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(
+              maxWidth: 420,
+            ),
+            child: SurfacePanel(
+              child: Column(
+                crossAxisAlignment:
+                    CrossAxisAlignment.stretch,
+                children: [
+                  const SoftIcon(
+                    Icons.inventory_2_rounded,
+                    size: 60,
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    'Bienvenido a InvenTrack',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w800,
+                      color: context.ink,
                     ),
-                    const SizedBox(height: 20),
-                    Text(
-                      'Bienvenido a InvenTrack',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w800,
-                        color: context.ink,
-                      ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Ingresa tu credencial para continuar.',
+                    style: TextStyle(
+                      color: context.muted,
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Ingresa tu credencial para continuar.',
-                      style: TextStyle(
-                        color: context.muted,
-                      ),
+                  ),
+                  const SizedBox(height: 24),
+                  TextField(
+                    controller: campo,
+                    obscureText: true,
+                    enableSuggestions: false,
+                    autocorrect: false,
+                    decoration: InputDecoration(
+                      labelText: 'Credencial individual',
+                      prefixIcon:
+                          const Icon(Icons.lock_outline),
+                      errorText: error,
                     ),
-                    const SizedBox(height: 24),
-                    TextField(
-                      controller: campo,
-                      obscureText: true,
-                      enableSuggestions: false,
-                      autocorrect: false,
-                      decoration: InputDecoration(
-                        labelText: 'Credencial individual',
-                        prefixIcon:
-                            const Icon(Icons.lock_outline),
-                        errorText: error,
-                      ),
+                  ),
+                  const SizedBox(height: 18),
+                  FilledButton.icon(
+                    onPressed: esperando
+                        ? null
+                        : ingresar,
+                    icon: const Icon(
+                      Icons.login_rounded,
                     ),
-                    const SizedBox(height: 18),
-                    FilledButton.icon(
-                      onPressed: esperando
-                          ? null
-                          : ingresar,
-                      icon: const Icon(
-                        Icons.login_rounded,
-                      ),
-                      label: Text(
-                        esperando
-                            ? 'Verificando...'
-                            : 'Ingresar',
-                      ),
+                    label: Text(
+                      esperando
+                          ? 'Verificando...'
+                          : 'Ingresar',
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ),

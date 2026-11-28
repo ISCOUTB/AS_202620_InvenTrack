@@ -9,8 +9,8 @@ flowchart TB
 
     subgraph sis ["InvenTrack"]
         direction TB
-        app["<b>Cliente Flutter</b><br/>Dart / Flutter, provider, http<br/>Inicio, productos, inventario y gestión<br/>Windows, Android e iOS"]:::cont
-        api["<b>API InvenTrack</b><br/>Python 3.11, FastAPI, Uvicorn<br/>Monolito modular hexagonal, Bearer y roles,<br/>métricas, logs JSON, broker simulado, cola de correo"]:::cont
+        app["<b>Cliente Flutter</b><br/>Dart / Flutter, provider, http<br/>Inicio, productos, inventario y gestión<br/>Android"]:::cont
+        api["<b>API InvenTrack</b><br/>Python 3.11, FastAPI, Uvicorn<br/>Monolito modular hexagonal, Bearer y roles,<br/>métricas, logs JSON, auditoría y cola de correo SQLite"]:::cont
         db[("<b>Base SQLite</b><br/>modo WAL<br/>usuarios, productos, stocks, movimientos,<br/>comandos, auditoria, proveedores,<br/>cierres, correos_stock")]:::db
         cli["<b>CLI de administración</b><br/>python -m ...<br/>Credenciales (emitir y revocar),<br/>respaldo y restauración"]:::cont
     end
@@ -43,7 +43,7 @@ flowchart TB
 
 | Perfil | Condición | Persistencia | Autenticación |
 |---|---|---|---|
-| Demo | Sin `INVENTRACK_DB_PATH` | Repositorios en memoria | Ninguna |
+| Demo | Sin `INVENTRACK_DB_PATH` | Repositorios y broker simulado en memoria | Ninguna |
 | Durable | Con `INVENTRACK_DB_PATH` | SQLite | Bearer individual + roles |
 | Producción cerrada | `INVENTRACK_ENV=production` sin `INVENTRACK_ALLOW_BUSINESS_DATA=true` | — | Rutas de negocio devuelven 503 |
 

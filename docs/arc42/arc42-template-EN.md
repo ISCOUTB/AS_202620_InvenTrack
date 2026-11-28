@@ -398,7 +398,7 @@ El modelo de despliegue integra 6 nodos funcionales distribuidos entre el client
 ```mermaid
 flowchart TD
     subgraph CLIENTE["1. Nodo Cliente"]
-        USER["Cliente Flutter (frontend/) / HTTP Client<br/>(HTTP / HTTPS · JSON)"]
+        USER["Cliente Flutter Android (frontend/) / HTTP Client<br/>(HTTP / HTTPS · JSON)"]
     end
 
     subgraph CI_CD["Entorno de Integración Continua"]
@@ -428,10 +428,10 @@ La aplicación se inicia localmente mediante:
 python -m uvicorn app.main:app --reload
 ```
 
-Y el cliente gráfico Flutter desde `frontend/` (ver [`frontend/README.md`](../../frontend/README.md)):
+El cliente de la entrega se ejecuta en Android. Windows sirve exclusivamente para pruebas locales. Desde `frontend/`, con la API en el equipo anfitrión, se usa el identificador que muestre `flutter devices`. [Guía del cliente](../../frontend/README.md).
 
 ```text
-flutter run -d android
+flutter run -d emulator-5554 --dart-define=INVENTRACK_API_URL=http://10.0.2.2:8000
 ```
 
 El despliegue institucional se construye con `Dockerfile` y
@@ -539,11 +539,13 @@ Para responder a las operaciones reales del sistema InvenTrack, se definen expl�
 
 La transacción abarca validación de producto, saldo, historial, respuesta idempotente por actor y evento de auditoría. Las lecturas consultan SQLite directamente. Un movimiento queda atribuido al ID autenticado incluso después de restaurar la base. El token operativo solo protege la telemetría. [ADR-0018](../adr/0018-restringir-superficies-internas-en-produccion.md), [ADR-0019](../adr/0019-autenticar-usuarios-y-autorizar-por-rol.md) y [ADR-0020](../adr/0020-persistir-inventario-y-auditoria-en-sqlite.md).
 
+Con SQLite, cada movimiento nuevo guarda el evento en la tabla `auditoria` y el cruce de umbral puede insertar un aviso en `correos_stock`. El trabajador SMTP reintenta los avisos pendientes. El simulador con deduplicación y DLQ procesa eventos exclusivamente en la demo en memoria. [ADR-0025](../adr/0025-limitar-el-broker-simulado-a-la-demostracion.md) · [Flujo durable](../../c4-actual/05-flujos.md).
+
 ### 8.3 Seguridad, privacidad y cadena de suministro (S13)
 
 Al cierre S13 el MVP aún carecía de identidad individual y roles. Los controles siguientes describen ese corte. El perfil durable posterior implementa la frontera de acceso descrita en ADR-0019.
 
-Los controles actualmente implementados son defensivos y de consistencia:
+En el perfil de S13 se aplicaban estos controles:
 
 - Validación Pydantic de payloads y cantidades positivas en el borde HTTP.
 - Locks por SKU, control de stock e idempotencia HTTP dentro de una instancia.
@@ -906,7 +908,7 @@ La prueba del perfil durable cubre autorización, actor y restauración en un pr
   - *Riesgo:* Ante reinicios del contenedor o despliegue en múltiples réplicas horizontales, el estado del inventario no es persistente ni compartido.
   - *Mitigación:* La prueba vigente ejecuta 20 peticiones concurrentes sobre salidas reales, comprueba el stock final y exige $p95 \le 400\text{ ms}$ en una instancia. La evolución prioritaria post-MVP es evaluar una base relacional compartida mediante los puertos existentes, incluyendo migración, respaldos y restauración.
 - **Inmutabilidad de ADRs Previos:** Los ADRs 0002, 0004 y 0005 sufrieron ediciones posteriores en iteraciones anteriores. Esto se zanja formalmente mediante el **ADR-0009**, decretando la inmutabilidad estricta de cualquier ADR aceptado a partir de la fecha.
-- **Límites del Frontend MVP (`frontend/`):** El cliente Flutter implementa exclusivamente los endpoints declarados en `contracts/openapi/v1.json` (`GET /health`, `POST /productos`, `DELETE /productos/{producto_id}`, `GET /inventario/{producto_id}`, `POST /inventario/{producto_id}/entradas|salidas`). El catálogo se sincroniza mediante `GET /productos`. La demostración usa memoria y el perfil SQLite exige una credencial. Los despliegues con negocio cerrado responden `503`.
+- **Alcance del cliente Android.** La aplicación consulta el catálogo y el inventario, registra movimientos y ofrece proveedores, usuarios y cierres según el rol. [Operaciones por pantalla](../../frontend/README.md#catálogo-y-acceso). La demostración usa memoria y el perfil SQLite exige una credencial. Los despliegues con negocio cerrado responden `503`.
 
 ## Tabla histórica de modos de fallo y mitigaciones del perfil en memoria
 

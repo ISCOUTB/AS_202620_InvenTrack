@@ -34,3 +34,7 @@ Este documento consolida los hallazgos reportados en las evaluaciones automátic
 | S14 · Carga distinta a §10 | Se conservó el reto anterior y se midieron ambos escenarios literales. | [Ensayo y muestras](docs/verificacion-final.md) |
 | Final · Recuperación, actor y gate público | Perfil SQLite con restauración e identidad. Resultados de Sonar por revisión y disponibilidad remota registrados por separado. | [ADR-0020](docs/adr/0020-persistir-inventario-y-auditoria-en-sqlite.md), [verificación](docs/verificacion-final.md) |
 | S16 · Una corrida de 20 ventas en SQLite superaba los 400 ms | Serializar las escrituras de la instancia y reutilizar la conexión. Las tres corridas del candidato terminaron con saldo 80 y p95 entre 98,089 y 102,243 ms. | [ADR-0021](docs/adr/0021-serializar-escrituras-sqlite.md), [comparación con S10 y muestras](docs/verificacion-final.md#concurrencia-y-recuperación) |
+
+## Retroalimentación del cierre
+
+La referencia de partida es el commit `51f353704cabdd0100c082d6af3912d18dc83795` de `main`. El equipo indicó que el formulario del jurado no fue compartido. La lista de recomendaciones de los pares de S14 y el número total de recomendaciones recibidas siguen sin confirmar. Las observaciones técnicas públicas y la solicitud del equipo tienen su propio origen en la tabla.

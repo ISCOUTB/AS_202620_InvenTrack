@@ -3,7 +3,7 @@
 ```mermaid
 flowchart TB
     %%{init: {"flowchart": {"nodeSpacing": 70, "rankSpacing": 90, "curve": "basis", "htmlLabels": true}, "themeVariables": {"fontSize": "15px"}}}%%
-    subgraph dev ["Dispositivo del usuario · Windows, Android o iOS"]
+    subgraph dev ["Dispositivo del usuario · Android"]
         flutter["<b>Cliente Flutter</b><br/>Dart"]:::cont
     end
 

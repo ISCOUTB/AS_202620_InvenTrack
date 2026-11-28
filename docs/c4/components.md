@@ -49,7 +49,7 @@ flowchart TB
     Tx --> ProdRouter
     Tx --> InvRouter
     InvRouter -->|Perfil durable| Auditoria
-    InvRouter --> Broker
+    InvRouter -->|Demo en memoria| Broker
     ProdRouter --> Consultar
     Consultar --> ProductoRepo
     ProdRouter --> Crear

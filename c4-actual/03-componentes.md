@@ -33,7 +33,7 @@ flowchart TB
     root -.->|"Ensambla"| productos
     root -.->|"Ensambla"| inventario
     inventario -->|"Valida producto<br/>(puertos ADR-0003)"| productos
-    inventario -->|"Publica evento<br/>de movimiento"| mensajeria
+    inventario -->|"Solo demo en memoria"| mensajeria
     inventario -->|"Registra cruce<br/>de umbral"| alertas
     productos -->|"Persiste"| shared
     inventario -->|"Persiste"| shared
@@ -76,8 +76,8 @@ flowchart TB
 
     rtr -->|"Invoca"| reg
     rtr -->|"Reserva clave"| idem
-    rtr -->|"Publica evento<br/>en segundo plano"| broker
-    rtr -->|"Guarda evento<br/>de auditoría"| repo
+    rtr -->|"Demo · publicación en segundo plano"| broker
+    rtr -->|"SQLite · auditoría transaccional"| repo
     rtr -->|"Registra cruce<br/>de umbral"| alert
     reg -->|"Usa"| dom
     reg -->|"Valida producto"| val

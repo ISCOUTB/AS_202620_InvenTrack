@@ -48,19 +48,15 @@ class _HomePageState extends State<HomePage> {
         title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
+            Icon(
               Icons.inventory_2_rounded,
-              color: InvenTrackStyle.emerald,
+              color: Theme.of(context).colorScheme.primary,
               size: 27,
             ),
             const SizedBox(width: 9),
             Text(
               'InvenTrack',
-              style: TextStyle(
-                fontWeight: FontWeight.w800,
-                letterSpacing: -0.6,
-                color: context.ink,
-              ),
+              style: context.titulo.copyWith(letterSpacing: -0.6),
             ),
           ],
         ),
@@ -91,8 +87,8 @@ class _HomePageState extends State<HomePage> {
               color: health.isChecking
                   ? context.muted
                   : health.isHealthy
-                      ? InvenTrackStyle.emerald
-                      : InvenTrackStyle.orange,
+                      ? Theme.of(context).colorScheme.primary
+                      : context.aviso,
             ),
           ),
           if (widget.salir != null)
@@ -172,12 +168,7 @@ class DashboardPage extends StatelessWidget {
         children: [
           Text(
             'Resumen de inventario',
-            style: TextStyle(
-              fontSize: 23,
-              fontWeight: FontWeight.w800,
-              color: context.ink,
-              letterSpacing: -0.6,
-            ),
+            style: context.titulo.copyWith(fontSize: 23, letterSpacing: -0.6),
           ),
           const SizedBox(height: 5),
           Text(
@@ -217,13 +208,13 @@ class DashboardPage extends StatelessWidget {
                 label: 'Productos activos',
                 value: '$activos',
                 icon: Icons.inventory_2_outlined,
-                color: InvenTrackStyle.emerald,
+                color: Theme.of(context).colorScheme.primary,
               ),
               StatTile(
                 label: 'Stock consultado',
                 value: '$stockConsultado',
                 icon: Icons.warehouse_outlined,
-                color: InvenTrackStyle.orange,
+                color: context.aviso,
               ),
               StatTile(
                 label: 'Movimientos recientes',
@@ -235,7 +226,7 @@ class DashboardPage extends StatelessWidget {
                 label: 'Productos registrados',
                 value: '${productos.productos.length}',
                 icon: Icons.category_outlined,
-                color: InvenTrackStyle.deepGreen,
+                color: Theme.of(context).colorScheme.secondary,
               ),
             ],
           ),
@@ -250,7 +241,7 @@ class DashboardPage extends StatelessWidget {
 
           _ActionTile(
             icon: Icons.add_box_rounded,
-            color: InvenTrackStyle.emerald,
+            color: Theme.of(context).colorScheme.primary,
             title: 'Nuevo Producto',
             subtitle: 'Agrega un producto al catálogo',
             onTap: () => _crearProducto(context),
@@ -260,7 +251,7 @@ class DashboardPage extends StatelessWidget {
 
           _ActionTile(
             icon: Icons.warehouse_rounded,
-            color: InvenTrackStyle.orange,
+            color: context.aviso,
             title: 'Gestionar inventario',
             subtitle: 'Consulta stock, entradas y salidas',
             onTap: () => onNavigate(2),
@@ -319,7 +310,7 @@ class DashboardPage extends StatelessWidget {
                         trailing: StatusTag(
                           producto.activo ? 'Activo' : 'Inactivo',
                           color: producto.activo
-                              ? InvenTrackStyle.emerald
+                              ? Theme.of(context).colorScheme.primary
                               : context.muted,
                         ),
                         onTap: () => onNavigate(1),
@@ -475,8 +466,8 @@ class _ConnectionPanel extends StatelessWidget {
     final color = comprobando
         ? context.muted
         : conectado
-            ? InvenTrackStyle.emerald
-            : InvenTrackStyle.orange;
+            ? Theme.of(context).colorScheme.primary
+            : context.aviso;
 
     return SurfacePanel(
       padding: const EdgeInsets.all(14),
@@ -500,11 +491,7 @@ class _ConnectionPanel extends StatelessWidget {
                       : conectado
                           ? 'Servicio conectado'
                           : 'Servicio no disponible',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w800,
-                    color: context.ink,
-                    fontSize: 13,
-                  ),
+                  style: context.titulo.copyWith(fontSize: 13),
                 ),
                 const SizedBox(height: 3),
                 Text(
@@ -566,11 +553,7 @@ class _ActionTile extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w800,
-                        color: context.ink,
-                        fontSize: 14,
-                      ),
+                      style: context.titulo.copyWith(fontSize: 14),
                     ),
                     const SizedBox(height: 4),
                     Text(

@@ -11,7 +11,6 @@ sequenceDiagram
     participant R as Router inventario
     participant UC as RegistrarMovimiento
     participant DB as SQLite
-    participant Br as Broker simulado
     participant Al as alertas.registrar_cruce
 
     Op->>App: Registrar salida de SKU
@@ -29,11 +28,12 @@ sequenceDiagram
     else OK
         R->>DB: guardar_evento en auditoria
         R->>Al: cruzó el umbral de 10?
-        Al->>DB: INSERT en correos_stock
+        opt Saldo anterior mayor que 10 y saldo final de 10 o menos
+            Al->>DB: INSERT en correos_stock
+        end
         R-->>Mw: 2xx
         Mw->>DB: COMMIT
         Mw-->>App: respuesta
-        R->>Br: publicar MovimientoDeInventarioRegistrado (segundo plano)
     end
 ```
 

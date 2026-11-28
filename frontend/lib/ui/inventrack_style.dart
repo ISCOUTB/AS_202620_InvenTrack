@@ -105,13 +105,19 @@ extension InvenTrackContext on BuildContext {
   InvenTrackColors get _paleta =>
       Theme.of(this).extension<InvenTrackColors>() ?? InvenTrackColors.light;
 
+  TextStyle get titulo => TextStyle(fontWeight: FontWeight.w800, color: ink);
+
+  Color get aviso => Theme.of(this).brightness == Brightness.dark
+      ? InvenTrackStyle.orange
+      : const Color(0xFF8E421D);
+
   Color get ink => _paleta.ink;
   Color get muted => _paleta.muted;
   Color get outline => _paleta.outline;
   Color get canvas => _paleta.canvas;
   Color get surface => _paleta.surface;
   Color get mint => _paleta.mint;
-  Color get watchShadow => _paleta.shadow;
+  Color get shadow => _paleta.shadow;
 }
 
 /// Modo de tema elegido por la persona. Por defecto sigue al sistema.
@@ -159,7 +165,7 @@ class SurfacePanel extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: context.watchShadow,
+            color: context.shadow,
             blurRadius: 22,
             offset: const Offset(0, 9),
           ),

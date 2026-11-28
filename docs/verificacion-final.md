@@ -1,4 +1,23 @@
-# Verificación técnica de InvenTrack · S15 y S16
+# Verificación técnica de InvenTrack
+
+## Comprobaciones del 27 de noviembre de 2026
+
+**Inventario por HTTP en dos revisiones.** En Windows y Python 3.11.9 se extrajeron el código y las pruebas de cada SHA con `git archive`. Para cada revisión se inició Uvicorn en loopback con una base SQLite temporal y una credencial de ensayo. Cada corrida creó su propio producto, cargó 40 unidades, lanzó 50 ventas de una unidad, repitió una venta con su clave y midió 40 lecturas. [Escenario y aserciones](../tests/inventario/test_escenarios_calidad.py) · [Configuración para repetirlo](#escenarios-de-negocio).
+
+| Código ejecutado | Respuestas por corrida (3 corridas) | Saldo tras repetir la venta | p95 de lectura por corrida, umbral 400 ms |
+|---|---|---:|---|
+| `51f3537`, candidato revisado el 25 de noviembre | 40 ventas aceptadas y 10 conflictos HTTP 409 | 0 | 6,788 / 5,343 / 5,309 ms |
+| `6c031e0`, cambio posterior de auditoría | 40 ventas aceptadas y 10 conflictos HTTP 409 | 0 | 6,548 / 5,100 / 5,400 ms |
+
+**Cierre y recuperación.** Sobre el archivo Git de `51f3537` pasaron las 13 pruebas de perfil durable, conciliación y Gestión. En `6c031e0`, la prueba ampliada tomó un corte de 14 unidades de café. Dos ventas distintas dejaron 9 unidades. Al restaurar una copia en otro archivo y arrancar otro proceso, el historial conservó al operador, el cierre siguió mostrando 14, el conteo de 9 arrojó una diferencia de −5 y el receptor SMTP de loopback recibió un aviso. Durante el turno se registraron tres eventos en SQLite y cero publicaciones al simulador. Para repetirlo, ejecutar `python -m pytest -q tests/test_gestion_integrada.py tests/test_perfil_durable.py tests/inventario/test_conciliacion_turno.py`. [Prueba de Gestión](../tests/test_gestion_integrada.py) · [Desafío de conciliación por SKU](#conciliación-por-sku).
+
+**Regresión local.** Pasaron las 49 pruebas Python, incluido el contrato OpenAPI, y las 12 pruebas Flutter tras añadir los casos de navegación, sesión y tema. `flutter analyze --no-pub` terminó sin hallazgos. Las pruebas del cliente usaron widgets y un cliente HTTP simulado.
+
+**Servicio institucional.** El 27 de noviembre, desde una conexión externa, `GET /health` devolvió 200 y `GET /sesion` sin credencial devolvió 401. Para acreditar qué revisión atendió el recorrido Android, el operador necesita el SHA del despliegue activo en Dokploy, la hora del ensayo y un SKU de prueba. Con ese SKU puede registrar alta, entrada, salida, conflicto por stock y conciliación por corte. Conservar saldos y códigos HTTP sin incluir credenciales. [Salud pública](https://inventrack.iscoutb.dev/health).
+
+**SonarCloud.** El análisis público `8e03df00-aacd-4ea1-8e62-131e1917cd55` identifica la revisión `51f353704cabdd0100c082d6af3912d18dc83795` con gate `OK`. El 27 de noviembre la consulta de todos los *issues* sin resolver de `main` devolvió 0 y la de *hotspots* devolvió 0. Son inventarios de la rama en el momento de la consulta. El análisis se aplica a las fuentes declaradas en `sonar-project.properties`. [Configuración](../sonar-project.properties) · [Scanner de CI](../.github/workflows/test.yml) · [Run del candidato](https://github.com/ISCOUTB/AS_202620_InvenTrack/actions/runs/45112590983) · [Gate por ID](https://sonarcloud.io/api/qualitygates/project_status?analysisId=8e03df00-aacd-4ea1-8e62-131e1917cd55) · [Issues sin resolver](https://sonarcloud.io/api/issues/search?componentKeys=ISCOUTB_AS_202620_InvenTrack&branch=main&resolved=false) · [Hotspots](https://sonarcloud.io/api/hotspots/search?projectKey=ISCOUTB_AS_202620_InvenTrack&branch=main).
+
+**Historial Git.** Antes de crear los commits del cierre se revisaron 476 commits y 901 objetos de archivo distintos alcanzables desde las referencias del clon. Se buscaron nombres de archivo `.env`, cabeceras de clave privada y prefijos de credenciales AWS, GitHub, Slack y OpenAI. El barrido obtuvo cero coincidencias en esos patrones. Las credenciales con otros formatos quedan fuera de esa comprobación.
 
 ## Revisiones de la entrega
 
@@ -104,4 +123,4 @@ El historial de la revisión publicada contiene los siguientes aportes por mes d
 | Esteban Peluffo · Esteban Peluffo | 13 | 6 | 5 | 11 | Amenazas y controles (`e12e765`), sincronización de catálogo (`335e524`). |
 | Javier Carta · jxviercarta-a11y, atribución provisional en la planilla | 3 | 0 | 0 | 10 | C4 (`dd4ea1c`), interfaz y pruebas ([PR 15](https://github.com/ISCOUTB/AS_202620_InvenTrack/pull/15)). |
 
-La consulta pública encontró nueve PR, siete de Dependabot y dos de integrantes del equipo. Cada PR del equipo tenía un comentario automático del análisis de calidad. [Comentario del PR 15](https://github.com/ISCOUTB/AS_202620_InvenTrack/pull/15#issuecomment-7073171914) · [comentario del PR 16](https://github.com/ISCOUTB/AS_202620_InvenTrack/pull/16#issuecomment-7090255636).
+La primera consulta pública encontró nueve PR, siete de Dependabot y dos de integrantes del equipo. Cada PR del equipo tenía un comentario automático del análisis de calidad. La consulta de revisiones por línea del 27 de noviembre identificó además ocho comentarios humanos de `Josephva24`, tres en el PR 15 y cinco en el PR 16, enviados el 22 de noviembre en horario de Bogotá. Los enlaces a cada hilo y las respuestas técnicas están en la [matriz](../correcciones.md#retroalimentación-del-cierre). [Comentario del PR 15](https://github.com/ISCOUTB/AS_202620_InvenTrack/pull/15#issuecomment-7073171914) · [comentario del PR 16](https://github.com/ISCOUTB/AS_202620_InvenTrack/pull/16#issuecomment-7090255636).
